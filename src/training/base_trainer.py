@@ -1,17 +1,11 @@
 import logging
-import sys
 import tempfile
-
+import random
+import sys
 sys.path.append(".")
-import comet_ml
-from monai.data import CacheDataset, DataLoader, Dataset, ZipDataset
-from monai.transforms import (
-    RandFlip,
-    RandRotate,
-    Compose,
-)
+from monai.data import DataLoader, Dataset
+
 import torch
-import torch.nn as nn
 import lightning
 from comet_ml.integration.pytorch import log_model
 
@@ -24,7 +18,8 @@ from src.training.arg_parser import create_arg_parser
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
 
-IM_SHAPE=(1,160,192,160)
+IM_SHAPE = (1, 160, 192, 160)
+
 
 def launch_train(config):
     name = "Base"
@@ -32,11 +27,15 @@ def launch_train(config):
         name += "-NoDec"
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
-        project_name="nan-investigate-midl2024",
+        project_name="compare-conv-k",
         experiment_name=f"{name}-beta{config.beta}-lr{config.learning_rate}",
     )
 
-    train_ds = TrainMrArt.lab(Preprocess())
+    train_ds = (
+        TrainMrArt.narval(Preprocess())
+        if config.narval
+        else TrainMrArt.lab(Preprocess())
+    )
     flipped_train_ds = Dataset(
         data=train_ds,
         transform=Augment(),
@@ -49,7 +48,8 @@ def launch_train(config):
     )
 
     val_loader = DataLoader(
-        ValMrArt.lab(Preprocess()), batch_size=config.batch_size
+        ValMrArt.narval(Preprocess()) if config.narval else ValMrArt.lab(Preprocess()),
+        batch_size=config.batch_size,
     )
     logging.info(f"Dataset contain {len(train_ds)} datas")
     tempdir = tempfile.TemporaryDirectory()
@@ -80,7 +80,7 @@ def launch_train(config):
             check,
         ],
     )
-   
+
     trainer.fit(aug_net, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
     log_model(
@@ -94,5 +94,9 @@ if __name__ == "__main__":
     logging.basicConfig(level="INFO")
     config = create_arg_parser()
     logging.info(str(config))
+    if config.seed == None:
+        config.seed = random.randint(1, 10000)
+    torch.manual_seed(config.seed)
+
     torch.set_float32_matmul_precision("high")
     launch_train(config)

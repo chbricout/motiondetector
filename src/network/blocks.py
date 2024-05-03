@@ -1,5 +1,7 @@
 import torch.nn as nn
 from monai.networks.blocks import Convolution
+
+
 class ConvModule(nn.Module):
     def __init__(
         self,
@@ -40,7 +42,6 @@ class ConvModule(nn.Module):
         return y
 
 
-
 class DeConvModule(nn.Module):
     def __init__(
         self,
@@ -78,7 +79,8 @@ class DeConvModule(nn.Module):
         y = self.deconv_in(x)
         y = self.deconv_mid(y)
         return y
-    
+
+
 class Classifier(nn.Sequential):
     def __init__(self, input_size, output_size=3):
         self.input_size = input_size
@@ -86,23 +88,17 @@ class Classifier(nn.Sequential):
 
         super().__init__(
             nn.Dropout(0.5),
-
             nn.Linear(self.input_size, 450),
             nn.BatchNorm1d(450, affine=False),
             nn.Dropout(0.5),
             nn.PReLU(),
-
             nn.Linear(450, 450),
             nn.BatchNorm1d(450, affine=False),
             nn.PReLU(),
             nn.Dropout(0.5),
-
             nn.Linear(450, 128),
             nn.BatchNorm1d(128, affine=False),
             nn.PReLU(),
             nn.Dropout(0.5),
-
-            nn.Linear(128, self.output_size)
+            nn.Linear(128, self.output_size),
         )
-
-
