@@ -8,6 +8,7 @@ from monai.transforms import (
     RandFlipd,
     RandRotated,
 )
+from src.transforms.soft_label import ProgressiveSoftEncode
 
 
 def threshold_one(x):
@@ -15,9 +16,8 @@ def threshold_one(x):
 
 
 class Preprocess(Compose):
-    def __init__(self, final_size=(160, 192, 160)):
-        super().__init__(
-            [
+    def __init__(self, final_size=(160, 192, 160), soft_labeling=False):
+        self.tsf =  [
                 LoadImaged(keys="data", ensure_channel_first=True, image_only=True),
                 Orientationd(keys="data", axcodes="RAS"),
                 ScaleIntensityd(keys="data", minv=0, maxv=1),
@@ -29,6 +29,10 @@ class Preprocess(Compose):
                 ),
                 Resized(keys="data", spatial_size=final_size),
             ]
+        if soft_labeling:
+            self.tsf.append(ProgressiveSoftEncode(keys="label"))
+        super().__init__(
+           self.tsf
         )
 
 

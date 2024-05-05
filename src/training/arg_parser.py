@@ -15,7 +15,7 @@ def create_arg_parser():
         type=float,
     )
     parser.add_argument(
-        "--beta", default=1, required=False, help="beta label loss weight", type=float
+        "--beta", default=1, required=False, help="beta reconstruction loss weight", type=float
     )
     parser.add_argument("--use_decoder", action="store_true")
 
@@ -29,16 +29,22 @@ def create_arg_parser():
 
     parser.add_argument(
         "--act",
-        default="PRELU",
+        default="RELU",
         required=False,
         help="Chose activation function PRELU or RELU",
         type=str,
     )
     parser.add_argument(
-        "--conv_k", default=5, required=False, help="size of conv kernel", type=int
+        "--conv_k", default=3, required=False, help="size of conv kernel", type=int
     )
     parser.add_argument(
         "--seed", default=None, required=False, help="Random seed for torch", type=int
+    )
+    parser.add_argument(
+        "--dropout_rate", default=0.2, required=False, help="dropout rate", type=float
+    )
+    parser.add_argument(
+        "--model", default="BASE", required=False, help="Model architecture : BASE or RES", type=str
     )
     parser.add_argument("-n", "--narval", action="store_true")
     return parser.parse_args()

@@ -1,5 +1,5 @@
 import torch.nn as nn
-from monai.networks.blocks import Convolution
+from monai.networks.blocks import Convolution, ResidualUnit
 
 
 class ConvModule(nn.Module):
@@ -9,7 +9,7 @@ class ConvModule(nn.Module):
         in_channel,
         out_channel,
         stride,
-        act="PRELU",
+        act="RELU",
     ):
         super().__init__()
         self.key = f"{in_channel}-{out_channel}"
@@ -40,6 +40,37 @@ class ConvModule(nn.Module):
         y = self.conv_mid(y)
 
         return y
+    
+class ResConvModule(nn.Module):
+    def __init__(
+        self,
+        conv_kernel,
+        in_channel,
+        out_channel,
+        stride,
+        resunit=3,
+        padding=None,
+        act="RELU",
+    ):
+        super().__init__()
+        self.key = f"{in_channel}-{out_channel}"
+        if padding == None:
+            padding = conv_kernel // 2
+
+      
+        self.conv_in = ResidualUnit(
+            3,
+            in_channels=in_channel,
+            out_channels=out_channel,
+            kernel_size=conv_kernel,
+            subunits=resunit,
+            norm="BATCH",
+            act=act,
+            strides=stride
+        )
+
+    def forward(self, x):
+        return self.conv_in(x)
 
 
 class DeConvModule(nn.Module):
@@ -49,7 +80,7 @@ class DeConvModule(nn.Module):
         in_channel,
         out_channel,
         stride=2,
-        act="PRELU",
+        act="RELU",
     ):
         super().__init__()
         padding = conv_kernel // 2
@@ -82,23 +113,24 @@ class DeConvModule(nn.Module):
 
 
 class Classifier(nn.Sequential):
-    def __init__(self, input_size, output_size=3):
+    def __init__(self, input_size, output_size=3, dropout_rate=0.5):
         self.input_size = input_size
         self.output_size = output_size
+        self.dropout_rate=dropout_rate
 
         super().__init__(
-            nn.Dropout(0.5),
+            nn.Dropout(self.dropout_rate),
             nn.Linear(self.input_size, 450),
             nn.BatchNorm1d(450, affine=False),
-            nn.Dropout(0.5),
+            nn.Dropout(self.dropout_rate),
             nn.PReLU(),
             nn.Linear(450, 450),
             nn.BatchNorm1d(450, affine=False),
             nn.PReLU(),
-            nn.Dropout(0.5),
+            nn.Dropout(self.dropout_rate),
             nn.Linear(450, 128),
             nn.BatchNorm1d(128, affine=False),
             nn.PReLU(),
-            nn.Dropout(0.5),
+            nn.Dropout(self.dropout_rate),
             nn.Linear(128, self.output_size),
         )

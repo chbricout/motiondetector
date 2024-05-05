@@ -2,39 +2,43 @@ import logging
 import tempfile
 import random
 import sys
+
 sys.path.append(".")
-from monai.data import DataLoader, Dataset
+from monai.data.dataloader import DataLoader
+from monai.data.dataset import Dataset
 
 import torch
 import lightning
+import lightning.pytorch.loggers
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
 from comet_ml.integration.pytorch import log_model
 
+from src.network.res_net import ResNetModel
 from src.network.base_net import BaselineModel
 from src.dataset.mrart_dataset import TrainMrArt, ValMrArt
 from src.transforms.base_transform import Preprocess, Augment
 from src.network.utils import init_weights
 from src.training.arg_parser import create_arg_parser
 
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
-from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
+
 
 IM_SHAPE = (1, 160, 192, 160)
 
 
 def launch_train(config):
-    name = "Base"
-    if not config.use_decoder:
-        name += "-NoDec"
+    
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
-        project_name="compare-conv-k",
-        experiment_name=f"{name}-beta{config.beta}-lr{config.learning_rate}",
+        project_name="test_soft_encode",
+        experiment_name=f"Soft encode",
     )
-
+    comet_logger.log_hyperparams({"seed":config.seed})
+    train_tsf = Preprocess(soft_labeling=True)
     train_ds = (
-        TrainMrArt.narval(Preprocess())
+        TrainMrArt.narval(train_tsf)
         if config.narval
-        else TrainMrArt.lab(Preprocess())
+        else TrainMrArt.lab(train_tsf)
     )
     flipped_train_ds = Dataset(
         data=train_ds,
@@ -48,23 +52,36 @@ def launch_train(config):
     )
 
     val_loader = DataLoader(
-        ValMrArt.narval(Preprocess()) if config.narval else ValMrArt.lab(Preprocess()),
+        ValMrArt.narval(train_tsf) if config.narval else ValMrArt.lab(train_tsf),
         batch_size=config.batch_size,
     )
     logging.info(f"Dataset contain {len(train_ds)} datas")
     tempdir = tempfile.TemporaryDirectory()
-    aug_net = BaselineModel(
-        1,
-        IM_SHAPE,
-        act=config.act,
-        kernel_size=config.conv_k,
-        run_name=tempdir.name,
-        lr=config.learning_rate,
-        beta=config.beta,
-        use_decoder=config.use_decoder,
-    )
 
-    aug_net.apply(init_weights)
+    if config.model =="BASE":
+        net = BaselineModel(
+            1,
+            IM_SHAPE,
+            act=config.act,
+            kernel_size=config.conv_k,
+            run_name=tempdir.name,
+            lr=config.learning_rate,
+            beta=config.beta,
+            use_decoder=config.use_decoder,
+        )
+    elif config.model == "RES":
+            net = ResNetModel(
+            1,
+            IM_SHAPE,
+            act=config.act,
+            kernel_size=config.conv_k,
+            run_name=tempdir.name,
+            lr=config.learning_rate,
+            beta=config.beta,
+            use_decoder=config.use_decoder,
+        )
+
+    net.apply(init_weights)
 
     check = ModelCheckpoint(monitor="val_accuracy", mode="max")
 
@@ -81,12 +98,12 @@ def launch_train(config):
         ],
     )
 
-    trainer.fit(aug_net, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    trainer.fit(net, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
     log_model(
         comet_logger.experiment,
         BaselineModel.load_from_checkpoint(check.best_model_path),
-        name,
+        "BASE",
     )
 
 

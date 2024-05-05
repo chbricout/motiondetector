@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=compare-k-size-5
+#SBATCH --job-name=try-decoder
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=40G
 #SBATCH --gpus-per-node=1
-#SBATCH --time=5:00:00
+#SBATCH --time=10:00:00
 #SBATCH --account=rrg-ebrahimi
 #SBATCH --mail-user=bricout.charles@outlook.com
 #SBATCH --mail-type=ALL
@@ -22,6 +22,7 @@ export MKL_NUM_THREADS=1
 source ~/bowl/bin/activate
 
 srun python src/training/base_trainer.py \
-    -n --use_decoder --max_epochs 1000 --learning_rate 1e-5 --batch_size 20 --beta 1 --conv_k 5
+    -n  --max_epochs 1000 --learning_rate 1e-5 --batch_size 20 --beta 1 \
+    --use_decoder --model RES
 # Deactivate the virtual environment
 deactivate
