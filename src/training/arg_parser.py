@@ -15,7 +15,11 @@ def create_arg_parser():
         type=float,
     )
     parser.add_argument(
-        "--beta", default=1, required=False, help="beta reconstruction loss weight", type=float
+        "--beta",
+        default=1,
+        required=False,
+        help="beta reconstruction loss weight",
+        type=float,
     )
     parser.add_argument("--use_decoder", action="store_true")
 
@@ -44,7 +48,21 @@ def create_arg_parser():
         "--dropout_rate", default=0.2, required=False, help="dropout rate", type=float
     )
     parser.add_argument(
-        "--model", default="BASE", required=False, help="Model architecture : BASE or RES", type=str
+        "--model",
+        default="BASE",
+        required=False,
+        help="Model architecture : BASE, RES, SFCN, Conv5_FC3",
+        type=str,
     )
+
+    parser.add_argument(
+        "--mode",
+        default="CLASS",
+        required=False,
+        help="Prediction mode : CLASS or REGR",
+        type=str,
+    )
+
+    parser.add_argument("--synth", action="store_true")
     parser.add_argument("-n", "--narval", action="store_true")
     return parser.parse_args()

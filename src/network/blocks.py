@@ -40,7 +40,8 @@ class ConvModule(nn.Module):
         y = self.conv_mid(y)
 
         return y
-    
+
+
 class ResConvModule(nn.Module):
     def __init__(
         self,
@@ -57,7 +58,6 @@ class ResConvModule(nn.Module):
         if padding == None:
             padding = conv_kernel // 2
 
-      
         self.conv_in = ResidualUnit(
             3,
             in_channels=in_channel,
@@ -66,7 +66,7 @@ class ResConvModule(nn.Module):
             subunits=resunit,
             norm="BATCH",
             act=act,
-            strides=stride
+            strides=stride,
         )
 
     def forward(self, x):
@@ -116,21 +116,9 @@ class Classifier(nn.Sequential):
     def __init__(self, input_size, output_size=3, dropout_rate=0.5):
         self.input_size = input_size
         self.output_size = output_size
-        self.dropout_rate=dropout_rate
+        self.dropout_rate = dropout_rate
 
         super().__init__(
             nn.Dropout(self.dropout_rate),
-            nn.Linear(self.input_size, 450),
-            nn.BatchNorm1d(450, affine=False),
-            nn.Dropout(self.dropout_rate),
-            nn.PReLU(),
-            nn.Linear(450, 450),
-            nn.BatchNorm1d(450, affine=False),
-            nn.PReLU(),
-            nn.Dropout(self.dropout_rate),
-            nn.Linear(450, 128),
-            nn.BatchNorm1d(128, affine=False),
-            nn.PReLU(),
-            nn.Dropout(self.dropout_rate),
-            nn.Linear(128, self.output_size),
+            nn.Linear(self.input_size, 3),
         )

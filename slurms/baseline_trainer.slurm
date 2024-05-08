@@ -23,6 +23,6 @@ source ~/bowl/bin/activate
 
 srun python src/training/base_trainer.py \
     -n  --max_epochs 1000 --learning_rate 1e-5 --batch_size 20 --beta 1 \
-    --use_decoder --model RES
+    --use_decoder --model BASE
 # Deactivate the virtual environment
 deactivate

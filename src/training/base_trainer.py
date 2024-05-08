@@ -3,9 +3,11 @@ import tempfile
 import random
 import sys
 
+
 sys.path.append(".")
 from monai.data.dataloader import DataLoader
 from monai.data.dataset import Dataset
+from monai.transforms.compose import Compose
 
 import torch
 import lightning
@@ -16,7 +18,12 @@ from comet_ml.integration.pytorch import log_model
 
 from src.network.res_net import ResNetModel
 from src.network.base_net import BaselineModel
+from src.network.SFCN import SFCNModel
+from src.network.Conv5_FC3 import Conv5_FC3
+
 from src.dataset.mrart_dataset import TrainMrArt, ValMrArt
+from src.dataset.hcp_dataset import HCP
+from src.transforms.motion_transform import MotionTsfd
 from src.transforms.base_transform import Preprocess, Augment
 from src.network.utils import init_weights
 from src.training.arg_parser import create_arg_parser
@@ -34,22 +41,40 @@ def launch_train(config):
         experiment_name=f"Soft encode",
     )
     comet_logger.log_hyperparams({"seed":config.seed})
-    train_tsf = Preprocess(soft_labeling=True)
-    train_ds = (
-        TrainMrArt.narval(train_tsf)
-        if config.narval
-        else TrainMrArt.lab(train_tsf)
-    )
-    flipped_train_ds = Dataset(
-        data=train_ds,
-        transform=Augment(),
-    )
+    train_tsf = Preprocess(mode=config.mode, soft_labeling=True)
 
-    train_loader = DataLoader(
-        flipped_train_ds,
-        batch_size=config.batch_size,
-        shuffle=True,
-    )
+    if config.synth:
+        train_ds = (
+            HCP.narval(train_tsf)
+            if config.narval
+            else HCP.lab(train_tsf)
+        )
+        aug_train_ds = Dataset(
+            data=train_ds,
+            transform=Compose([MotionTsfd(),Augment(["data", "noise"])]),
+        )
+
+        train_loader = DataLoader(
+            aug_train_ds,
+            batch_size=config.batch_size,
+            shuffle=True,
+        )
+    else:
+        train_ds = (
+            TrainMrArt.narval(train_tsf)
+            if config.narval
+            else TrainMrArt.lab(train_tsf)
+        )
+        aug_train_ds = Dataset(
+            data=train_ds,
+            transform=Augment(),
+        )
+
+        train_loader = DataLoader(
+            aug_train_ds,
+            batch_size=config.batch_size,
+            shuffle=True,
+        )
 
     val_loader = DataLoader(
         ValMrArt.narval(train_tsf) if config.narval else ValMrArt.lab(train_tsf),
@@ -68,6 +93,8 @@ def launch_train(config):
             lr=config.learning_rate,
             beta=config.beta,
             use_decoder=config.use_decoder,
+            mode=config.mode,
+            dropout_rate=config.dropout_rate
         )
     elif config.model == "RES":
             net = ResNetModel(
@@ -79,6 +106,21 @@ def launch_train(config):
             lr=config.learning_rate,
             beta=config.beta,
             use_decoder=config.use_decoder,
+            dropout_rate=config.dropout_rate
+        )
+    elif config.model == "SFCN":
+            net = SFCNModel(
+            1,
+            IM_SHAPE,
+            run_name=tempdir.name,
+            lr=config.learning_rate,
+        )
+    elif config.model == "Conv5_FC3":
+         net = Conv5_FC3(
+            1,
+            IM_SHAPE,
+            run_name=tempdir.name,
+            lr=config.learning_rate,
         )
 
     net.apply(init_weights)

@@ -1,9 +1,13 @@
-import os
-
-import torch
-from monai.data import CacheDataset
+import re
+from monai.data.dataset import CacheDataset
 import pandas as pd
 
+def extract_sub(path: str):
+    match_re = ".*(sub-[0-9A-Za-z]+).*"
+    match_res = re.match(match_re, path)
+    if match_res:
+        return match_res.group(1)
+    return ""
 
 class TrainMrArt(CacheDataset):
     def __init__(self, transform=None, prefix: str = ""):

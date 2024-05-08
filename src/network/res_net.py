@@ -34,14 +34,7 @@ class ResNetModel(ClassifierBase):
             ResConvModule(kernel_size, 64, 128, 2, act=act),
             ResConvModule(kernel_size, 128, 256, 2, act=act),
             ResConvModule(kernel_size, 256, 512, 2, act=act),
-            Convolution(
-                3,
-                512,
-                3,
-                kernel_size=kernel_size,
-                padding=kernel_size // 2,
-                norm="BATCH",
-            ),
+           
         )
 
         self.im_shape = im_shape
@@ -51,14 +44,7 @@ class ResNetModel(ClassifierBase):
         print(self.latent_size)
         if self.use_decoder:
             self.decoder = nn.Sequential(
-                Convolution(
-                    3,
-                    3,
-                    512,
-                    kernel_size=kernel_size,
-                    padding=kernel_size // 2,
-                    norm="BATCH",
-                ),
+              
                 DeConvModule(kernel_size, 512, 256, act=act),
                 DeConvModule(kernel_size, 256, 128, act=act),
                 DeConvModule(kernel_size, 128, 64, act=act),
@@ -74,6 +60,9 @@ class ResNetModel(ClassifierBase):
         self.label = []
         self.classe = []
         self.save_hyperparameters()
+
+        self.label_loss = nn.CrossEntropyLoss()
+        self.recon_loss = nn.MSELoss()
 
     def encode_forward(self, input):
         z = self.encoder(input)

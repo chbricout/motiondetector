@@ -8,7 +8,8 @@ from monai.transforms import (
     RandFlipd,
     RandRotated,
 )
-from src.transforms.soft_label import ProgressiveSoftEncode
+from src.transforms.soft_label import ProgressiveSoftEncode, FloatLabel
+
 
 
 def threshold_one(x):
@@ -16,7 +17,7 @@ def threshold_one(x):
 
 
 class Preprocess(Compose):
-    def __init__(self, final_size=(160, 192, 160), soft_labeling=False):
+    def __init__(self, final_size=(160, 192, 160), soft_labeling=False, mode:str="CLASS"):
         self.tsf =  [
                 LoadImaged(keys="data", ensure_channel_first=True, image_only=True),
                 Orientationd(keys="data", axcodes="RAS"),
@@ -31,18 +32,20 @@ class Preprocess(Compose):
             ]
         if soft_labeling:
             self.tsf.append(ProgressiveSoftEncode(keys="label"))
+        elif mode == "REGR":
+            self.tsf.append(FloatLabel(keys="label"))
         super().__init__(
            self.tsf
         )
 
 
 class Augment(Compose):
-    def __init__(self, spatial_axis=0, range_rotate=0.2):
+    def __init__(self, keys :str | list[str]= "data", spatial_axis=0, range_rotate=0.2):
         super().__init__(
             [
-                RandFlipd(keys="data", prob=0.5, spatial_axis=spatial_axis),
+                RandFlipd(keys=keys, prob=0.5, spatial_axis=spatial_axis),
                 RandRotated(
-                    keys="data",
+                    keys=keys,
                     prob=0.7,
                     range_x=range_rotate,
                     range_y=range_rotate,
