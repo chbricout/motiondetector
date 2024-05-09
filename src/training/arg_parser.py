@@ -51,7 +51,7 @@ def create_arg_parser():
         "--model",
         default="BASE",
         required=False,
-        help="Model architecture : BASE, RES, SFCN, Conv5_FC3",
+        help="Model architecture : BASE, RES, SFCN, Conv5_FC3, SERes",
         type=str,
     )
 

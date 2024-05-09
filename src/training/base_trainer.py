@@ -4,6 +4,7 @@ import random
 import sys
 
 
+
 sys.path.append(".")
 from monai.data.dataloader import DataLoader
 from monai.data.dataset import Dataset
@@ -20,6 +21,7 @@ from src.network.res_net import ResNetModel
 from src.network.base_net import BaselineModel
 from src.network.SFCN import SFCNModel
 from src.network.Conv5_FC3 import Conv5_FC3
+from src.network.SENet import SEResModel
 
 from src.dataset.mrart_dataset import TrainMrArt, ValMrArt
 from src.dataset.hcp_dataset import HCP
@@ -38,7 +40,7 @@ def launch_train(config):
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
         project_name="test_soft_encode",
-        experiment_name=f"Soft encode",
+        experiment_name=f"{config.model}",
     )
     comet_logger.log_hyperparams({"seed":config.seed})
     train_tsf = Preprocess(mode=config.mode, soft_labeling=True)
@@ -100,13 +102,9 @@ def launch_train(config):
             net = ResNetModel(
             1,
             IM_SHAPE,
-            act=config.act,
-            kernel_size=config.conv_k,
             run_name=tempdir.name,
             lr=config.learning_rate,
-            beta=config.beta,
-            use_decoder=config.use_decoder,
-            dropout_rate=config.dropout_rate
+            mode=config.mode,
         )
     elif config.model == "SFCN":
             net = SFCNModel(
@@ -122,6 +120,14 @@ def launch_train(config):
             run_name=tempdir.name,
             lr=config.learning_rate,
         )
+    elif config.model == "SERes":
+         net = SEResModel(
+            1,
+            IM_SHAPE,
+            run_name=tempdir.name,
+            lr=config.learning_rate,
+            mode=config.mode,
+        )
 
     net.apply(init_weights)
 
@@ -130,7 +136,7 @@ def launch_train(config):
     trainer = lightning.Trainer(
         max_epochs=config.max_epochs,
         logger=comet_logger,
-        devices=[0],
+        devices=[1],
         accelerator="gpu",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
