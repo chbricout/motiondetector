@@ -42,35 +42,7 @@ class ConvModule(nn.Module):
         return y
 
 
-class ResConvModule(nn.Module):
-    def __init__(
-        self,
-        conv_kernel,
-        in_channel,
-        out_channel,
-        stride,
-        resunit=3,
-        padding=None,
-        act="RELU",
-    ):
-        super().__init__()
-        self.key = f"{in_channel}-{out_channel}"
-        if padding == None:
-            padding = conv_kernel // 2
 
-        self.conv_in = ResidualUnit(
-            3,
-            in_channels=in_channel,
-            out_channels=out_channel,
-            kernel_size=conv_kernel,
-            subunits=resunit,
-            norm="BATCH",
-            act=act,
-            strides=stride,
-        )
-
-    def forward(self, x):
-        return self.conv_in(x)
 
 
 class DeConvModule(nn.Module):

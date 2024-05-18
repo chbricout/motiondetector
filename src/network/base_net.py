@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 from monai.networks.blocks.convolutions import Convolution
 
-from src.network.archi import ClassifierBase
+from src.network.archi import ReconstructBase
 from src.network.blocks import ConvModule, DeConvModule, Classifier
 
 
-class BaselineModel(ClassifierBase):
+class BaselineModel(ReconstructBase):
     def __init__(
         self,
         in_channel,
@@ -17,7 +17,7 @@ class BaselineModel(ClassifierBase):
         lr=1e-5,
         beta=1,
         use_decoder=True,
-        dropout_rate=0.2,
+        dropout_rate=0.5,
         mode="CLASS"
     ):
         super().__init__()
@@ -35,14 +35,7 @@ class BaselineModel(ClassifierBase):
             ConvModule(kernel_size, 64, 128, 2, act=act),
             ConvModule(kernel_size, 128, 256, 2, act=act),
             ConvModule(kernel_size, 256, 512, 2, act=act),
-            # Convolution(
-            #     3,
-            #     512,
-            #     3,
-            #     kernel_size=kernel_size,
-            #     padding=kernel_size // 2,
-            #     norm="BATCH",
-            # ),
+         
         )
 
         self.im_shape = im_shape

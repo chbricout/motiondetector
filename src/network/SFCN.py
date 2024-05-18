@@ -60,7 +60,6 @@ class SFCNModel(ClassifierBase):
 
         self.im_shape = im_shape
         self.lr = lr
-        self.use_decoder = False
         self.run_name = run_name
         self.mode=mode
         self.encoder = nn.Sequential(
@@ -79,7 +78,6 @@ class SFCNModel(ClassifierBase):
         print(self.out_encoder)
        
 
-        self.recon_to_plot = None
         self.test_to_plot = None
 
         self.label = []
@@ -87,11 +85,9 @@ class SFCNModel(ClassifierBase):
         self.save_hyperparameters()
         if self.mode=="CLASS":
             self.label_loss = nn.CrossEntropyLoss()
-            self.recon_loss = nn.MSELoss()
             self.classifier = SFCNHeadBlock(self.out_encoder[2:] , 64,3)
         elif self.mode=="REGR":
             self.label_loss = nn.MSELoss()
-            self.recon_loss = nn.MSELoss()
             self.classifier = SFCNHeadBlock(self.out_encoder[2:] , 64,1)
             self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
 
@@ -107,6 +103,6 @@ class SFCNModel(ClassifierBase):
     def forward(self, x):
         z = self.encode_forward(x)
         classe = self.classify_emb(z)
-        return [x, z, classe]
+        return [ z, classe]
 
    

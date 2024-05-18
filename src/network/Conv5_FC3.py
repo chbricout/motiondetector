@@ -26,7 +26,6 @@ class Conv5_FC3(ClassifierBase):
 
         self.im_shape = im_shape
         self.lr = lr
-        self.use_decoder = False
         self.run_name = run_name
         self.mode = mode
         self.encoder = nn.Sequential(
@@ -44,7 +43,6 @@ class Conv5_FC3(ClassifierBase):
 
         print(self.out_encoder)
 
-        self.recon_to_plot = None
         self.test_to_plot = None
 
         self.label = []
@@ -59,11 +57,9 @@ class Conv5_FC3(ClassifierBase):
 
         if self.mode == "CLASS":
             self.label_loss = nn.CrossEntropyLoss()
-            self.recon_loss = nn.MSELoss()
             self.classifier.append(nn.Linear(50, 3))
         elif self.mode == "REGR":
             self.label_loss = nn.MSELoss()
-            self.recon_loss = nn.MSELoss()
             self.classifier.append(nn.Linear(50, 1))
             self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
 
@@ -77,4 +73,4 @@ class Conv5_FC3(ClassifierBase):
     def forward(self, x):
         z = self.encode_forward(x)
         classe = self.classify_emb(z)
-        return [x, z, classe]
+        return [ z, classe]
