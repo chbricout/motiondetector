@@ -35,13 +35,13 @@ class CreateSynthVolume(RandomizableTransform):
     def randomize(self):
         super().randomize(None)
         self.motion = self.R.rand()>0.5
-        self.elastic = self.R.rand()>0.2
+        self.elastic = self.R.rand()>0.1
         
 
     def __init__(self, prob: float = 1, do_transform: bool = True, elastic_activate=True):
         super().__init__(prob, do_transform)
         self.elastic_tsf = RandomElasticDeformation(num_control_points=7, max_displacement=7)
-        self.motion_tsf = RandomMotion(degrees=[6,8],translation=[4,6], num_transforms=3)
+        self.motion_tsf = RandomMotion(degrees=[2,4],translation=[2,4], num_transforms=4)
         self.elastic_activate = elastic_activate
 
     def __call__(self, data):
