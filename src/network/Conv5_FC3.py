@@ -56,12 +56,11 @@ class Conv5_FC3(ClassifierBase):
         )
 
         if self.mode == "CLASS":
-            self.label_loss = nn.CrossEntropyLoss()
-            self.classifier.append(nn.Linear(50, 3))
+            self.label_loss = nn.BCEWithLogitsLoss()
         elif self.mode == "REGR":
             self.label_loss = nn.MSELoss()
-            self.classifier.append(nn.Linear(50, 1))
-            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
+        self.classifier.append(nn.Linear(50, 1))
+        self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
 
     def encode_forward(self, input):
         z = self.encoder(input)

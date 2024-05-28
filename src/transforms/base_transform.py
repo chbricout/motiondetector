@@ -3,11 +3,10 @@ from monai.transforms import (
     LoadImaged,
     Orientationd,
     ScaleIntensityd,
-    CropForegroundd,
-    Resized,
-    RandFlipd,
-    RandRotated,
+    CenterSpatialCropd,
+    RandomizableTransform
 )
+from torchio.transforms import RandomMotion,RandomElasticDeformation
 from src.transforms.soft_label import ProgressiveSoftEncode, FloatLabel
 
 
@@ -17,39 +16,46 @@ def threshold_one(x):
 
 
 class Preprocess(Compose):
-    def __init__(self, final_size=(160, 192, 160), soft_labeling=False, mode:str="CLASS"):
+    def __init__(self, soft_labeling=False):
         self.tsf =  [
                 LoadImaged(keys="data", ensure_channel_first=True, image_only=True),
                 Orientationd(keys="data", axcodes="RAS"),
                 ScaleIntensityd(keys="data", minv=0, maxv=1),
-                CropForegroundd(
-                    source_key="data",
-                    keys="data",
-                    select_fn=threshold_one,
-                    allow_smaller=True,
-                ),
-                Resized(keys="data", spatial_size=final_size),
             ]
         if soft_labeling:
             self.tsf.append(ProgressiveSoftEncode(keys="label"))
-        elif mode == "REGR":
-            self.tsf.append(FloatLabel(keys="label"))
         super().__init__(
            self.tsf
         )
 
 
-class Augment(Compose):
-    def __init__(self, keys :str | list[str]= "data", spatial_axis=0, range_rotate=0.2):
-        super().__init__(
-            [
-                RandFlipd(keys=keys, prob=0.5, spatial_axis=spatial_axis),
-                RandRotated(
-                    keys=keys,
-                    prob=0.7,
-                    range_x=range_rotate,
-                    range_y=range_rotate,
-                    range_z=range_rotate,
-                ),
-            ]
-        )
+
+class CreateSynthVolume(RandomizableTransform):
+
+    def randomize(self):
+        super().randomize(None)
+        self.motion = self.R.rand()>0.5
+        self.elastic = self.R.rand()>0.1
+        
+
+    def __init__(self, prob: float = 1, do_transform: bool = True, elastic_activate=True):
+        super().__init__(prob, do_transform)
+        self.elastic_tsf = RandomElasticDeformation(num_control_points=7, max_displacement=7)
+        self.motion_tsf = RandomMotion(degrees=[2,4],translation=[2,4], num_transforms=4)
+        self.elastic_activate = elastic_activate
+
+    def __call__(self, data):
+        img = data["data"]
+        self.randomize()
+     
+        if self.elastic and self.elastic_activate:
+            img = self.elastic_tsf(img)
+        if self.motion:
+            img = self.motion_tsf(img)
+
+        return {"data": img, "label": float(self.motion)}
+
+
+class FinalCrop(CenterSpatialCropd):
+    def __init__(self):
+        super().__init__(keys="data",roi_size=(160, 192, 160))

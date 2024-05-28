@@ -84,8 +84,10 @@ class SFCNModel(ClassifierBase):
         self.classe = []
         self.save_hyperparameters()
         if self.mode=="CLASS":
-            self.label_loss = nn.CrossEntropyLoss()
-            self.classifier = SFCNHeadBlock(self.out_encoder[2:] , 64,3)
+            self.label_loss = nn.BCEWithLogitsLoss()
+            self.classifier = SFCNHeadBlock(self.out_encoder[2:] , 64,1)
+            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
+
         elif self.mode=="REGR":
             self.label_loss = nn.MSELoss()
             self.classifier = SFCNHeadBlock(self.out_encoder[2:] , 64,1)
