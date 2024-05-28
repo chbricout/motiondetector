@@ -1,4 +1,4 @@
-from src.dataset.mrart_dataset import TrainMrArt, ValMrArt, TestMrArt
+from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt, TestMrArt
 from src.transforms.base_transform import Preprocess, Augment
 from torch import Tensor
 import torch

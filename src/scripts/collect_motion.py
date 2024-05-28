@@ -7,7 +7,7 @@ from itertools import product
 
 sys.path.append(".")
 
-from src.dataset.mrart_dataset import TrainMrArt, extract_sub
+from dataset.mrart.mrart_dataset import TrainMrArt, extract_sub
 from monai.transforms import ScaleIntensity, CropForeground, Resize, Orientation
 
 

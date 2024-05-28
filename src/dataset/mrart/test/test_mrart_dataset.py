@@ -1,5 +1,5 @@
 import os
-from src.dataset.mrart_dataset import TrainMrArt, ValMrArt, TestMrArt
+from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt, TestMrArt
 
 
 class TestTrainDataset:

@@ -61,27 +61,33 @@ class ResNetModel(ClassifierBase):
         self.latent_size = self.out_encoder.numel()
         print(self.latent_size)
        
-        self.classifier = nn.Sequential(
+        self.classifier=nn.Sequential(
             nn.Flatten(),
-            nn.Dropout(0.5),
-            nn.Linear(self.latent_size, 1300),
-            nn.Linear(1300, 50),
+            nn.Linear(self.latent_size, 256),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256,1),
+            nn.Flatten(start_dim=0)
         )
 
+        # self.classifier = nn.Sequential(
+        #     nn.Flatten(),
+        #     nn.Dropout(0.5),
+        #     nn.Linear(self.latent_size, 1300),
+        #     nn.Linear(1300, 50),
+        #        nn.Linear(50, 1)
+        # )
+
         if self.mode == "CLASS":
-            self.label_loss = nn.CrossEntropyLoss()
-            self.classifier.append(nn.Linear(50, 3))
+            self.label_loss = nn.BCEWithLogitsLoss()
         elif self.mode == "REGR":
             self.label_loss = nn.MSELoss()
-            self.classifier.append(nn.Linear(50, 1))
-            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
         self.test_to_plot = None
 
         self.label = []
         self.classe = []
         self.save_hyperparameters()
 
-        self.label_loss = nn.CrossEntropyLoss()
 
     def encode_forward(self, input):
         z = self.encoder(input)

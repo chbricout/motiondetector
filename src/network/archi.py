@@ -144,7 +144,7 @@ class ClassifierBase(lightning.LightningModule):
 
         self.test_to_plot = volume[0][0].cpu()
         self.label += label.cpu().tolist()
-        self.classe += classe.cpu().tolist()
+        self.classe += classe.sigmoid().cpu().tolist()
         return model_loss_tot
 
     def on_validation_epoch_end(self) -> None:
@@ -158,9 +158,9 @@ class ClassifierBase(lightning.LightningModule):
             lab =lab.int()
 
 
-        if len(classe.shape)==2:
-            classe=classe.argmax(dim=1)    
-        if classe.dtype == torch.float32:
+        if self.mode=="CLASS":
+            classe=classe.round().int()
+        elif classe.dtype == torch.float32:
             classe =classe.round().int()
 
         accuracy = (classe == lab).sum() / (lab.numel())

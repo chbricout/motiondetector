@@ -92,5 +92,5 @@ class Classifier(nn.Sequential):
 
         super().__init__(
             nn.Dropout(self.dropout_rate),
-            nn.Linear(self.input_size, 3),
+            nn.Linear(self.input_size, output_size),
         )

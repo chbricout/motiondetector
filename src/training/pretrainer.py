@@ -15,6 +15,7 @@ import lightning.pytorch.loggers
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.model_checkpoint import ModelCheckpoint
 from comet_ml.integration.pytorch import log_model
+from torch.utils.data import ConcatDataset
 
 from src.network.res_net import ResNetModel
 from src.network.base_net import BaselineModel
@@ -22,10 +23,11 @@ from src.network.SFCN import SFCNModel
 from src.network.Conv5_FC3 import Conv5_FC3
 from src.network.SENet import SEResModel
 
-from dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
-from src.dataset.hcp_dataset import HCP
+from src.dataset.ampscz.ampscz_dataset import PretrainTrainAMPSCZ, PretrainValAMPSCZ
+from src.dataset.hcpep.hcpep_dataset import TrainHCPEP, ValHCPEP
+
 from src.transforms.motion_transform import MotionTsfd
-from src.transforms.base_transform import Preprocess, Augment
+from src.transforms.base_transform import Preprocess, CreateSynthVolume, FinalCrop
 from src.network.utils import init_weights
 from src.training.arg_parser import create_arg_parser
 
@@ -37,46 +39,63 @@ def launch_train(config):
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
-        project_name="test_soft_encode",
+        project_name="pretraining",
         experiment_name=f"{config.model}",
     )
     comet_logger.log_hyperparams({"seed": config.seed})
-    train_tsf = Preprocess(mode=config.mode, soft_labeling=True)
 
-    if config.synth:
-        train_ds = (
-            HCP.narval(train_tsf)
-            if config.narval
-            else HCP.lab(train_tsf)
-        )
-        aug_train_ds = Dataset(
-            data=train_ds,
-            transform=Compose([MotionTsfd(),Augment(["data", "noise"])]),
-        )
+    load_tsf = Preprocess(mode=config.mode, soft_labeling=False)
+    synth_tsf = CreateSynthVolume(elastic_activate=True)
+    val_synth_tsf = CreateSynthVolume(elastic_activate=False)
 
-    else:
-        train_ds = (
-            TrainMrArt.narval(train_tsf)
-            if config.narval
-            else TrainMrArt.lab(train_tsf)
-        )
-        aug_train_ds = Dataset(
-            data=train_ds,
-            transform=Augment(),
-        )
+    crop_tsf = FinalCrop()
+
+
+    train_ampscz_ds = (
+        PretrainTrainAMPSCZ.narval(load_tsf)
+        if config.narval
+        else PretrainTrainAMPSCZ.lab(load_tsf)
+    )
+    train_hcpep_ds = (
+        TrainHCPEP.narval(load_tsf)
+        if config.narval
+        else TrainHCPEP.lab(load_tsf)
+    )
+    train_ds = ConcatDataset([train_hcpep_ds, train_ampscz_ds])
+    synth_train_ds = Dataset(
+        data=train_ds,
+        transform=Compose([synth_tsf,crop_tsf]),
+    )
+
+   
 
     train_loader = DataLoader(
-        aug_train_ds,
+        synth_train_ds,
         batch_size=config.batch_size,
         shuffle=True,
-        num_workers=30,
+        num_workers=15,
         pin_memory=True,
-        prefetch_factor=6,
+        prefetch_factor=3,
         persistent_workers=True
     )
 
+    val_ampscz_ds = (
+        PretrainValAMPSCZ.narval(load_tsf)
+        if config.narval
+        else PretrainValAMPSCZ.lab(load_tsf)
+    )
+    val_hcpep_ds = (
+        ValHCPEP.narval(load_tsf)
+        if config.narval
+        else ValHCPEP.lab(load_tsf)
+    )
+    val_ds = ConcatDataset([val_ampscz_ds, val_hcpep_ds])
+    synth_val_ds = Dataset(
+        data=val_ds,
+        transform=Compose([synth_tsf,crop_tsf]),
+    )
     val_loader = DataLoader(
-        ValMrArt.narval(train_tsf) if config.narval else ValMrArt.lab(train_tsf),
+        synth_val_ds,
         batch_size=config.batch_size,
         num_workers=10,
         pin_memory=True,

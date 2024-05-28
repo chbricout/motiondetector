@@ -60,9 +60,11 @@ class BaselineModel(ReconstructBase):
         self.classe = []
         self.save_hyperparameters()
         if self.mode=="CLASS":
-            self.label_loss = nn.CrossEntropyLoss()
+            self.label_loss = nn.BCEWithLogitsLoss()
             self.recon_loss = nn.MSELoss()
-            self.classifier = Classifier(self.latent_size, 3, self.dropout_rate)
+            self.classifier = Classifier(self.latent_size, 1, self.dropout_rate)
+            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
+
         elif self.mode=="REGR":
             self.label_loss = nn.MSELoss()
             self.recon_loss = nn.MSELoss()
