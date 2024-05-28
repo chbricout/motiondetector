@@ -92,7 +92,7 @@ def launch_train(config):
     val_ds = ConcatDataset([val_ampscz_ds, val_hcpep_ds])
     synth_val_ds = Dataset(
         data=val_ds,
-        transform=Compose([synth_tsf,crop_tsf]),
+        transform=Compose([val_synth_tsf,crop_tsf]),
     )
     val_loader = DataLoader(
         synth_val_ds,

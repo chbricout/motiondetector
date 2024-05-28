@@ -16,7 +16,7 @@ def threshold_one(x):
 
 
 class Preprocess(Compose):
-    def __init__(self, soft_labeling=False, mode:str="CLASS"):
+    def __init__(self, soft_labeling=False):
         self.tsf =  [
                 LoadImaged(keys="data", ensure_channel_first=True, image_only=True),
                 Orientationd(keys="data", axcodes="RAS"),
@@ -58,4 +58,4 @@ class CreateSynthVolume(RandomizableTransform):
 
 class FinalCrop(CenterSpatialCropd):
     def __init__(self):
-        super().__init__(keys="data",roi_size=(160, 192, 160)        )
+        super().__init__(keys="data",roi_size=(160, 192, 160))
