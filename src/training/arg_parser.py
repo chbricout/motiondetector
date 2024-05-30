@@ -63,6 +63,15 @@ def create_arg_parser():
         type=str,
     )
 
+    parser.add_argument(
+        "--dataset",
+        default="MRART",
+        required=False,
+        help="Dataset for finetuning mode : MRART or AMPSCZ",
+        type=str,
+    )
+
+    parser.add_argument("--freeze_encoder", action="store_true")
     parser.add_argument("--synth", action="store_true")
     parser.add_argument("-n", "--narval", action="store_true")
     return parser.parse_args()

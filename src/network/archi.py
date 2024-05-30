@@ -53,7 +53,7 @@ class ReconstructBase(lightning.LightningModule):
         self.recon_to_plot = recon_batch[0][0].cpu()
         self.test_to_plot = volume[0][0].cpu()
         self.label += label.cpu().tolist()
-        self.classe += classe.cpu().tolist()
+        self.classe += classe.sigmoid().cpu().tolist()
         return model_loss_tot
 
     def on_validation_epoch_end(self) -> None:
@@ -65,11 +65,12 @@ class ReconstructBase(lightning.LightningModule):
             lab=lab.argmax(dim=1)
         if lab.dtype == torch.float32:
             lab =lab.int()
-
-
+        
         if len(classe.shape)==2:
-            classe=classe.argmax(dim=1)    
-        if classe.dtype == torch.float32:
+            classe=classe.argmax(dim=1)
+        if self.mode=="CLASS":
+            classe=classe.round().int()
+        elif classe.dtype == torch.float32:
             classe =classe.round().int()
 
         accuracy = (classe == lab).sum() / (lab.numel())
@@ -80,13 +81,11 @@ class ReconstructBase(lightning.LightningModule):
         self.classe = []
         self.log("val_accuracy", accuracy.mean())
         self.log("val_balanced_accuracy", balanced_accuracy_score(lab,classe))
-        self.plot_recon()
         self.plot_test()
 
     def configure_optimizers(self):
-        optim = torch.optim.AdamW(self.parameters(), lr=self.lr)
-        scheduler = StepLR(optim, 40, 0.8)
-        return [optim], [{"scheduler": scheduler, "interval": "epoch"}]
+        optim = torch.optim.Adam(self.parameters(), lr=self.lr)
+        return optim
     
     def plot_recon(self):
         path = f"{self.run_name}/recon-{self.current_epoch}.gif"
@@ -157,7 +156,8 @@ class ClassifierBase(lightning.LightningModule):
         if lab.dtype == torch.float32:
             lab =lab.int()
 
-
+        if len(classe.shape)==2:
+            classe=classe.argmax(dim=1)
         if self.mode=="CLASS":
             classe=classe.round().int()
         elif classe.dtype == torch.float32:
@@ -174,9 +174,8 @@ class ClassifierBase(lightning.LightningModule):
         self.plot_test()
 
     def configure_optimizers(self):
-        optim = torch.optim.AdamW(self.parameters(), lr=self.lr)
-        scheduler = StepLR(optim, 500, 0.8)
-        return [optim], [{"scheduler": scheduler, "interval": "epoch"}]
+        optim = torch.optim.Adam(self.parameters(), lr=self.lr)
+        return optim
     
 
     def plot_test(self):

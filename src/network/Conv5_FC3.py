@@ -21,7 +21,7 @@ class Conv5_FC3(ClassifierBase):
     https://doi.org/10.1016/j.media.2021.102219
     """
 
-    def __init__(self, in_channel, im_shape, run_name="", lr=1e-5, mode="CLASS"):
+    def __init__(self, in_channel, im_shape,output_class=1, run_name="", lr=1e-5, mode="CLASS"):
         super().__init__()
 
         self.im_shape = im_shape
@@ -56,20 +56,29 @@ class Conv5_FC3(ClassifierBase):
         )
 
         if self.mode == "CLASS":
-            self.label_loss = nn.BCEWithLogitsLoss()
+            self.change_output_num(output_class)
         elif self.mode == "REGR":
             self.label_loss = nn.MSELoss()
-        self.classifier.append(nn.Linear(50, 1))
-        self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
+      
+
+    def change_output_num(self, num: int):
+        if num == 1:
+            self.classifier_output = nn.Sequential(
+                nn.Linear(50, num), nn.Flatten(start_dim=0)
+            )
+            self.label_loss = nn.BCEWithLogitsLoss()
+        elif num > 1:
+            self.classifier_output = nn.Linear(50, num)
+            self.label_loss = nn.CrossEntropyLoss()
 
     def encode_forward(self, input):
         z = self.encoder(input)
         return z
 
     def classify_emb(self, z):
-        return self.classifier(z)
+        return self.classifier_output(self.classifier(z))
 
     def forward(self, x):
         z = self.encode_forward(x)
         classe = self.classify_emb(z)
-        return [ z, classe]
+        return [z, classe]

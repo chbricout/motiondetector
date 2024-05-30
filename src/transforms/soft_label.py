@@ -17,6 +17,7 @@ class ProgressiveSoftEncode(MapTransform):
 class FloatLabel(MapTransform):
 
     def __call__(self, data):
+        
         for key in self.keys:
             data[key]= torch.as_tensor(data[key], dtype=torch.float32)
         return data

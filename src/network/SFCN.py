@@ -24,23 +24,21 @@ class SFCNBlock(nn.Module):
     def forward(self, x):
         return self.block(x)
     
-class SFCNHeadBlock(nn.Module): 
+class SFCNHeadBlock(nn.Sequential): 
     def __init__(
         self,
         pool_size,
         in_channel,
         out_channel,
     ):
-        super().__init__()
-        self.block=nn.Sequential(
+        super().__init__(
             nn.AvgPool3d(pool_size),
             nn.Dropout(p=0.5),
             nn.Conv3d(in_channels=in_channel, out_channels=out_channel, kernel_size=1, padding="same"),
             nn.Flatten()
         )
 
-    def forward(self, x):
-        return self.block(x)
+
 
 
 class SFCNModel(ClassifierBase):
@@ -52,6 +50,7 @@ class SFCNModel(ClassifierBase):
         self,
         in_channel,
         im_shape,
+        output_class=1,
         run_name="",
         lr=1e-5,
         mode="CLASS"
@@ -84,9 +83,7 @@ class SFCNModel(ClassifierBase):
         self.classe = []
         self.save_hyperparameters()
         if self.mode=="CLASS":
-            self.label_loss = nn.BCEWithLogitsLoss()
-            self.classifier = SFCNHeadBlock(self.out_encoder[2:] , 64,1)
-            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
+            self.change_output_num(output_class)
 
         elif self.mode=="REGR":
             self.label_loss = nn.MSELoss()
@@ -97,6 +94,14 @@ class SFCNModel(ClassifierBase):
     def encode_forward(self, input):
         z = self.encoder(input)
         return z
+    
+    def change_output_num(self, num:int):
+        self.classifier = SFCNHeadBlock(self.out_encoder[2:] , 64,num)
+        if num == 1:
+            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
+            self.label_loss = nn.BCEWithLogitsLoss()
+        elif num > 1:
+            self.label_loss = nn.CrossEntropyLoss()
 
 
     def classify_emb(self, z):

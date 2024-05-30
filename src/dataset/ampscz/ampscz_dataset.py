@@ -62,7 +62,7 @@ class FinetuneTrainAMPSCZ(CacheDataset):
         self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
         self.files = self.files[self.files['group']=="train"]
         self.files["data"] = prefix + self.files["data"]
-        self.files['label'] = self.files['score']
+        self.files['label'] = self.files['motion'].astype(float)
 
         super().__init__(self.files[['data', 'label']].to_dict("records"), transform, num_workers=10)
 
@@ -80,7 +80,7 @@ class FinetuneValAMPSCZ(CacheDataset):
         self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
         self.files = self.files[self.files['group']=="val"]
         self.files["data"] = prefix + self.files["data"]
-        self.files['label'] = self.files['score']
+        self.files['label'] = self.files['motion'].astype(float)
 
         super().__init__(self.files[['data', 'label']].to_dict("records"), transform, num_workers=10)
 
@@ -98,7 +98,7 @@ class FinetuneTestAMPSCZ(Dataset):
         self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
         self.files = self.files[self.files['group']=="test"]
         self.files["data"] = prefix + self.files["data"]
-        self.files['label'] = self.files['score']
+        self.files['label'] = self.files['motion'].astype(float)
 
         super().__init__(self.files[['data', 'label']].to_dict("records"), transform)
 

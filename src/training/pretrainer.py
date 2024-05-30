@@ -39,12 +39,12 @@ def launch_train(config):
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
-        project_name="pretraining",
-        experiment_name=f"{config.model}",
+        project_name="base-study",
+        experiment_name=f"pretraining-{config.model}",
     )
     comet_logger.log_hyperparams({"seed": config.seed})
 
-    load_tsf = Preprocess(mode=config.mode, soft_labeling=False)
+    load_tsf = Preprocess( soft_labeling=False)
     synth_tsf = CreateSynthVolume(elastic_activate=True)
     val_synth_tsf = CreateSynthVolume(elastic_activate=False)
 
@@ -73,9 +73,9 @@ def launch_train(config):
         synth_train_ds,
         batch_size=config.batch_size,
         shuffle=True,
-        num_workers=15,
+        num_workers=25,
         pin_memory=True,
-        prefetch_factor=3,
+        prefetch_factor=6,
         persistent_workers=True
     )
 
@@ -97,15 +97,16 @@ def launch_train(config):
     val_loader = DataLoader(
         synth_val_ds,
         batch_size=config.batch_size,
-        num_workers=10,
+        num_workers=14,
         pin_memory=True,
         persistent_workers=True
 
     )
     logging.info(f"Dataset contain {len(train_ds)} datas")
     tempdir = tempfile.TemporaryDirectory()
-
+    model_class=None
     if config.model == "BASE":
+        model_class=BaselineModel
         net = BaselineModel(
             1,
             IM_SHAPE,
@@ -119,6 +120,7 @@ def launch_train(config):
             dropout_rate=config.dropout_rate,
         )
     elif config.model == "RES":
+        model_class=ResNetModel
         net = ResNetModel(
             1,
             IM_SHAPE,
@@ -127,6 +129,7 @@ def launch_train(config):
             mode=config.mode,
         )
     elif config.model == "SFCN":
+        model_class=SFCNModel
         net = SFCNModel(
             1,
             IM_SHAPE,
@@ -134,6 +137,7 @@ def launch_train(config):
             lr=config.learning_rate,
         )
     elif config.model == "Conv5_FC3":
+        model_class=Conv5_FC3
         net = Conv5_FC3(
             1,
             IM_SHAPE,
@@ -141,6 +145,7 @@ def launch_train(config):
             lr=config.learning_rate,
         )
     elif config.model == "SERes":
+        model_class=SEResModel
         net = SEResModel(
             1,
             IM_SHAPE,
@@ -151,17 +156,17 @@ def launch_train(config):
 
     net.apply(init_weights)
 
-    check = ModelCheckpoint(monitor="val_accuracy", mode="max")
+    check = ModelCheckpoint(monitor="val_balanced_accuracy", mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=config.max_epochs,
         logger=comet_logger,
-        devices=[1],
+        devices=[0],
         accelerator="gpu",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
         callbacks=[
-            # EarlyStopping(monitor="val_label_loss", mode="min", patience=50),
+            EarlyStopping(monitor="val_balanced_accuracy", mode="max", patience=50),
             check,
         ],
     )
@@ -170,8 +175,8 @@ def launch_train(config):
 
     log_model(
         comet_logger.experiment,
-        BaselineModel.load_from_checkpoint(check.best_model_path),
-        "BASE",
+        model_class.load_from_checkpoint(check.best_model_path),
+        config.model,
     )
 
 

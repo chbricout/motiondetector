@@ -11,6 +11,7 @@ class BaselineModel(ReconstructBase):
         self,
         in_channel,
         im_shape,
+        output_class=1,
         act="RELU",
         kernel_size=3,
         run_name="",
@@ -60,17 +61,21 @@ class BaselineModel(ReconstructBase):
         self.classe = []
         self.save_hyperparameters()
         if self.mode=="CLASS":
-            self.label_loss = nn.BCEWithLogitsLoss()
             self.recon_loss = nn.MSELoss()
-            self.classifier = Classifier(self.latent_size, 1, self.dropout_rate)
-            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
+            self.change_output_num(output_class)
 
         elif self.mode=="REGR":
             self.label_loss = nn.MSELoss()
             self.recon_loss = nn.MSELoss()
             self.classifier = Classifier(self.latent_size, 1, self.dropout_rate)
-            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))
 
+    def change_output_num(self, num:int):
+        self.classifier = Classifier(self.latent_size, num, self.dropout_rate)
+        if num == 1:
+            self.classifier.add_module("flatten_out", nn.Flatten(start_dim=0))       
+            self.label_loss = nn.BCEWithLogitsLoss()
+        elif num > 1:
+            self.label_loss = nn.CrossEntropyLoss()
 
     def encode_forward(self, input):
         z = self.encoder(input)

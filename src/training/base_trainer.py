@@ -6,7 +6,6 @@ import sys
 
 sys.path.append(".")
 from monai.data.dataloader import DataLoader
-from monai.data.dataset import Dataset
 from monai.transforms.compose import Compose
 
 import torch
@@ -22,10 +21,9 @@ from src.network.SFCN import SFCNModel
 from src.network.Conv5_FC3 import Conv5_FC3
 from src.network.SENet import SEResModel
 
-from dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
-from src.dataset.hcp_dataset import HCP
-from src.transforms.motion_transform import MotionTsfd
-from src.transforms.base_transform import Preprocess, Augment
+from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
+from src.dataset.ampscz.ampscz_dataset import FinetuneTrainAMPSCZ, FinetuneValAMPSCZ
+from src.transforms.base_transform import Preprocess, FinalCrop
 from src.network.utils import init_weights
 from src.training.arg_parser import create_arg_parser
 
@@ -34,39 +32,32 @@ IM_SHAPE = (1, 160, 192, 160)
 
 
 def launch_train(config):
-
+    if config.dataset == "MRART":
+        ds_train_class= TrainMrArt
+        ds_val_class = ValMrArt
+        num_output = 3
+    elif config.dataset =="AMPSCZ":
+        ds_train_class= FinetuneTrainAMPSCZ
+        ds_val_class = FinetuneValAMPSCZ
+        num_output = 1
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
-        project_name="test_soft_encode",
+        project_name=f"baseline-{config.dataset}",
         experiment_name=f"{config.model}",
     )
     comet_logger.log_hyperparams({"seed": config.seed})
-    train_tsf = Preprocess(mode=config.mode, soft_labeling=True)
+    train_tsf = Compose([Preprocess(), FinalCrop()])
 
-    if config.synth:
-        train_ds = (
-            HCP.narval(train_tsf)
-            if config.narval
-            else HCP.lab(train_tsf)
-        )
-        aug_train_ds = Dataset(
-            data=train_ds,
-            transform=Compose([MotionTsfd(),Augment(["data", "noise"])]),
-        )
-
-    else:
-        train_ds = (
-            TrainMrArt.narval(train_tsf)
-            if config.narval
-            else TrainMrArt.lab(train_tsf)
-        )
-        aug_train_ds = Dataset(
-            data=train_ds,
-            transform=Augment(),
-        )
+   
+    train_ds = (
+        ds_train_class.narval(train_tsf)
+        if config.narval
+        else ds_train_class.lab(train_tsf)
+    )
+  
 
     train_loader = DataLoader(
-        aug_train_ds,
+        train_ds,
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=30,
@@ -76,7 +67,7 @@ def launch_train(config):
     )
 
     val_loader = DataLoader(
-        ValMrArt.narval(train_tsf) if config.narval else ValMrArt.lab(train_tsf),
+        ds_val_class.narval(train_tsf) if config.narval else ds_val_class.lab(train_tsf),
         batch_size=config.batch_size,
         num_workers=10,
         pin_memory=True,
@@ -90,6 +81,7 @@ def launch_train(config):
         net = BaselineModel(
             1,
             IM_SHAPE,
+            output_class=num_output,
             act=config.act,
             kernel_size=config.conv_k,
             run_name=tempdir.name,
@@ -103,6 +95,7 @@ def launch_train(config):
         net = ResNetModel(
             1,
             IM_SHAPE,
+            output_class=num_output,
             run_name=tempdir.name,
             lr=config.learning_rate,
             mode=config.mode,
@@ -111,6 +104,7 @@ def launch_train(config):
         net = SFCNModel(
             1,
             IM_SHAPE,
+            output_class=num_output,
             run_name=tempdir.name,
             lr=config.learning_rate,
         )
@@ -118,6 +112,7 @@ def launch_train(config):
         net = Conv5_FC3(
             1,
             IM_SHAPE,
+            output_class=num_output,
             run_name=tempdir.name,
             lr=config.learning_rate,
         )
@@ -125,6 +120,7 @@ def launch_train(config):
         net = SEResModel(
             1,
             IM_SHAPE,
+            output_class=num_output,
             run_name=tempdir.name,
             lr=config.learning_rate,
             mode=config.mode,
@@ -137,12 +133,12 @@ def launch_train(config):
     trainer = lightning.Trainer(
         max_epochs=config.max_epochs,
         logger=comet_logger,
-        devices=[1],
+        devices=[0],
         accelerator="gpu",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
         callbacks=[
-            # EarlyStopping(monitor="val_label_loss", mode="min", patience=50),
+            EarlyStopping(monitor="val_label_loss", mode="min", patience=50),
             check,
         ],
     )
@@ -152,7 +148,7 @@ def launch_train(config):
     log_model(
         comet_logger.experiment,
         BaselineModel.load_from_checkpoint(check.best_model_path),
-        "BASE",
+        config.model,
     )
 
 
