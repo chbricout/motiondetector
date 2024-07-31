@@ -1,7 +1,6 @@
-import torch
 import torch.nn as nn
-
-from src.network.archi import ClassifierBase
+from collections.abc import Sequence
+from src.network.archi import Classifier, Encoder, Model
 
 
 class ResConvModule(nn.Module):
@@ -31,73 +30,49 @@ class ResConvModule(nn.Module):
         return self.out(main + res)
 
 
-class ResNetModel(ClassifierBase):
-    def __init__(self, in_channel, im_shape,output_class=1, run_name="", lr=1e-5, mode="CLASS"):
-        super().__init__()
-        self.mode = mode
-        self.im_shape = im_shape
-        self.lr = lr
-        self.run_name = run_name
+class ResEncoder(Encoder):
+    _latent_size: int
 
-        self.encoder = nn.Sequential(
-            ResConvModule(in_channel, 8),
+    def __init__(self, im_shape: Sequence, dropout_rate: float):
+        super().__init__(im_shape=im_shape, dropout_rate=dropout_rate)
+        self.convs = nn.Sequential(
+            ResConvModule(1, 8),
             ResConvModule(8, 16),
             ResConvModule(16, 32),
             ResConvModule(32, 64),
             ResConvModule(64, 128),
         )
 
-        self.im_shape = im_shape
-        shape_like = (1, *im_shape)
-        self.out_encoder = self.encoder(torch.empty(shape_like))
-        self.latent_size = self.out_encoder.numel()
-        print(self.latent_size)
+    def forward(self, x):
+        return self.convs(x)
+
+
+class ResClassifier(Classifier):
+    input_size: int
+
+    def __init__(self, input_size: int, num_classes: int, dropout_rate: float):
+        super().__init__(input_size, num_classes, dropout_rate)
 
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self.latent_size, 256),
+            nn.Linear(self.input_size, 256),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(self.dropout_rate),
         )
-     
 
-        # self.classifier = nn.Sequential(
-        #     nn.Flatten(),
-        #     nn.Dropout(0.5),
-        #     nn.Linear(self.latent_size, 1300),
-        #     nn.Linear(1300, 50),
-        #        nn.Linear(50, 1)
-        # )
+        self.output_layer = nn.Linear(256, self.num_classes)
 
-        if self.mode == "CLASS":
-            self.change_output_num(output_class)
-        elif self.mode == "REGR":
-            self.label_loss = nn.MSELoss()
-        self.test_to_plot = None
+    def change_output_num(self, num_classes: int):
+        self.num_classes = num_classes
+        self.output_layer = nn.Linear(256, self.num_classes)
 
-        self.label = []
-        self.classe = []
-        self.save_hyperparameters()
 
-    def change_output_num(self, num: int):
-        if num == 1:
-            self.classifier_output = nn.Sequential(
-                nn.Linear(256, num), nn.Flatten(start_dim=0)
-            )
-            self.label_loss = nn.BCEWithLogitsLoss()
-        elif num > 1:
-            self.classifier_output = nn.Linear(256, num)
-            self.label_loss = nn.CrossEntropyLoss()
-
-    def encode_forward(self, input):
-        z = self.encoder(input)
-        return z
-
-    def classify_emb(self, z):
-        return self.classifier_output(self.classifier(torch.flatten(z, start_dim=1)))
-
-    def forward(self, x):
-        z = self.encode_forward(x)
-
-        classe = self.classify_emb(z)
-        return [z, classe]
+class ResModel(Model):
+    def __init__(self, im_shape: Sequence, num_classes: int, dropout_rate: float):
+        super().__init__(
+            im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate
+        )
+        self.encoder = ResEncoder(self.im_shape, self.dropout_rate)
+        self.classifier = ResClassifier(
+            self.encoder.latent_size, self.num_classes, self.dropout_rate
+        )

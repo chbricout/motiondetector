@@ -1,3 +1,4 @@
+sbatch --export=ALL,batch_size=12,model="ViT" --job-name=pretrain-ViT  slurms/pretrain.slurm
 sbatch --export=ALL,batch_size=20,model="BASE" --job-name=pretrain-BASE slurms/pretrain.slurm
 sbatch --export=ALL,batch_size=20,model="RES" --job-name=pretrain-RES  slurms/pretrain.slurm
 sbatch --export=ALL,batch_size=14,model="SFCN" --job-name=pretrain-SFCN  slurms/pretrain.slurm

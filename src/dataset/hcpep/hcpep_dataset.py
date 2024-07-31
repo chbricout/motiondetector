@@ -2,6 +2,7 @@ import re
 from monai.data.dataset import Dataset, CacheDataset
 import pandas as pd
 
+
 def extract_sub(path: str):
     match_re = ".*(sub-[0-9A-Za-z]+).*"
     match_res = re.match(match_re, path)
@@ -9,12 +10,15 @@ def extract_sub(path: str):
         return match_res.group(1)
     return ""
 
+
 class TrainHCPEP(CacheDataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/hcpep/pretrain.csv", index_col=0)
-        self.files = self.files[self.files['group']=="train"]
+        self.files = self.files[self.files["group"] == "train"]
         self.files["data"] = prefix + self.files["data"]
-        super().__init__(self.files.to_dict("records"), transform, num_workers=10)
+        super().__init__(
+            self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
+        )
 
     @classmethod
     def lab(cls, transform=None):
@@ -28,9 +32,11 @@ class TrainHCPEP(CacheDataset):
 class ValHCPEP(CacheDataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/hcpep/pretrain.csv", index_col=0)
-        self.files = self.files[self.files['group']=="val"]
+        self.files = self.files[self.files["group"] == "val"]
         self.files["data"] = prefix + self.files["data"]
-        super().__init__(self.files.to_dict("records"), transform, num_workers=10)
+        super().__init__(
+            self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
+        )
 
     @classmethod
     def lab(cls, transform=None):
@@ -44,9 +50,11 @@ class ValHCPEP(CacheDataset):
 class TestHCPEP(Dataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/hcpep/pretrain.csv", index_col=0)
-        self.files = self.files[self.files['group']=="test"]
+        self.files = self.files[self.files["group"] == "test"]
         self.files["data"] = prefix + self.files["data"]
-        super().__init__(self.files.to_dict("records"), transform)
+        super().__init__(
+            self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
+        )
 
     @classmethod
     def lab(cls, transform=None):
