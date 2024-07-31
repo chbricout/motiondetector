@@ -1,195 +1,136 @@
-import os
-
-import lightning
-import torch.nn.functional as F
-import torch.optim
-import torchmetrics
-from torch.optim.lr_scheduler import StepLR
-from sklearn.metrics import balanced_accuracy_score
-
-from src.training.log import save_volume_as_gif
-
-class ReconstructBase(lightning.LightningModule):
-
-  
-
-    def training_step(self, batch, batch_idx):
-        volume = batch["data"]
-        label = batch["label"]
-        recon_batch, emb, classe = self.forward(volume)
-        # LOSS COMPUTE
-        if self.use_decoder:
-            recon_loss = self.recon_loss(recon_batch, volume)
-            label_loss = self.label_loss(classe, label)
-            model_loss_tot = recon_loss + self.beta * label_loss
-            self.log("train_recon_loss", recon_loss)
-        else:
-            label_loss = self.label_loss(classe, label)
-            model_loss_tot = label_loss
-        self.log("train_loss", model_loss_tot)
-        self.log("train_label_loss", label_loss)
-
-        self.plot_train(volume[0][0].cpu())
-        return model_loss_tot
-
-    def validation_step(self, batch, batch_idx):
-        ## VAE TESTING PHASE##
-        # INFERENCE
-        volume = batch["data"]
-        label = batch["label"]
-        recon_batch, emb, classe = self.forward(volume)
-        # LOSS COMPUTE
-        if self.use_decoder:
-            recon_loss = self.recon_loss(recon_batch, volume)
-            label_loss = self.label_loss(classe, label)
-            model_loss_tot =  self.beta *recon_loss + label_loss
-            self.log("val_recon_loss", recon_loss)
-        else:
-            label_loss = self.label_loss(classe, label)
-            model_loss_tot = label_loss
-        self.log("val_loss", model_loss_tot)
-        self.log("val_label_loss", label_loss)
-
-        self.recon_to_plot = recon_batch[0][0].cpu()
-        self.test_to_plot = volume[0][0].cpu()
-        self.label += label.cpu().tolist()
-        self.classe += classe.sigmoid().cpu().tolist()
-        return model_loss_tot
-
-    def on_validation_epoch_end(self) -> None:
-        print(self.classe)
-        print(self.label)
-        classe = torch.Tensor(self.classe)
-        lab = torch.Tensor(self.label)
-        if len(lab.shape)==2:
-            lab=lab.argmax(dim=1)
-        if lab.dtype == torch.float32:
-            lab =lab.int()
-        
-        if len(classe.shape)==2:
-            classe=classe.argmax(dim=1)
-        if self.mode=="CLASS":
-            classe=classe.round().int()
-        elif classe.dtype == torch.float32:
-            classe =classe.round().int()
-
-        accuracy = (classe == lab).sum() / (lab.numel())
-        self.logger.experiment.log_confusion_matrix(
-            lab, classe, epoch=self.current_epoch
-        )
-        self.label = []
-        self.classe = []
-        self.log("val_accuracy", accuracy.mean())
-        self.log("val_balanced_accuracy", balanced_accuracy_score(lab,classe))
-        self.plot_test()
-
-    def configure_optimizers(self):
-        optim = torch.optim.Adam(self.parameters(), lr=self.lr)
-        return optim
-    
-    def plot_recon(self):
-        path = f"{self.run_name}/recon-{self.current_epoch}.gif"
-        save_volume_as_gif(self.recon_to_plot, path)
-        self.logger.experiment.log_image(
-            path, name="reconstruction", image_format="gif", step=self.current_epoch
-        )
-        os.remove(path)
-
-    def plot_test(self):
-        path = f"{self.run_name}/test-{self.current_epoch}.gif"
-        save_volume_as_gif(self.test_to_plot, path)
-        self.logger.experiment.log_image(
-            path, name="test", image_format="gif", step=self.current_epoch
-        )
-        os.remove(path)
-        
-    def plot_train(self, train_to_plot):
-        path = f"{self.run_name}/train-{self.current_epoch}-{self.global_step}.gif"
-        save_volume_as_gif(train_to_plot, path)
-        self.logger.experiment.log_image(
-            path, name="train", image_format="gif", step=self.global_step
-        )
-        os.remove(path)
+import abc
+import torch
+import torch.nn as nn
+from collections.abc import Sequence
 
 
-class ClassifierBase(lightning.LightningModule):
+class Encoder(abc.ABC, nn.Module):
+    """
+    Base encoder for the pretraining / finetuning process.
+    """
 
-    def training_step(self, batch, batch_idx):
-        volume = batch["data"]
-        label = batch["label"]
-        emb, classe = self.forward(volume)
-        # LOSS COMPUTE
-       
-        label_loss = self.label_loss(classe, label)
-        model_loss_tot = label_loss
-        self.log("train_loss", model_loss_tot)
-        self.log("train_label_loss", label_loss)
+    _latent_size: Sequence | int = None
+    im_shape: Sequence
+    dropout_rate: float
 
-        self.plot_train(volume[0][0].cpu())
-        return model_loss_tot
+    def __init__(self, im_shape: Sequence, dropout_rate: float):
+        """
+        Args:
+            im_shape (Sequence): Shape of input data (4D)
+            dropout_rate (float): Dropout rate
+        """
+        super(Encoder, self).__init__()
+        self.im_shape = im_shape
+        self.dropout_rate = dropout_rate
 
-    def validation_step(self, batch, batch_idx):
-        ## VAE TESTING PHASE##
-        # INFERENCE
-        volume = batch["data"]
-        label = batch["label"]
-        emb, classe = self.forward(volume)
-        # LOSS COMPUTE
-       
-        label_loss = self.label_loss(classe, label)
-        model_loss_tot = label_loss
-        self.log("val_loss", model_loss_tot)
-        self.log("val_label_loss", label_loss)
+    @property
+    def latent_size(self) -> Sequence | int:
+        """Procedure to compute and store the latent size of the model"""
+        if self._latent_size == None:
+            shape_like = (1, *self.im_shape)
+            out_encoder: torch.Tensor = self.forward(torch.empty(shape_like))
+            self._latent_size = out_encoder.numel()
+        return self._latent_size
 
-        self.test_to_plot = volume[0][0].cpu()
-        self.label += label.cpu().tolist()
-        self.classe += classe.sigmoid().cpu().tolist()
-        return model_loss_tot
 
-    def on_validation_epoch_end(self) -> None:
-        print(self.classe)
-        print(self.label)
-        classe = torch.Tensor(self.classe)
-        lab = torch.Tensor(self.label)
-        if len(lab.shape)==2:
-            lab=lab.argmax(dim=1)
-        if lab.dtype == torch.float32:
-            lab =lab.int()
+class Classifier(abc.ABC, nn.Module):
+    """
+    Base classifier class for the pretraining / finetuning process
+    This module should not contain final activation, it has to be handled by the lightning module for more flexibility
+    """
 
-        if len(classe.shape)==2:
-            classe=classe.argmax(dim=1)
-        if self.mode=="CLASS":
-            classe=classe.round().int()
-        elif classe.dtype == torch.float32:
-            classe =classe.round().int()
+    input_size: Sequence | int
+    num_classes: int
+    dropout_rate: float
+    output_layer: nn.Module
+    classifier: nn.Module
 
-        accuracy = (classe == lab).sum() / (lab.numel())
-        self.logger.experiment.log_confusion_matrix(
-            lab, classe, epoch=self.current_epoch
-        )
-        self.label = []
-        self.classe = []
-        self.log("val_accuracy", accuracy.mean())
-        self.log("val_balanced_accuracy", balanced_accuracy_score(lab,classe))
-        self.plot_test()
+    @abc.abstractmethod
+    def __init__(
+        self, input_size: Sequence | int, num_classes: int, dropout_rate: float
+    ):
+        """
+        Args:
+            im_shape (Sequence | int): Shape of input data ()
+            dropout_rate (float): _description_
+        """
+        super(Classifier, self).__init__()
+        self.input_size = input_size
+        self.dropout_rate = dropout_rate
+        self.num_classes = num_classes
 
-    def configure_optimizers(self):
-        optim = torch.optim.Adam(self.parameters(), lr=self.lr)
-        return optim
-    
+    def class_forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward everything through classifier main block (excluding output layer)
 
-    def plot_test(self):
-        path = f"{self.run_name}/test-{self.current_epoch}.gif"
-        save_volume_as_gif(self.test_to_plot, path)
-        self.logger.experiment.log_image(
-            path, name="test", image_format="gif", step=self.current_epoch
-        )
-        os.remove(path)
-        
-    def plot_train(self, train_to_plot):
-        path = f"{self.run_name}/train-{self.current_epoch}-{self.global_step}.gif"
-        save_volume_as_gif(train_to_plot, path)
-        self.logger.experiment.log_image(
-            path, name="train", image_format="gif", step=self.global_step
-        )
-        os.remove(path)
+        Args:
+            x (torch.Tensor): Input volumes encodings (2D)
+
+        Returns:
+            torch.Tensor: Output before last layer
+        """
+        return self.classifier(x)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Default forward mechanism, ideally should not be override
+
+        Args:
+            x (torch.Tensor):  Input volumes encodings (2D)
+
+        Returns:
+            torch.Tensor: raw output
+        """
+        x = self.class_forward(x)
+        return self.output_layer(x)
+
+    @abc.abstractmethod
+    def change_output_num(self, num_classes: int):
+        pass
+
+
+class Model(abc.ABC, nn.Module):
+    encoder: Encoder
+    classifier: Classifier
+    im_shape: Sequence
+    dropout_rate: float
+    num_classes: int
+
+    @abc.abstractmethod
+    def __init__(self, im_shape: Sequence, num_classes: int, dropout_rate: float):
+        """
+        Args:
+            im_shape (Sequence): Shape of input data (4D)
+            num_classes (int): Number of output classes for classifier
+            dropout_rate (float): Dropout rate
+        """
+        super(Model, self).__init__()
+        self.im_shape = im_shape
+        self.num_classes = num_classes
+        self.dropout_rate = dropout_rate
+        pass
+
+    def encode_forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Pass the batched 3D volumes through the encoder and output only the relevant encoding to feed to the classifier
+
+        Args:
+            x (torch.Tensor): Input data (3D volumes)
+
+        Returns:
+            torch.Tensor: encoding to feed to a classifier
+        """
+        return self.encoder(x)
+
+    def forward(self, x: torch.Tensor):
+        """Default forward mechanism, ideally should not be override
+
+        Args:
+            x (torch.Tensor): Input data (3D volumes)
+        """
+        encoded = self.encoder(x)
+        return self.classifier(encoded)
+
+    def mc_dropout(self):
+        """Function to enable the dropout layers during test-time"""
+        self.eval()
+        for m in self.modules():
+            if m.__class__.__name__.startswith("Dropout"):
+                m.train()

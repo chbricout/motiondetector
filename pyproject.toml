@@ -7,3 +7,4 @@ addopts=[
 pythonpath = [
   "."
 ]
+python_files="test_*.py"
