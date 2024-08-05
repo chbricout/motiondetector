@@ -75,6 +75,12 @@ slurm = click.option(
     is_flag=True,
     type=bool,
 )
+cutout = click.option(
+    "--cutout",
+    help="Flag to use cutout strategy in training",
+    is_flag=True,
+    type=bool,
+)
 
 
 @click.group()
@@ -92,6 +98,7 @@ def cli():
 @seed
 @narval
 @slurm
+@cutout
 def pretrain(
     max_epochs,
     learning_rate,
@@ -102,6 +109,7 @@ def pretrain(
     seed,
     narval,
     slurm,
+    use_cutout
 ):
     if slurm:
         submit_pretrain(
@@ -119,6 +127,7 @@ def pretrain(
             run_num=run_num,
             seed=seed,
             narval=narval,
+            use_cutout=use_cutout
         )
 
 
@@ -233,12 +242,12 @@ def launch_exp():
 
 
 run_confs = [
+    {"name": "VIT", "batch_size": 12},
     {"name": "SFCN", "batch_size": 28},
     {"name": "CNN", "batch_size": 28},
     {"name": "CONV5_FC3", "batch_size": 28},
     {"name": "RES", "batch_size": 28},
     {"name": "SERES", "batch_size": 28},
-    {"name": "VIT", "batch_size": 28},
 ]
 
 
@@ -247,13 +256,37 @@ def pretrainer():
     for model in run_confs:
         submit_pretrain(
             model["name"],
-            (1, 2, 3, 4, 5),
+            range(1,6),
             f"cli.py pretrain -n  \
                 --batch_size {model['batch_size']}\
                 --model {model['name']}\
-                --learning_rate 5e-5\
-                --dropout_rate 0.7 ",
+                --learning_rate 2e-5\
+                --dropout_rate 0.8 ",
         )
+
+finetune_confs = [
+    {"name": "VIT", "batch_size": 12},
+    {"name": "SFCN", "batch_size": 28},
+    {"name": "CNN", "batch_size": 28},
+    {"name": "CONV5_FC3", "batch_size": 28},
+]
+
+
+@launch_exp.command()
+def finetune():
+    for model in finetune_confs:
+        for dataset in ["MRART", "AMPSCZ"]:
+            submit_finetune(
+                model["name"],
+                range(1,6),
+                f"cli.py finetune -n  \
+                    --batch_size {model['batch_size']}\
+                    --model {model['name']}\
+                    --learning_rate 1e-5\
+                    --dataset {dataset} ",
+                dataset=dataset
+            )
+
 
 
 if __name__ == "__main__":

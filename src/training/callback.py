@@ -25,7 +25,7 @@ def get_correlations(model, exp: comet_ml.BaseExperiment):
         exp.log_table(f"{dataset.__name__}-pred.csv", res)
 
         with tempfile.NamedTemporaryFile() as img_file:
-            fig = get_calibration_curve(res["mean"], res["label"], hue=res["std"])
+            fig = get_box_plot(res["mean"], res["label"])
             fig.savefig(img_file)
             exp.log_image(
                 img_file.name,
@@ -66,12 +66,19 @@ def get_calibration_curve(prediction, label, hue=None):
     plt.ylabel("Estimated Label")
     return fig
 
+def get_box_plot(prediction, label):
+    fig = plt.figure(figsize=(6, 5))
+    sb.boxplot(x=label, y=prediction)
+    plt.xlabel("Correct Label")
+    plt.ylabel("Estimated Motion")
+    return fig
+
 
 class FinetuneCallback(ModelCheckpoint):
     def on_fit_end(self, trainer: Trainer, pl_module):
         comet_logger = pl_module.logger
         comet_logger.experiment.log_model(
-            name=pl_module.model_class.__name__, file_or_folder=self.best_model_path
+            name=pl_module.model.__class__.__name__, file_or_folder=self.best_model_path
         )
         best_net = pl_module.__class__.load_from_checkpoint(self.best_model_path)
         

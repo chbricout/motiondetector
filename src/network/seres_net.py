@@ -73,10 +73,10 @@ class SEResClassifier(Classifier):
         super().__init__(input_size, num_classes, dropout_rate)
 
         self.classifier = nn.Sequential(
+            nn.Dropout(self.dropout_rate),
             nn.Flatten(),
             nn.Linear(self.input_size, 256),
             nn.ReLU(),
-            nn.Dropout(self.dropout_rate),
         )
         self.output_layer = nn.Linear(256, self.num_classes)
 

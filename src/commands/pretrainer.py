@@ -26,6 +26,7 @@ def launch_pretrain(
     run_num: int,
     seed: int,
     narval: bool,
+    use_cutout:bool
 ):
     run_name = f"pretraining-{model}-{run_num}"
     if not os.path.exists(f"/home/cbricout/scratch/{PROJECT_NAME}"):
@@ -46,7 +47,12 @@ def launch_pretrain(
     if seed == None:
         seed = random.randint(1, 10000)
     torch.manual_seed(seed)
-    comet_logger.log_hyperparams({"seed": seed})
+    comet_logger.log_hyperparams({
+        "seed": seed,
+        "model":model,
+        "run_num":run_num,
+        "use_cutout":use_cutout
+        })
     comet_logger.experiment.log_code(file_name="src/commands/pretrainer.py")
     logging.info(f"Run dir path is : {run_dir}")
     net = PretrainingTask(
@@ -54,7 +60,8 @@ def launch_pretrain(
         im_shape=IM_SHAPE,
         lr=learning_rate,
         dropout_rate=dropout_rate,
-        batch_size=batch_size
+        batch_size=batch_size,
+        use_cutout=use_cutout
     )
 
     trainer = lightning.Trainer(
@@ -68,15 +75,14 @@ def launch_pretrain(
         log_every_n_steps=10,
         callbacks=[
             EarlyStopping(
-                monitor="r2_score",
-                mode="max",
-                patience=20,
+                monitor="val_loss",
+                mode="min",
+                patience=40,
                 check_on_train_epoch_end=False,
                 verbose=True
             ),
             PretrainCallback(monitor="r2_score", mode="max"),
             LearningRateMonitor(logging_interval="epoch"),
-            # StochasticWeightAveraging(swa_lrs=learning_rate*0.2, swa_epoch_start=70)
         ],
     )
 

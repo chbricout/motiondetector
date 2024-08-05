@@ -44,7 +44,7 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
 
         lab = label.detach().cpu()
         prediction = prediction.detach().cpu()
-        self.label += lab.tolist()
+        self.label += lab.int().tolist()
         self.prediction += self.raw_to_pred(prediction).tolist()
         return label_loss
 
@@ -55,7 +55,8 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
 
         self.log(
             "val_balanced_accuracy",
-            balanced_accuracy_score(self.label, self.prediction, sync_dist=True),
+            balanced_accuracy_score(self.label, self.prediction),
+            sync_dist=True,
         )
         self.label = []
         self.prediction = []
@@ -74,7 +75,7 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
         return prediction
 
     def configure_optimizers(self):
-        optim = torch.optim.AdamW(self.parameters(), lr=self.lr)
+        optim = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.05)
         return optim
 
 
@@ -88,6 +89,7 @@ class TrainScratchTask(BaseTrain):
         lr=1e-5,
         dropout_rate=0.5,
     ):
+        super().__init__()
         self.im_shape = im_shape
         self.dropout_rate = dropout_rate
         self.lr = lr
@@ -115,6 +117,7 @@ class FinetuningTask(BaseTrain):
         im_shape,
         lr=1e-5,
     ):
+        super().__init__()
         self.im_shape = im_shape
         self.lr = lr
         self.model = pretrained_model
@@ -181,7 +184,13 @@ class PretrainingTask(lightning.LightningModule):
     label_loss: nn.Module
 
     def __init__(
-        self, model_class: str, im_shape, lr=1e-5, dropout_rate=0.5, batch_size=14
+        self,
+        model_class: str,
+        im_shape,
+        lr=1e-5,
+        dropout_rate=0.5,
+        batch_size=14,
+        use_cutout=False,
     ):
         super().__init__()
         self.im_shape = im_shape
@@ -193,7 +202,7 @@ class PretrainingTask(lightning.LightningModule):
         self.model = self.model_class(
             self.im_shape, self.num_classes, self.dropout_rate
         )
-        if model_class != "ViT":
+        if model_class != "VIT":
             self.model.apply(init_weights)
 
         self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
@@ -201,7 +210,10 @@ class PretrainingTask(lightning.LightningModule):
         self.label: list[float] = []
         self.prediction: list[float] = []
         self.soft_label_util = ToSoftLabel.baseConfig()
-        self.cutout = CutOut(self.batch_size, alpha=0.3)
+
+        self.use_cutout = use_cutout
+        if self.use_cutout:
+            self.cutout = CutOut(self.batch_size)
         self.save_hyperparameters()
 
     def forward(self, x: torch.Tensor):
@@ -211,7 +223,12 @@ class PretrainingTask(lightning.LightningModule):
     def training_step(self, batch, batch_idx):
         volumes: MetaTensor = batch["data"]
         labels = batch["label"]
-        augvolumes = self.cutout(volumes)
+
+        if self.use_cutout:
+            augvolumes = self.cutout(volumes)
+        else:
+            augvolumes = volumes
+
         predictions = self.forward(augvolumes)
         label_loss = self.label_loss(predictions, labels)
         self.log("train_loss", label_loss.item())
@@ -256,7 +273,7 @@ class PretrainingTask(lightning.LightningModule):
         return prediction
 
     def configure_optimizers(self):
-        optim = torch.optim.AdamW(self.parameters(), lr=self.lr)
+        optim = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.05)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optim, mode="min", factor=0.75, patience=10
         )

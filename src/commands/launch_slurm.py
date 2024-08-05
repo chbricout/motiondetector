@@ -9,6 +9,7 @@ from src.config import DEFAULT_SLURM_ACCOUNT
 def setup_python(job: Slurm):
     job.add_cmd("module load python cuda httpproxy")
     job.add_cmd("source ~/bowl/bin/activate")
+    job.add_cmd("echo \"python is setup\"")
 
 
 def get_full_cmd():
@@ -90,12 +91,12 @@ def submit_pretrain(
         if not "--run_num" in cmd and array!=None:
             cmd += " --run_num $SLURM_ARRAY_TASK_ID"
 
-    job.sbatch(f"srun python {cmd}")
+    job_id =job.sbatch(f"srun python {cmd}")
 
     if send_finetune:
         finetune_cmd = get_finetune_cmd_from_pretrain(cmd)
         for dataset in ["MRART", "AMPSCZ"]:
-            submit_finetune(model, cmd=finetune_cmd + f" --dataset ${dataset}", dependency="$SLURM_JOB_ID")
+            submit_finetune(model, cmd=finetune_cmd + f" --dataset ${dataset}", dependency=job_id, dataset=dataset)
 
 
 def submit_finetune(
@@ -103,11 +104,12 @@ def submit_finetune(
     array: Sequence[int] | int = None,
     cmd: str = None,
     dependency: str = None,
+    dataset:str=""
 ):
     job = create_job(
         get_name("finetune", model, array),
         array,
-        get_output("finetune", model, array),
+        get_output("finetune", model, array)+f"_{dataset}",
         n_cpus=20,
         n_gpus=1,
         mem="100G",
@@ -117,6 +119,10 @@ def submit_finetune(
         job.set_dependency(f"afterok:${dependency}")
     if cmd is None:
         cmd = get_full_cmd()
+    else:
+        if not "--run_num" in cmd and array!=None:
+            cmd += " --run_num $SLURM_ARRAY_TASK_ID"
+
     job.sbatch(f"srun python {cmd}")
 
 

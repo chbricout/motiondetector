@@ -2,8 +2,28 @@ import comet_ml
 import torch
 import tempfile
 import ast
+import glob
 from src.network.utils import parse_model
+from src.training.lightning_logic import PretrainingTask
 
+
+def get_pretrain_task(model_name:str, run_num:int, project_name:str):
+    api = comet_ml.api.API(
+        api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
+    )
+    pretrain_exp = api.get("mrart", project_name, f"pretraining-{model_name}-{run_num}")
+    model_class = parse_model(model_name)
+
+    output_path=f"/home/cbricout/scratch/{project_name}-{run_num}/{model_class.__name__}"
+    pretrain_exp.download_model(
+        model_class.__name__,
+        output_path=output_path,
+    )
+    file_path = glob.glob(f"{output_path}/*.ckpt")[0]
+    pretrained = PretrainingTask.load_from_checkpoint(
+        file_path
+    )
+    return pretrained
 
 def get_model_from_exp(exp: comet_ml.ExistingExperiment, project_name):
     model_name = exp.get_parameters_summary("model")["valueCurrent"]

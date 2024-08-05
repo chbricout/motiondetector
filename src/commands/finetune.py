@@ -1,6 +1,10 @@
+import logging
+import os
 import tempfile
 import random
 import sys
+
+from src.utils.comet import get_pretrain_task
 
 sys.path.append(".")
 import comet_ml
@@ -30,7 +34,12 @@ def launch_finetune(
     seed: int,
     narval: bool,
 ):
-    torch.set_float32_matmul_precision("high")
+    run_name = f"finetune-{dataset}-{model}-{run_num}"
+    if not os.path.exists(f"/home/cbricout/scratch/{PROJECT_NAME}"):
+        os.mkdir(f"/home/cbricout/scratch/{PROJECT_NAME}")
+    run_dir = f"/home/cbricout/scratch/{PROJECT_NAME}/{run_name}"
+    if not os.path.exists(run_dir):
+        os.mkdir(run_dir)
 
     if dataset == "MRART":
         datamodule = MRArtDataModule
@@ -42,28 +51,22 @@ def launch_finetune(
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
         project_name=PROJECT_NAME,
-        experiment_name=f"finetune-{dataset}-{model}-{run_num}",
+        experiment_name=run_name,
     )
 
     if seed == None:
         seed = random.randint(1, 10000)
     torch.manual_seed(seed)
-    comet_logger.log_hyperparams({"seed": seed})
+    comet_logger.log_hyperparams({
+        "seed": seed,
+        "model":model,
+        "dataset":dataset,
+        "run_num":run_num
+        })
+    comet_logger.experiment.log_code(file_name="src/commands/finetune.py")
+    logging.info(f"Run dir path is : {run_dir}")
 
-    api = comet_ml.api.API(
-        api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
-    )
-
-    tempdir = tempfile.TemporaryDirectory()
-
-    pretrain_exp = api.get("mrart", PROJECT_NAME, f"pretraining-{model}-{run_num}")
-    pretrain_exp.download_model(
-        model,
-        output_path=f"/home/cbricout/scratch/{PROJECT_NAME}-{run_num}/{model}",
-    )
-    pretrained = PretrainingTask.load_from_checkpoint(
-        f"/home/cbricout/scratch/{PROJECT_NAME}-{run_num}/{model}/model-data/comet-torch-model.pth"
-    )
+    pretrained = get_pretrain_task(model, run_num, PROJECT_NAME)
     net = task(pretrained_model=pretrained.model, im_shape=IM_SHAPE, lr=learning_rate)
 
     trainer = lightning.Trainer(
@@ -71,7 +74,8 @@ def launch_finetune(
         logger=comet_logger,
         devices=[0],
         accelerator="gpu",
-        default_root_dir=tempdir.name,
+        precision="16-mixed",
+        default_root_dir=run_dir,
         log_every_n_steps=10,
         callbacks=[
             EarlyStopping(monitor="val_loss", mode="min", patience=100),
