@@ -252,17 +252,22 @@ run_confs = [
 
 
 @launch_exp.command()
-def pretrainer():
+@cutout
+def pretrainer(cutout: bool):
     for model in run_confs:
-        submit_pretrain(
-            model["name"],
-            range(1,6),
-            f"cli.py pretrain -n  \
+        cmd = f"cli.py pretrain -n  \
                 --batch_size {model['batch_size']}\
                 --model {model['name']}\
                 --learning_rate 2e-5\
-                --dropout_rate 0.8 ",
+                --dropout_rate 0.8 "
+        if cutout:
+            cmd += " --cutout"
+        submit_pretrain(
+            model["name"],
+            range(1, 6),
+            cmd,
         )
+
 
 finetune_confs = [
     {"name": "VIT", "batch_size": 12},
