@@ -18,6 +18,8 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
+    label: list[float|int] = []
+    prediction: list[float|int] = []
 
     def forward(self, x: torch.Tensor):
         raw_output = self.model(x)
@@ -99,9 +101,7 @@ class TrainScratchTask(BaseTrain):
         )
         if model_class != "ViT":
             self.model.apply(init_weights)
-
-        self.label: list[float] = []
-        self.prediction: list[float] = []
+        
         self.setup_training()
         self.save_hyperparameters()
 
@@ -121,8 +121,6 @@ class FinetuningTask(BaseTrain):
         self.im_shape = im_shape
         self.lr = lr
         self.model = pretrained_model
-        self.label: list[int] = []
-        self.prediction: list[int] = []
         self.setup_training()
         self.save_hyperparameters()
 
@@ -182,7 +180,9 @@ class PretrainingTask(lightning.LightningModule):
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
-
+    label: list[float|int] = []
+    prediction: list[float|int] = []
+    
     def __init__(
         self,
         model_class: str,
@@ -207,8 +207,6 @@ class PretrainingTask(lightning.LightningModule):
 
         self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
         self.label_loss = KLDivLoss()
-        self.label: list[float] = []
-        self.prediction: list[float] = []
         self.soft_label_util = ToSoftLabel.baseConfig()
 
         self.use_cutout = use_cutout

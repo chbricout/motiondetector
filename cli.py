@@ -184,6 +184,7 @@ def train(
     run_num,
     seed,
     narval,
+    slurm
 ):
     if slurm:
         submit_scratch(

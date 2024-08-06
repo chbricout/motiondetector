@@ -41,7 +41,6 @@ class SFCNHeadBlock(nn.Sequential):
 
 
 class SFCNEncoder(Encoder):
-    _latent_size: Sequence
 
     def __init__(self, im_shape: Sequence, dropout_rate: float):
         super().__init__(im_shape=im_shape, dropout_rate=dropout_rate)
@@ -57,14 +56,7 @@ class SFCNEncoder(Encoder):
     def forward(self, x):
         return self.convs(x)
 
-    @property
-    def latent_size(self) -> Sequence:
-        """Procedure to compute and store the latent size of the model"""
-        if self._latent_size == None:
-            shape_like = (1, *self.im_shape)
-            out_encoder = self.forward(torch.empty(shape_like))
-            self._latent_size = out_encoder.shape[2:]
-        return self._latent_size
+
 
 
 class SFCNClassifier(Classifier):
@@ -95,5 +87,5 @@ class SFCNModel(Model):
         )
         self.encoder = SFCNEncoder(self.im_shape, self.dropout_rate)
         self.classifier = SFCNClassifier(
-            self.encoder.latent_size, self.num_classes, self.dropout_rate
+            self.encoder.latent_shape, self.num_classes, self.dropout_rate
         )

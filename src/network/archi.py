@@ -9,7 +9,9 @@ class Encoder(abc.ABC, nn.Module):
     Base encoder for the pretraining / finetuning process.
     """
 
-    _latent_size: Sequence | int = None
+    _latent_shape: Sequence
+    _latent_size: int = -1
+
     im_shape: Sequence
     dropout_rate: float
 
@@ -23,13 +25,24 @@ class Encoder(abc.ABC, nn.Module):
         self.im_shape = im_shape
         self.dropout_rate = dropout_rate
 
-    @property
-    def latent_size(self) -> Sequence | int:
-        """Procedure to compute and store the latent size of the model"""
-        if self._latent_size == None:
+    def _retrieve_latent(self):
+        if self._latent_size<=0:
             shape_like = (1, *self.im_shape)
             out_encoder: torch.Tensor = self.forward(torch.empty(shape_like))
+            self._latent_shape = out_encoder.shape[2:]
             self._latent_size = out_encoder.numel()
+
+
+    @property
+    def latent_shape(self) -> Sequence  :
+        """Procedure to compute and store the latent size of the model"""
+        self._retrieve_latent()
+        return self._latent_shape
+
+    @property
+    def latent_size(self) -> int:
+        """Procedure to compute and store the latent size of the model"""
+        self._retrieve_latent()
         return self._latent_size
 
 
@@ -119,7 +132,7 @@ class Model(abc.ABC, nn.Module):
         """
         return self.encoder(x)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor)-> torch.Tensor:
         """Default forward mechanism, ideally should not be override
 
         Args:

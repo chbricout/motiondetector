@@ -1,8 +1,10 @@
-import sys
+"""
+Command to generate synthetic motion datasets used for pretraining
+"""
+
 import os
 import shutil
 
-sys.path.append(".")
 from monai.data.dataloader import DataLoader
 from monai.data.dataset import Dataset
 from monai.transforms.compose import Compose
@@ -17,20 +19,20 @@ from src.transforms.generate import Preprocess, CreateSynthVolume, FinalCrop
 
 
 class SaveElement(Transform):
+    """Special tranform to save the newly created volume in your intended folder"""
+
     def __init__(self, new_dataset: str, mode="train", iteration=0):
         super().__init__()
         self.mode = mode
         self.save = SaveImage(savepath_in_metadict=True, resample=False)
         self.iteration = iteration
         self.new_dataset = new_dataset
+        self.base_path = f"/home/cbricout/scratch/{self.new_dataset}/{self.mode}/"
 
     def __call__(self, element):
-        path = None
-        if self.mode == "train":
-            path = f"/home/cbricout/scratch/{self.new_dataset}/train/{element['sub_id']}-{element['ses_id']}-{self.iteration}"
-        elif self.mode == "val":
-            path = f"/home/cbricout/scratch/{self.new_dataset}/val/{element['sub_id']}-{element['ses_id']}-{self.iteration}"
-
+        path = (
+            self.base_path + f"{element['sub_id']}-{element['ses_id']}-{self.iteration}"
+        )
         self.save(element["data"], filename=path)
 
         return {
@@ -42,6 +44,12 @@ class SaveElement(Transform):
 
 
 def setup_dataset_tree(new_dataset: str):
+    """Create every folder needed for the new dataset (if needed) and remove previous
+    generation attempt if the main folder already exists
+
+    Args:
+        new_dataset (str): Name of the new dataset
+    """
     if not os.path.exists(f"/home/cbricout/scratch/{new_dataset}"):
         os.mkdir(f"/home/cbricout/scratch/{new_dataset}")
     else:
@@ -54,6 +62,11 @@ def setup_dataset_tree(new_dataset: str):
 
 
 def launch_generate_data(new_dataset: str):
+    """Generate synthetic motion dataset and store everything (Volumes and CSVs)
+
+    Args:
+        new_dataset (str): Name of the new dataset
+    """
     setup_dataset_tree(new_dataset)
 
     load_tsf = Preprocess()

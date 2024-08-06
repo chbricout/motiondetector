@@ -1,19 +1,22 @@
+"""
+Function to launch the training process from scratch (no pretraining)
+Used as baseline training technic
+"""
+
 import tempfile
 import random
-import sys
-
-sys.path.append(".")
-
-import torch
 import lightning
 import lightning.pytorch.loggers
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
-
 from src.dataset.mrart.mrart_dataset import MRArtDataModule
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
 from src.config import IM_SHAPE
 from src.training.callback import FinetuneCallback
-from src.training.lightning_logic import AMPSCZScratchTask, MRArtScratchTask
+from src.training.lightning_logic import (
+    AMPSCZScratchTask,
+    MRArtScratchTask,
+    TrainScratchTask,
+)
 
 
 def launch_train_from_scratch(
@@ -27,8 +30,23 @@ def launch_train_from_scratch(
     seed: int,
     narval: bool,
 ):
-    torch.set_float32_matmul_precision("high")
+    """Start training from scratch
 
+    Args:
+        learning_rate (float): training learning rate
+        dropout_rate (float): dropout rate before final layer
+        max_epochs (int): max number of epoch to train for
+        batch_size (int): batch size (on one GPU)
+        dataset (str): dataset to train on "AMPSCZ" or "MRART"
+        model (str): model to train
+        run_num (int): array id for slurm job zhen running multiple seeds
+        seed (int): random seed to run on
+        narval (bool): flag to run on narval computers
+    """
+    assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
+
+    task: TrainScratchTask = None
+    datamodule: lightning.LightningDataModule = None
     if dataset == "MRART":
         datamodule = MRArtDataModule
         task = MRArtScratchTask
@@ -41,7 +59,7 @@ def launch_train_from_scratch(
         project_name=f"baseline-{dataset}",
         experiment_name=f"{model}-{run_num}",
     )
-    if seed == None:
+    if seed is None:
         seed = random.randint(1, 10000)
     comet_logger.log_hyperparams({"seed": seed})
 

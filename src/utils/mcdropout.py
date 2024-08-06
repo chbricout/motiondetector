@@ -30,7 +30,7 @@ def evaluate_mcdropout(
 ):
     model.mc_dropout()
     res = []
-    labels = []
+    labels : list[int] = []
     with torch.no_grad():
         for _ in tqdm(range(n_samples)):
             sample_pred = []
@@ -40,8 +40,7 @@ def evaluate_mcdropout(
                 labels += batch[label].tolist()
                 sample_pred.append(torch.as_tensor(model.predict_step(batch, idx)))
                 torch.cuda.empty_cache()
-            sample_pred = torch.concat(sample_pred)
-            res.append(sample_pred.unsqueeze(1))
+            res.append(torch.concat(sample_pred).unsqueeze(1))
     preds = torch.concat(res, 1).float()
     print(preds, labels)
     mean = torch.mean(preds, dim=1)
