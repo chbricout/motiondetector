@@ -109,7 +109,7 @@ def pretrain(
     seed,
     narval,
     slurm,
-    use_cutout
+    cutout
 ):
     if slurm:
         submit_pretrain(
@@ -127,7 +127,7 @@ def pretrain(
             run_num=run_num,
             seed=seed,
             narval=narval,
-            use_cutout=use_cutout
+            use_cutout=cutout
         )
 
 

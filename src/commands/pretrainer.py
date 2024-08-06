@@ -16,6 +16,18 @@ from src.training.callback import PretrainCallback
 from src.training.lightning_logic import PretrainingTask
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 
+def get_run_dir(project_name:str, run_name:str, narval:bool):
+    if narval:
+        root_dir = f"/home/cbricout/scratch/{PROJECT_NAME}"
+    else :
+        root_dir = f"/home/at70870/local_scratch/{PROJECT_NAME}"
+
+    if not os.path.exists(root_dir):
+        os.mkdir(root_dir)
+    run_dir = f"{root_dir}/{run_name}"
+    if not os.path.exists(run_dir):
+        os.mkdir(run_dir)
+    return run_dir
 
 def launch_pretrain(
     learning_rate: float,
@@ -29,11 +41,7 @@ def launch_pretrain(
     use_cutout:bool
 ):
     run_name = f"pretraining-{model}-{run_num}"
-    if not os.path.exists(f"/home/cbricout/scratch/{PROJECT_NAME}"):
-        os.mkdir(f"/home/cbricout/scratch/{PROJECT_NAME}")
-    run_dir = f"/home/cbricout/scratch/{PROJECT_NAME}/{run_name}"
-    if not os.path.exists(run_dir):
-        os.mkdir(run_dir)
+    run_dir = get_run_dir(PROJECT_NAME, run_name, narval)
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=COMET_API_KEY,
