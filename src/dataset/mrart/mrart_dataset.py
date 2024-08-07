@@ -1,96 +1,70 @@
-import logging
-import re
+"""
+Module to use the MR-ART dataset from python (require split csv files)
+"""
+
+from typing import Callable
 from monai.data.dataset import Dataset, CacheDataset
 from monai.data.dataloader import DataLoader
-from monai.transforms import Compose
 import pandas as pd
-import lightning as L
+from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import FinetuneTransform
 
 
-def extract_sub(path: str):
-    match_re = ".*(sub-[0-9A-Za-z]+).*"
-    match_res = re.match(match_re, path)
-    if match_res:
-        return match_res.group(1)
-    return ""
+class TrainMrArt(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the train split of MR-ART (in finetune).
+    It relies on the "train_preproc.csv" file
+    """
 
-
-class TrainMrArt(CacheDataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/mrart/train_preproc.csv", index_col=0)
         self.files["data"] = prefix + self.files["data"]
         super().__init__(self.files.to_dict("records"), transform)
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class ValMrArt(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the validation split of MR-ART (in finetune).
+    It relies on the "val_preproc.csv" file
+    """
 
-
-class ValMrArt(CacheDataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/mrart/val_preproc.csv")
         self.files["data"] = prefix + self.files["data"]
         super().__init__(self.files.to_dict("records"), transform)
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class TestMrArt(Dataset, BaseDataset):
+    """
+    Pytorch Dataset to use the test split of MR-ART (in finetune).
+    It relies on the "test_preproc.csv" file
+    """
 
-
-class TestMrArt(Dataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/mrart/test_preproc.csv")
         self.files["data"] = prefix + self.files["data"]
         super().__init__(self.files.to_dict("records"), transform)
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class MRArtDataModule(BaseDataModule):
+    """
+    Lightning data module to use MR-ART data in lightning trainers (for finetune)
+    """
 
-
-class MRArtDataModule(L.LightningDataModule):
     def __init__(self, narval=True, batch_size: int = 32):
-        super().__init__()
-        self.narval = narval
-        self.batch_size = batch_size
-        self.load_tsf = FinetuneTransform()
-
-    def setup(self, stage: str):
-        self.val_ds = (
-            ValMrArt.narval(self.load_tsf)
-            if self.narval
-            else ValMrArt.lab(self.load_tsf)
-        )
-        self.train_ds = (
-            TrainMrArt.narval(self.load_tsf)
-            if self.narval
-            else TrainMrArt.lab(self.load_tsf)
-        )
-        logging.info(
-            f"Train dataset contains {len(self.train_ds)} datas  \nVal dataset contains {len(self.val_ds)}"
-        )
+        super().__init__(narval, batch_size)
+        self.load_tsf: Callable = FinetuneTransform()
+        self.val_ds_class = ValMrArt
+        self.train_ds_class = TrainMrArt
 
     def train_dataloader(self):
         return DataLoader(
             self.train_ds,
             batch_size=self.batch_size,
-            shuffle=True,
             num_workers=25,
-            pin_memory=True,
             prefetch_factor=3,
+            shuffle=True,
+            pin_memory=True,
             persistent_workers=True,
         )
 

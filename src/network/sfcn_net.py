@@ -77,7 +77,8 @@ class SFCNClassifier(Classifier):
 
 class SFCNModel(Model):
     """
-    Implementation of the model from Han Peng et al. in "Accurate brain age prediction with lightweight deep neural networks"
+    Implementation of the model from Han Peng et al. in 
+    "Accurate brain age prediction with lightweight deep neural networks"
     https://doi.org/10.1016/j.media.2020.101871
     """
 

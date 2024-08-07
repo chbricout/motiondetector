@@ -1,33 +1,25 @@
+"""
+Module to launch pretraining job on synthetic motion dataset.
+"""
+
 import logging
-import tempfile
 import random
-import sys
-import os
 
-from src.utils.comet import get_experiment_key
-
-sys.path.append(".")
 import torch
 import lightning
 import lightning.pytorch.loggers
-from lightning.pytorch.callbacks import StochasticWeightAveraging, EarlyStopping,LearningRateMonitor
+from lightning.pytorch.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+)
+
+from src.utils.comet import get_experiment_key
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
 from src.training.callback import PretrainCallback
 from src.training.lightning_logic import PretrainingTask
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
+from src.utils.log import get_run_dir
 
-def get_run_dir(project_name:str, run_name:str, narval:bool):
-    if narval:
-        root_dir = f"/home/cbricout/scratch/{PROJECT_NAME}"
-    else :
-        root_dir = f"/home/at70870/local_scratch/{PROJECT_NAME}"
-
-    if not os.path.exists(root_dir):
-        os.mkdir(root_dir)
-    run_dir = f"{root_dir}/{run_name}"
-    if not os.path.exists(run_dir):
-        os.mkdir(run_dir)
-    return run_dir
 
 def launch_pretrain(
     learning_rate: float,
@@ -36,10 +28,24 @@ def launch_pretrain(
     batch_size: int,
     model: str,
     run_num: int,
-    seed: int,
+    seed: int | None,
     narval: bool,
-    use_cutout:bool
+    use_cutout: bool,
 ):
+    """Launch the pretraining process
+
+    Args:
+        learning_rate (float): training learning rate
+        dropout_rate (float): dropout rate before final layer
+        max_epochs (int): max number of epoch to train for
+        batch_size (int): batch size (on one GPU)
+        model (str): model to train
+        run_num (int): array id for slurm job when running multiple seeds
+        seed (int | None): random seed to run on
+        narval (bool): flag to run on narval computers
+        use_cutout(bool): flag to use cutout in model training
+    """
+
     run_name = f"pretraining-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name, narval)
 
@@ -52,24 +58,21 @@ def launch_pretrain(
         ),
     )
 
-    if seed == None:
+    if seed is None:
         seed = random.randint(1, 10000)
     torch.manual_seed(seed)
-    comet_logger.log_hyperparams({
-        "seed": seed,
-        "model":model,
-        "run_num":run_num,
-        "use_cutout":use_cutout
-        })
+    comet_logger.log_hyperparams(
+        {"seed": seed, "model": model, "run_num": run_num, "use_cutout": use_cutout}
+    )
     comet_logger.experiment.log_code(file_name="src/commands/pretrainer.py")
-    logging.info(f"Run dir path is : {run_dir}")
+    logging.info("Run dir path is : %s", run_dir)
     net = PretrainingTask(
         model_class=model,
         im_shape=IM_SHAPE,
         lr=learning_rate,
         dropout_rate=dropout_rate,
         batch_size=batch_size,
-        use_cutout=use_cutout
+        use_cutout=use_cutout,
     )
 
     trainer = lightning.Trainer(
@@ -87,12 +90,11 @@ def launch_pretrain(
                 mode="min",
                 patience=40,
                 check_on_train_epoch_end=False,
-                verbose=True
+                verbose=True,
             ),
             PretrainCallback(monitor="r2_score", mode="max"),
             LearningRateMonitor(logging_interval="epoch"),
         ],
     )
-
 
     trainer.fit(net, datamodule=PretrainingDataModule(narval, batch_size))

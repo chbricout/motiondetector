@@ -1,23 +1,22 @@
-import logging
-import re
+"""
+Module to use the AMPSCZ dataset from python (require split csv files)
+"""
+
+from typing import Callable
 from monai.data.dataset import Dataset, CacheDataset
 from monai.data.dataloader import DataLoader
-from monai.transforms import Compose
 import pandas as pd
-import lightning as L
+from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import FinetuneTransform
 
 
-def extract_sub(path: str):
-    match_re = ".*(sub-[0-9A-Za-z]+).*"
-    match_res = re.match(match_re, path)
-    if match_res:
-        return match_res.group(1)
-    return ""
+class PretrainTrainAMPSCZ(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the train split of the pretrain dedicated part of AMPSCZ
+    It relies on the "pretrain.csv" file
+    """
 
-
-class PretrainTrainAMPSCZ(CacheDataset):
-    def __init__(self, transform=None, prefix: str = ""):
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/ampscz/pretrain.csv", index_col=0)
         self.files = self.files[self.files["group"] == "train"]
         self.files["data"] = prefix + self.files["data"]
@@ -29,17 +28,14 @@ class PretrainTrainAMPSCZ(CacheDataset):
             self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class PretrainValAMPSCZ(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the validation split of the pretrain dedicated part of AMPSCZ
+    It relies on the "pretrain.csv" file
+    """
 
-
-class PretrainValAMPSCZ(CacheDataset):
-    def __init__(self, transform=None, prefix: str = ""):
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/ampscz/pretrain.csv", index_col=0)
         self.files = self.files[self.files["group"] == "val"]
         self.files["data"] = prefix + self.files["data"]
@@ -51,17 +47,14 @@ class PretrainValAMPSCZ(CacheDataset):
             self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class PretrainTestAMPSCZ(Dataset, BaseDataset):
+    """
+    Pytorch Dataset to use the test split of the pretrain dedicated part of AMPSCZ
+    It relies on the "pretrain.csv" file
+    """
 
-
-class PretrainTestAMPSCZ(Dataset):
-    def __init__(self, transform=None, prefix: str = ""):
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/ampscz/pretrain.csv", index_col=0)
         self.files = self.files[self.files["group"] == "test"]
         self.files["data"] = prefix + self.files["data"]
@@ -73,17 +66,14 @@ class PretrainTestAMPSCZ(Dataset):
             self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class FinetuneTrainAMPSCZ(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the train split of the finetune dedicated part of AMPSCZ
+    It relies on the "finetune.csv" file
+    """
 
-
-class FinetuneTrainAMPSCZ(CacheDataset):
-    def __init__(self, transform=None, prefix: str = ""):
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
         self.files = self.files[self.files["group"] == "train"]
         self.files["data"] = prefix + self.files["data"]
@@ -97,17 +87,14 @@ class FinetuneTrainAMPSCZ(CacheDataset):
             transform,
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class FinetuneValAMPSCZ(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the validation split of the finetune dedicated part of AMPSCZ
+    It relies on the "finetune.csv" file
+    """
 
-
-class FinetuneValAMPSCZ(CacheDataset):
-    def __init__(self, transform=None, prefix: str = ""):
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
         self.files = self.files[self.files["group"] == "val"]
         self.files["data"] = prefix + self.files["data"]
@@ -121,17 +108,14 @@ class FinetuneValAMPSCZ(CacheDataset):
             transform,
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class FinetuneTestAMPSCZ(Dataset, BaseDataset):
+    """
+    Pytorch Dataset to use the test split of the finetune dedicated part of AMPSCZ
+    It relies on the "finetune.csv" file
+    """
 
-
-class FinetuneTestAMPSCZ(Dataset):
-    def __init__(self, transform=None, prefix: str = ""):
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
         self.files = self.files[self.files["group"] == "test"]
         self.files["data"] = prefix + self.files["data"]
@@ -145,45 +129,26 @@ class FinetuneTestAMPSCZ(Dataset):
             transform,
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class AMPSCZDataModule(BaseDataModule):
+    """
+    Lightning data module to use AMPSCZ finetune data in lightning trainers
+    """
 
-
-class AMPSCZDataModule(L.LightningDataModule):
-    def __init__(self, narval=True, batch_size: int = 32):
-        super().__init__()
-        self.narval = narval
-        self.batch_size = batch_size
-        self.load_tsf = FinetuneTransform()
-
-    def setup(self, stage: str):
-        self.val_ds = (
-            FinetuneValAMPSCZ.narval(self.load_tsf)
-            if self.narval
-            else FinetuneValAMPSCZ.lab(self.load_tsf)
-        )
-        self.train_ds = (
-            FinetuneTrainAMPSCZ.narval(self.load_tsf)
-            if self.narval
-            else FinetuneTrainAMPSCZ.lab(self.load_tsf)
-        )
-        logging.info(
-            f"Train dataset contains {len(self.train_ds)} datas  \nVal dataset contains {len(self.val_ds)}"
-        )
+    def __init__(self, narval: bool = True, batch_size: int = 32):
+        super().__init__(narval, batch_size)
+        self.load_tsf: Callable = FinetuneTransform()
+        self.val_ds_class = FinetuneValAMPSCZ
+        self.train_ds_class = FinetuneTrainAMPSCZ
 
     def train_dataloader(self):
         return DataLoader(
             self.train_ds,
             batch_size=self.batch_size,
-            shuffle=True,
             num_workers=25,
-            pin_memory=True,
             prefetch_factor=3,
+            shuffle=True,
+            pin_memory=True,
             persistent_workers=True,
         )
 

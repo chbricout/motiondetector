@@ -1,17 +1,35 @@
+"""
+Module to convert MR-ART dataset structure to BIDS structure
+"""
+
 import os
 import logging
-import glob
-import tqdm
 import shutil
+import glob
+
+import tqdm
 
 
-def get_ses_id(filename):
+def get_ses_id(filename: str) -> str:
+    """Return the bids session id corresponding to the file
+
+    Args:
+        filename (str): filename to analyse
+
+    Returns:
+        str: Bids co;pliant session ID
+    """
+    ses_id = "ses-"
     if "standard" in filename:
-        return "ses-standard"
+        ses_id += "standard"
     elif "headmotion1" in filename:
-        return "ses-headmotion1"
+        ses_id += "headmotion1"
     elif "headmotion2" in filename:
-        return "ses-headmotion2"
+        ses_id += "headmotion2"
+    else:
+        ses_id += "broken"
+        logging.error("Unable to identify session for filename %s", filename)
+    return ses_id
 
 
 def launch_convert_mrart_to_bids(input_path: str, output_path: str):
@@ -25,7 +43,7 @@ def launch_convert_mrart_to_bids(input_path: str, output_path: str):
     assert os.path.exists(input_path)
 
     if not os.path.exists(output_path):
-        logging.info(f"Output folder does not exist. Creating {output_path}")
+        logging.info("Output folder does not exist. Creating %s", output_path)
         os.makedirs(output_path)
 
     for subject_path in tqdm.tqdm(

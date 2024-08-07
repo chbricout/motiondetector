@@ -1,9 +1,24 @@
-import torch.nn as nn
+"""
+Module to define a residual CNN network based on :
+Jonsson, B.A., Bjornsdottir, G., Thorgeirsson, T.E., Ellingsen, L.M., Walters, 
+G.B., Gudbjartsson, D.F., Stefansson, H., Stefansson, K., Ulfarsson, M.O., 2019.
+Brain age prediction using deep learning uncovers associated sequence variants.
+Nature Communications 10, 5409. doi:10.1038/s41467-019-13163-9.
+
+With a dropout layer moved at the beginning of the network
+"""
+
 from collections.abc import Sequence
+import torch
+from torch import nn
 from src.network.archi import Classifier, Encoder, Model
 
 
 class ResConvModule(nn.Module):
+    """
+    Base Module for Res encoder
+    """
+
     def __init__(
         self,
         in_channel,
@@ -23,7 +38,15 @@ class ResConvModule(nn.Module):
 
         self.out = nn.Sequential(nn.ReLU(), nn.MaxPool3d(2, 2))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute one layer of two convolution with residual connection for Res encoder
+
+        Args:
+            x (torch.Tensor): input tensor
+
+        Returns:
+            torch.Tensor: concatenated output
+        """
         main = self.main_path(x)
         res = self.res_path(x)
 
@@ -31,6 +54,10 @@ class ResConvModule(nn.Module):
 
 
 class ResEncoder(Encoder):
+    """
+    Encoder for the ResModel
+    """
+
     _latent_size: int
 
     def __init__(self, im_shape: Sequence, dropout_rate: float):
@@ -43,11 +70,23 @@ class ResEncoder(Encoder):
             ResConvModule(64, 128),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute volume encoding through 5 ResConvModule
+
+        Args:
+            x (torch.Tensor): input tensor
+
+        Returns:
+            torch.Tensor: ResConvModules encoding
+        """
         return self.convs(x)
 
 
 class ResClassifier(Classifier):
+    """
+    Classifier for Res Model
+    """
+
     input_size: int
 
     def __init__(self, input_size: int, num_classes: int, dropout_rate: float):
@@ -63,11 +102,20 @@ class ResClassifier(Classifier):
         self.output_layer = nn.Linear(256, self.num_classes)
 
     def change_output_num(self, num_classes: int):
+        """Change the size of output layer
+
+        Args:
+            num_classes (int): Number of class / length of new output layer
+        """
         self.num_classes = num_classes
         self.output_layer = nn.Linear(256, self.num_classes)
 
 
 class ResModel(Model):
+    """
+    Combine a Res encoder and classifier
+    """
+
     def __init__(self, im_shape: Sequence, num_classes: int, dropout_rate: float):
         super().__init__(
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate

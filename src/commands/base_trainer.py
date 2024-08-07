@@ -1,5 +1,5 @@
 """
-Function to launch the training process from scratch (no pretraining)
+Module to launch the training process from scratch (no pretraining)
 Used as baseline training technic
 """
 
@@ -27,7 +27,7 @@ def launch_train_from_scratch(
     dataset: str,
     model: str,
     run_num: int,
-    seed: int,
+    seed: int | None,
     narval: bool,
 ):
     """Start training from scratch
@@ -39,8 +39,8 @@ def launch_train_from_scratch(
         batch_size (int): batch size (on one GPU)
         dataset (str): dataset to train on "AMPSCZ" or "MRART"
         model (str): model to train
-        run_num (int): array id for slurm job zhen running multiple seeds
-        seed (int): random seed to run on
+        run_num (int): array id for slurm job when running multiple seeds
+        seed (int | None): random seed to run on
         narval (bool): flag to run on narval computers
     """
     assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
@@ -61,7 +61,8 @@ def launch_train_from_scratch(
     )
     if seed is None:
         seed = random.randint(1, 10000)
-    comet_logger.log_hyperparams({"seed": seed})
+    comet_logger.log_hyperparams({"seed": seed, "model": model, "run_num": run_num})
+    comet_logger.experiment.log_code(file_name="src/commands/base_trainer.py")
 
     tempdir = tempfile.TemporaryDirectory()
 

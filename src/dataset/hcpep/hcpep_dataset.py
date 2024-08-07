@@ -1,17 +1,19 @@
-import re
+"""
+Module to use the HCPEP dataset from python (require split csv files)
+"""
+
 from monai.data.dataset import Dataset, CacheDataset
 import pandas as pd
 
-
-def extract_sub(path: str):
-    match_re = ".*(sub-[0-9A-Za-z]+).*"
-    match_res = re.match(match_re, path)
-    if match_res:
-        return match_res.group(1)
-    return ""
+from src.dataset.base_dataset import BaseDataset
 
 
-class TrainHCPEP(CacheDataset):
+class TrainHCPEP(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the train split of HCPEP (in pretrain synthetic dataset).
+    It relies on the "pretrain.csv" file
+    """
+
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/hcpep/pretrain.csv", index_col=0)
         self.files = self.files[self.files["group"] == "train"]
@@ -20,16 +22,13 @@ class TrainHCPEP(CacheDataset):
             self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class ValHCPEP(CacheDataset, BaseDataset):
+    """
+    Pytorch Dataset to use the validation split of HCPEP (in pretrain synthetic dataset).
+    It relies on the "pretrain.csv" file
+    """
 
-
-class ValHCPEP(CacheDataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/hcpep/pretrain.csv", index_col=0)
         self.files = self.files[self.files["group"] == "val"]
@@ -38,16 +37,13 @@ class ValHCPEP(CacheDataset):
             self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
         )
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")
+class TestHCPEP(Dataset, BaseDataset):
+    """
+    Pytorch Dataset to use the test split of HCPEP (in pretrain synthetic dataset).
+    It relies on the "pretrain.csv" file
+    """
 
-
-class TestHCPEP(Dataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/hcpep/pretrain.csv", index_col=0)
         self.files = self.files[self.files["group"] == "test"]
@@ -55,11 +51,3 @@ class TestHCPEP(Dataset):
         super().__init__(
             self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
         )
-
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
-
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "/home/cbricout/scratch/")

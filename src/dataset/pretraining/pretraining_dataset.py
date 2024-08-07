@@ -1,18 +1,28 @@
-import logging
+"""
+Module to use the synthetic motion pretraining dataset from python (require split csv files)
+"""
+
 from torch.utils.data import Dataset
-import lightning as L
 import pandas as pd
 from monai.data.dataloader import DataLoader
 
 from src.config import BIN_RANGE, N_BINS
+from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import LoadSynth
 
 
-class PretrainTrain(Dataset):
+class PretrainTrain(Dataset, BaseDataset):
+    """
+    Pytorch Dataset to use the train split of synthetic motion dataset (in pretrain).
+    It relies on the "train.csv" file
+    """
+
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/pretraining/train.csv", index_col=0)
-        if prefix!='':
-            self.files['data'] = self.files['data'].str.replace("/home/cbricout/scratch/",prefix)
+        if prefix != "":
+            self.files["data"] = self.files["data"].str.replace(
+                "/home/cbricout/scratch/", prefix
+            )
         self.files["label"] = self.files["motion_mm"]
         self.transform = transform
 
@@ -26,20 +36,19 @@ class PretrainTrain(Dataset):
 
         return data
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "")
+class PretrainVal(Dataset, BaseDataset):
+    """
+    Pytorch Dataset to use the validation split of synthetic motion dataset (in pretrain).
+    It relies on the "val.csv" file
+    """
 
-
-class PretrainVal(Dataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/pretraining/val.csv", index_col=0)
-        if prefix!='':
-            self.files['data'] = self.files['data'].str.replace("/home/cbricout/scratch/",prefix)
+        if prefix != "":
+            self.files["data"] = self.files["data"].str.replace(
+                "/home/cbricout/scratch/", prefix
+            )
         self.files["label"] = self.files["motion_mm"]
         self.transform = transform
 
@@ -53,46 +62,27 @@ class PretrainVal(Dataset):
 
         return data
 
-    @classmethod
-    def lab(cls, transform=None):
-        return cls(transform, "/home/at70870/narval/scratch/")
 
-    @classmethod
-    def narval(cls, transform=None):
-        return cls(transform, "")
+class PretrainingDataModule(BaseDataModule):
+    """
+    Lightning data module to use synthetic motion pretraining data in lightning trainers
+    """
 
-
-class PretrainingDataModule(L.LightningDataModule):
     def __init__(self, narval=True, batch_size: int = 32):
-        super().__init__()
-        self.narval = narval
-        self.batch_size = batch_size
+        super().__init__(narval, batch_size)
         self.load_tsf = LoadSynth(num_bins=N_BINS, bin_range=BIN_RANGE)
-
-    def setup(self, stage: str):
-        self.val_ds = (
-            PretrainVal.narval(self.load_tsf)
-            if self.narval
-            else PretrainVal.lab(self.load_tsf)
-        )
-        self.train_ds = (
-            PretrainTrain.narval(self.load_tsf)
-            if self.narval
-            else PretrainTrain.lab(self.load_tsf)
-        )
-        logging.info(
-            f"Train dataset contains {len(self.train_ds)} datas  \nVal dataset contains {len(self.val_ds)}"
-        )
+        self.val_ds_class = PretrainVal
+        self.train_ds_class = PretrainTrain
 
     def train_dataloader(self):
         return DataLoader(
             self.train_ds,
             batch_size=self.batch_size,
-            shuffle=True,
-            pin_memory=True,
             num_workers=20,
             prefetch_factor=4,
-            drop_last =True
+            shuffle=True,
+            pin_memory=True,
+            drop_last=True,
         )
 
     def val_dataloader(self):

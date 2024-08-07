@@ -1,5 +1,11 @@
-import torch.nn as nn
+"""
+Module to store utils function and classes for network
+"""
 
+import logging
+from torch import nn
+
+from src.network.archi import Model
 from src.network.cnn_net import CNNModel
 from src.network.conv5_fc3_net import Conv5_FC3Model
 from src.network.res_net import ResModel
@@ -8,25 +14,35 @@ from src.network.sfcn_net import SFCNModel
 from src.network.vit_net import ViTModel
 
 
-def init_weights(m):
-    if (
-        isinstance(m, nn.Linear)
-        or isinstance(m, nn.Conv3d)
-        or isinstance(m, nn.ConvTranspose3d)
-    ):
-        nn.init.kaiming_uniform_(m.weight)
-        nn.init.constant_(m.bias, 0)
-    elif isinstance(m, nn.BatchNorm3d):
-        nn.init.constant_(m.weight, 1)
-        nn.init.constant_(m.bias, 0)
-        if m.running_mean.isnan().any():
-            m.running_mean.fill_(0)
-        if m.running_var.isnan().any():
-            m.running_var.fill_(1)
+def init_weights(model: nn.Module):
+    """Initialize weight for networks using Convolution or Linear layers
+      (no transformers) using kaiming / He init
+
+    Args:
+        model (nn.Module): Module to apply init strategy
+    """
+    if isinstance(model, (nn.Linear, nn.Conv3d, nn.ConvTranspose3d)):
+        nn.init.kaiming_uniform_(model.weight)
+        nn.init.constant_(model.bias, 0)
+    elif isinstance(model, nn.BatchNorm3d):
+        nn.init.constant_(model.weight, 1)
+        nn.init.constant_(model.bias, 0)
+        if model.running_mean.isnan().any():
+            model.running_mean.fill_(0)
+        if model.running_var.isnan().any():
+            model.running_var.fill_(1)
 
 
-def parse_model(model):
-    model_class = None
+def parse_model(model: str) -> Model:
+    """Return the class corresponding to a model string name
+
+    Args:
+        model (str): model name (capitalized)
+
+    Returns:
+        Model: model class
+    """
+    model_class: Model = None
     if model == "CNN":
         model_class = CNNModel
     elif model == "RES":
@@ -39,6 +55,9 @@ def parse_model(model):
         model_class = SEResModel
     elif model == "VIT":
         model_class = ViTModel
+    else:
+        logging.error("No model corresponding to %s, use CNNModel by default", model)
+        model_class = CNNModel
 
     return model_class
 

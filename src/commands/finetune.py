@@ -1,13 +1,10 @@
+"""
+Module to launch finetuning job on pretrained model.
+"""
+
 import logging
-import os
-import tempfile
 import random
-import sys
 
-from src.utils.comet import get_pretrain_task
-
-sys.path.append(".")
-import comet_ml
 import torch
 import lightning
 import lightning.pytorch.loggers
@@ -20,8 +17,10 @@ from src.training.callback import FinetuneCallback
 from src.training.lightning_logic import (
     MRArtFinetuningTask,
     AMPSCZFinetuningTask,
-    PretrainingTask,
+    TrainScratchTask,
 )
+from src.utils.comet import get_pretrain_task
+from src.utils.log import get_run_dir
 
 
 def launch_finetune(
@@ -31,16 +30,28 @@ def launch_finetune(
     dataset: str,
     model: str,
     run_num: int,
-    seed: int,
+    seed: int | None,
     narval: bool,
 ):
-    run_name = f"finetune-{dataset}-{model}-{run_num}"
-    if not os.path.exists(f"/home/cbricout/scratch/{PROJECT_NAME}"):
-        os.mkdir(f"/home/cbricout/scratch/{PROJECT_NAME}")
-    run_dir = f"/home/cbricout/scratch/{PROJECT_NAME}/{run_name}"
-    if not os.path.exists(run_dir):
-        os.mkdir(run_dir)
+    """Launch the finetuning process
 
+    Args:
+        learning_rate (float): training learning rate
+        max_epochs (int): max number of epoch to train for
+        batch_size (int): batch size (on one GPU)
+        dataset (str): dataset to train on "AMPSCZ" or "MRART"
+        model (str): model to train
+        run_num (int): array id for slurm job when running multiple seeds
+        seed (int | None): random seed to run on
+        narval (bool): flag to run on narval computers
+    """
+    assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
+
+    run_name = f"finetune-{dataset}-{model}-{run_num}"
+    run_dir = get_run_dir(PROJECT_NAME, run_name, narval)
+
+    task: TrainScratchTask = None
+    datamodule: lightning.LightningDataModule = None
     if dataset == "MRART":
         datamodule = MRArtDataModule
         task = MRArtFinetuningTask
@@ -54,17 +65,14 @@ def launch_finetune(
         experiment_name=run_name,
     )
 
-    if seed == None:
+    if seed is None:
         seed = random.randint(1, 10000)
     torch.manual_seed(seed)
-    comet_logger.log_hyperparams({
-        "seed": seed,
-        "model":model,
-        "dataset":dataset,
-        "run_num":run_num
-        })
+    comet_logger.log_hyperparams(
+        {"seed": seed, "model": model, "dataset": dataset, "run_num": run_num}
+    )
     comet_logger.experiment.log_code(file_name="src/commands/finetune.py")
-    logging.info(f"Run dir path is : {run_dir}")
+    logging.info("Run dir path is : %s", run_dir)
 
     pretrained = get_pretrain_task(model, run_num, PROJECT_NAME)
     net = task(pretrained_model=pretrained.model, im_shape=IM_SHAPE, lr=learning_rate)

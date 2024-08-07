@@ -1,5 +1,5 @@
 """
-Command to generate synthetic motion datasets used for pretraining
+Module to generate synthetic motion datasets used for pretraining
 """
 
 import os
