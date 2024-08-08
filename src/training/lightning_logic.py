@@ -244,7 +244,7 @@ class PretrainingTask(lightning.LightningModule):
 
         self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
         self.label_loss = KLDivLoss()
-        self.soft_label_util = ToSoftLabel.baseConfig()
+        self.soft_label_util = ToSoftLabel.base_config()
 
         self.use_cutout = use_cutout
         if self.use_cutout:

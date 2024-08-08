@@ -56,7 +56,7 @@ def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataF
         pd.DataFrame: results dataframe containing "mean", "std", "file" and "label
     """
     model = model.cuda().eval()
-    soft_label = ToSoftLabel.baseConfig()
+    soft_label = ToSoftLabel.base_config()
     means = []
     stds = []
     labels = []

@@ -54,7 +54,7 @@ def launch_pretrain(
         project_name=PROJECT_NAME,
         experiment_name=run_name,
         experiment_key=get_experiment_key(
-            COMET_API_KEY, "mrart", PROJECT_NAME, run_name
+            "mrart", PROJECT_NAME, run_name
         ),
     )
 
