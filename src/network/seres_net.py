@@ -1,10 +1,21 @@
-import torch.nn as nn
+"""
+Module to define the SERes model define in :
+Ghosal, P., Nandanwar, L., Kanchan, S., Bhadra, A., Chakraborty, J., & Nandi, D. (2019).
+Brain Tumor Classification Using ResNet-101 Based Squeeze and Excitation Deep Neural Network.
+in 2019 Second International Conference on Advanced Computational and Communication Paradigms 
+(ICACCP) (pp. 1‑6). https://doi.org/10.1109/ICACCP.2019.8882973
+"""
+
 from collections.abc import Sequence
+from torch import nn
+import torch
 from src.network.archi import Encoder, Classifier, Model
 
 
 class SqueezeNExcite(nn.Module):
-    def __init__(self, in_channels, reduction=2):
+    """SqueezeNExcite path for SE Res module"""
+
+    def __init__(self, in_channels: int, reduction: int = 2):
         super().__init__()
         self.pool = nn.AdaptiveAvgPool3d(1)
         self.module = nn.Sequential(
@@ -14,7 +25,15 @@ class SqueezeNExcite(nn.Module):
             nn.Sigmoid(),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Return the output of the SqueezeNExcite path
+
+        Args:
+            x (torch.Tensor): input tensor
+
+        Returns:
+            torch.Tensor: SqueezeNExcite activation
+        """
         batch, channel = x.shape[:2]
         y = self.pool(x).view(batch, channel)
         w = self.module(y).view(batch, channel, 1, 1, 1)
@@ -22,10 +41,12 @@ class SqueezeNExcite(nn.Module):
 
 
 class SEResModule(nn.Module):
+    """SERes Module for the SERes Encoder"""
+
     def __init__(
         self,
-        in_channel,
-        out_channel,
+        in_channel: int,
+        out_channel: int,
     ):
         super().__init__()
 
@@ -42,7 +63,15 @@ class SEResModule(nn.Module):
         self.res_path = nn.Conv3d(in_channel, out_channel, 1, padding="same")
         self.out = nn.Sequential(nn.ReLU(), nn.MaxPool3d(2, 2))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute output of one SERes unit
+
+        Args:
+            x (torch.Tensor): input
+
+        Returns:
+            torch.Tensor: SERes module output
+        """
         main = self.main_path(x)
         res = self.res_path(x)
 
@@ -50,6 +79,8 @@ class SEResModule(nn.Module):
 
 
 class SEResEncoder(Encoder):
+    """SERes Encoder for the SERes model"""
+
     _latent_size: int
 
     def __init__(self, im_shape: Sequence, dropout_rate: float):
@@ -62,11 +93,21 @@ class SEResEncoder(Encoder):
             SEResModule(64, 128),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the encoding of the SERes Encoder
+
+        Args:
+            x (torch.Tensor): input volume
+
+        Returns:
+            torch.Tensor: encoding for the volume
+        """
         return self.convs(x)
 
 
 class SEResClassifier(Classifier):
+    """SERes classifier for the SERes model"""
+
     input_size: int
 
     def __init__(self, input_size: int, num_classes: int, dropout_rate: float):
@@ -81,11 +122,22 @@ class SEResClassifier(Classifier):
         self.output_layer = nn.Linear(256, self.num_classes)
 
     def change_output_num(self, num_classes: int):
+        """Change the size of output layer
+
+        Args:
+            num_classes (int): Number of class / length of new output layer
+        """
         self.num_classes = num_classes
         self.output_layer = nn.Linear(256, self.num_classes)
 
 
 class SEResModel(Model):
+    """
+    Implementation of the model from Ghosal, P. et al.
+    Brain Tumor Classification Using ResNet-101 Based Squeeze and Excitation Deep Neural Network.
+    https://doi.org/10.1109/ICACCP.2019.8882973
+    """
+
     def __init__(self, im_shape: Sequence, num_classes: int, dropout_rate: float):
         super().__init__(
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate

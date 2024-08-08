@@ -1,14 +1,20 @@
+"""Module defining the callback used at on the Pretraining and Finetuning task
+ and any needed function"""
+
 import logging
 import shutil
 import tempfile
+from typing import Sequence
 import comet_ml
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from monai.data.dataloader import DataLoader
-from lightning import Trainer
+from lightning import Trainer, LightningModule
 from lightning.pytorch.callbacks import ModelCheckpoint
 import pandas as pd
 import seaborn as sb
 import torch
+from torch import nn
 from sklearn.metrics import r2_score
 from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ
 from src.dataset.mrart.mrart_dataset import ValMrArt
@@ -16,7 +22,13 @@ from src.utils.mcdropout import evaluate_mcdropout, pretrain_mcdropout
 from src.transforms.load import FinetuneTransform, ToSoftLabel
 
 
-def get_correlations(model, exp: comet_ml.BaseExperiment):
+def get_correlations(model: nn.Module, exp: comet_ml.BaseExperiment):
+    """Plot and store prediction of a pretrain model on a finetuning task (MR-ART and AMPSCZ)
+
+    Args:
+        model (nn.Module): Pretrained model to test
+        exp (comet_ml.BaseExperiment): Experiment to log on
+    """
     load_tsf = FinetuneTransform()
     for dataset in (ValMrArt, FinetuneValAMPSCZ):
         dl = DataLoader(dataset.narval(load_tsf))
@@ -33,9 +45,18 @@ def get_correlations(model, exp: comet_ml.BaseExperiment):
             )
 
 
-def get_pred_from_pretrain(model, dataloader: DataLoader):
+def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataFrame:
+    """Compute prediction of a model on a dataloader
+
+    Args:
+        model (nn.Module): Model to use for prediction
+        dataloader (DataLoader): Dictionnary based dataloader
+
+    Returns:
+        pd.DataFrame: results dataframe containing "mean", "std", "file" and "label
+    """
     model = model.cuda().eval()
-    softLabel = ToSoftLabel.baseConfig()
+    soft_label = ToSoftLabel.baseConfig()
     means = []
     stds = []
     labels = []
@@ -44,7 +65,7 @@ def get_pred_from_pretrain(model, dataloader: DataLoader):
             volume = batch["data"].cuda()
             prediction = model(volume)
             prediction = prediction.cpu()
-            mean, std = softLabel.softLabelToMeanStd(prediction)
+            mean, std = soft_label.softLabelToMeanStd(prediction)
             means += mean.tolist()
             stds += std.tolist()
             labels += batch["label"].tolist()
@@ -58,7 +79,21 @@ def get_pred_from_pretrain(model, dataloader: DataLoader):
     return full
 
 
-def get_calibration_curve(prediction, label, hue=None):
+def get_calibration_curve(
+    prediction: Sequence[int | float],
+    label: Sequence[int | float],
+    hue: Sequence[int] = None,
+) -> Figure:
+    """Generate calibration curve with matplotlib's pyplot
+
+    Args:
+        prediction (Sequence[int | float]): prediction vector
+        label (Sequence[int | float]): ground truth vector
+        hue (Sequence[int], optional): vector for hue purpose. Defaults to None.
+
+    Returns:
+        Figure: matplotlib's Figure object for the plot
+    """
     fig = plt.figure(figsize=(6, 5))
     sb.scatterplot(x=label, y=prediction, hue=hue)
     plt.plot([0, 3], [0, 3], "r")
@@ -66,7 +101,19 @@ def get_calibration_curve(prediction, label, hue=None):
     plt.ylabel("Estimated Label")
     return fig
 
-def get_box_plot(prediction, label):
+
+def get_box_plot(
+    prediction: Sequence[int | float], label: Sequence[int | float]
+) -> Figure:
+    """Generate box plot of model predictions against ground truth label to visualize distribution
+
+    Args:
+        prediction (Sequence[int | float]): prediction vector
+        label (Sequence[int | float]): ground truth vector
+
+    Returns:
+        Figure: matplotlib's Figure object for the plot
+    """
     fig = plt.figure(figsize=(6, 5))
     sb.boxplot(x=label, y=prediction)
     plt.xlabel("Correct Label")
@@ -75,19 +122,40 @@ def get_box_plot(prediction, label):
 
 
 class FinetuneCallback(ModelCheckpoint):
-    def on_fit_end(self, trainer: Trainer, pl_module):
+    """Callback for the Finetuning process.
+    Inherits from ModelCheckpoint to access the best model"""
+
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule):
+        """On fit function end, log best model checkpoint,
+          evaluate mcdropout and clear the checkpoint directory
+
+        Args:
+            trainer (Trainer): Trainer used for the fit process
+            pl_module (LightningModule): Trained Lightning module
+        """
         comet_logger = pl_module.logger
         comet_logger.experiment.log_model(
             name=pl_module.model.__class__.__name__, file_or_folder=self.best_model_path
         )
         best_net = pl_module.__class__.load_from_checkpoint(self.best_model_path)
-        
 
         evaluate_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
+        logging.info("Removing Checkpoints")
+        shutil.rmtree(trainer.default_root_dir)
 
 
 class PretrainCallback(ModelCheckpoint):
-    def on_fit_end(self, trainer: Trainer, pl_module):
+    """Callback for the Pretraining process.
+    Inherits from ModelCheckpoint to access the best model"""
+
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule):
+        """On fit function end, log best model checkpoint,
+          evaluate mcdropout, plot correlations and clear the checkpoint directory
+
+        Args:
+            trainer (Trainer): _description_
+            pl_module (LightningModule): _description_
+        """
         logging.info("Logging pretrain model")
         comet_logger = pl_module.logger
         comet_logger.experiment.log_model(
@@ -101,7 +169,7 @@ class PretrainCallback(ModelCheckpoint):
 
         logging.info("Running dropout on pretrain")
         pretrain_mcdropout(
-            best_net,trainer.val_dataloaders, comet_logger.experiment, "motion_mm"
+            best_net, trainer.val_dataloaders, comet_logger.experiment, "motion_mm"
         )
 
         logging.info("Removing Checkpoints")

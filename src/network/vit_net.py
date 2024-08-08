@@ -1,10 +1,15 @@
-import torch.nn as nn
-import monai.networks.nets.vit as vit
+"""Module use to define a model compliant to our framework from monai ViT"""
+
 from collections.abc import Sequence
+import torch
+from torch import nn
+from monai.networks.nets import vit
 from src.network.archi import Classifier, Encoder, Model
 
 
 class ViTEncoder(Encoder):
+    """ViT Encoder for the ViT model"""
+
     def __init__(self, im_shape: Sequence, dropout_rate: float):
         super().__init__(im_shape=im_shape, dropout_rate=dropout_rate)
         self.vit = vit.ViT(
@@ -18,12 +23,22 @@ class ViTEncoder(Encoder):
         )
         delattr(self.vit, "classification_head")
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Compute the ViT encoding (classification token)
+
+        Args:
+            x (torch.Tensor): Volume tensor
+
+        Returns:
+            torch.Tensor: ViT's encoding (classification token embedding)
+        """
         z, _ = self.vit(x)
         return z[:, 0]
 
 
 class ViTClassifier(Classifier):
+    """Classifier for the ViT Model"""
+
     input_size: int
 
     def __init__(self, input_size: int, num_classes: int, dropout_rate: float):
@@ -36,11 +51,18 @@ class ViTClassifier(Classifier):
         self.output_layer = nn.Linear(self.input_size, self.num_classes)
 
     def change_output_num(self, num_classes: int):
+        """Change the size of output layer
+
+        Args:
+            num_classes (int): Number of class / length of new output layer
+        """
         self.num_classes = num_classes
         self.output_layer = nn.Linear(self.input_size, self.num_classes)
 
 
 class ViTModel(Model):
+    """ViT Model combining the ViT Encoder and Classifier"""
+
     def __init__(self, im_shape: Sequence, num_classes: int, dropout_rate: float):
         super().__init__(
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate

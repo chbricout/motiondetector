@@ -3,7 +3,7 @@ import torch
 from src.config import IM_SHAPE
 from src.network.archi import Encoder, Model
 from src.network.cnn_net import CNNModel, CNNEncoder
-from src.network.conv5_fc3_net import Conv5_FC3Model, Conv5_FC3Encoder
+from src.network.conv5_fc3_net import Conv5FC3Model, Conv5FC3Encoder
 from src.network.res_net import ResModel, ResEncoder
 from src.network.seres_net import SEResModel, SEResEncoder
 from src.network.sfcn_net import SFCNModel, SFCNEncoder
@@ -14,7 +14,7 @@ from src.network.vit_net import ViTModel, ViTEncoder
     "encoder_to_test",
     [
         (CNNEncoder),
-        (Conv5_FC3Encoder),
+        (Conv5FC3Encoder),
         (ResEncoder),
         (SEResEncoder),
         (SFCNEncoder),
@@ -29,7 +29,7 @@ def test_encoder_init(encoder_to_test: Encoder):
 
 @pytest.mark.parametrize(
     "model_to_test",
-    [(CNNModel), (ResModel), (Conv5_FC3Model), (SEResModel), (SFCNModel), (ViTModel)],
+    [(CNNModel), (ResModel), (Conv5FC3Model), (SEResModel), (SFCNModel), (ViTModel)],
 )
 def test_model_init(model_to_test):
     net = model_to_test(im_shape=IM_SHAPE, num_classes=40, dropout_rate=0.5).cuda()
@@ -39,7 +39,7 @@ def test_model_init(model_to_test):
 
 @pytest.mark.parametrize(
     "model_to_test",
-    [(CNNModel), (ResModel), (Conv5_FC3Model), (SEResModel), (SFCNModel), (ViTModel)],
+    [(CNNModel), (ResModel), (Conv5FC3Model), (SEResModel), (SFCNModel), (ViTModel)],
 )
 def test_model_change_num(model_to_test):
     net: Model = model_to_test(im_shape=IM_SHAPE, num_classes=40, dropout_rate=0.5)
@@ -51,7 +51,7 @@ def test_model_change_num(model_to_test):
 
 @pytest.mark.parametrize(
     "model_to_test",
-    [(CNNModel), (ResModel), (Conv5_FC3Model), (SEResModel), (SFCNModel), (ViTModel)],
+    [(CNNModel), (ResModel), (Conv5FC3Model), (SEResModel), (SFCNModel), (ViTModel)],
 )
 def test_model_mc_dropout(model_to_test):
     net: Model = model_to_test(im_shape=IM_SHAPE, num_classes=40, dropout_rate=0.5)

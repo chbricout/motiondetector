@@ -7,7 +7,7 @@ from torch import nn
 
 from src.network.archi import Model
 from src.network.cnn_net import CNNModel
-from src.network.conv5_fc3_net import Conv5_FC3Model
+from src.network.conv5_fc3_net import Conv5FC3Model
 from src.network.res_net import ResModel
 from src.network.seres_net import SEResModel
 from src.network.sfcn_net import SFCNModel
@@ -50,7 +50,7 @@ def parse_model(model: str) -> Model:
     elif model == "SFCN":
         model_class = SFCNModel
     elif model == "CONV5_FC3":
-        model_class = Conv5_FC3Model
+        model_class = Conv5FC3Model
     elif model == "SERES":
         model_class = SEResModel
     elif model == "VIT":

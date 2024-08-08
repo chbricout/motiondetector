@@ -1,9 +1,15 @@
+"""Define the Lightning Module corresponding to our different tasks:
+- Training from scratch
+- Pretraining
+- Finetuning
+for every Dataset"""
+
 import gc
-import lightning
 import abc
 
+import lightning
 import torch.optim
-import torch.nn as nn
+from torch import nn
 from monai.transforms import CutOut
 from monai.data.meta_tensor import MetaTensor
 from sklearn.metrics import balanced_accuracy_score, r2_score
@@ -15,17 +21,21 @@ from src.network.utils import init_weights, parse_model, KLDivLoss
 
 
 class BaseTrain(abc.ABC, lightning.LightningModule):
+    """
+    Base class used for training from scratch and finetuning tasks
+    """
+
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
-    label: list[float|int] = []
-    prediction: list[float|int] = []
+    label: list[float | int] = []
+    prediction: list[float | int] = []
 
     def forward(self, x: torch.Tensor):
         raw_output = self.model(x)
         return self.output_pipeline(raw_output)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.forward(volume)
@@ -36,7 +46,7 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
 
         return label_loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.forward(volume)
@@ -65,13 +75,20 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
 
     @abc.abstractmethod
     def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
-        pass
+        """Transform raw output of the model to a final prediction
 
-    def predict_step(self, batch, batch_idx):
+        Args:
+            pred (torch.Tensor): Raw prediction
+
+        Returns:
+            torch.Tensor: final prediction
+        """
+
+    def predict_step(self, batch, _):
         ## VAE TESTING PHASE##
         # INFERENCE
         volume = batch["data"]
-        emb, prediction = self.forward(volume)
+        _, prediction = self.forward(volume)
 
         prediction = self.treat_data_for_pred(prediction)
         return prediction
@@ -82,6 +99,8 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
 
 
 class TrainScratchTask(BaseTrain):
+    """Common class for task to train from scratch"""
+
     num_classes: int
 
     def __init__(
@@ -101,12 +120,14 @@ class TrainScratchTask(BaseTrain):
         )
         if model_class != "ViT":
             self.model.apply(init_weights)
-        
+
         self.setup_training()
         self.save_hyperparameters()
 
 
 class FinetuningTask(BaseTrain):
+    """Common class for task to finetune"""
+
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
@@ -126,14 +147,17 @@ class FinetuningTask(BaseTrain):
 
     @abc.abstractmethod
     def setup_training(self):
-        """This function need to define the label loss and the output pipeline for your specific finetuning task"""
-        pass
+        """This function need to define the label loss and the output pipeline
+        for your specific finetuning task"""
 
 
 class MRArtScratchTask(TrainScratchTask):
+    """Task to train from scratch on MR-ART"""
+
     num_classes = 3
 
     def setup_training(self):
+        """Function used to define output pipeline and label loss"""
         self.output_pipeline = nn.Identity()
         self.label_loss = nn.CrossEntropyLoss()
 
@@ -142,9 +166,12 @@ class MRArtScratchTask(TrainScratchTask):
 
 
 class AMPSCZScratchTask(TrainScratchTask):
+    """Task to train from scratch on AMPSCZ"""
+
     num_classes = 1
 
     def setup_training(self):
+        """Function used to define output pipeline and label loss"""
         self.output_pipeline = nn.Sequential(
             nn.Flatten(start_dim=0),
         )
@@ -155,7 +182,11 @@ class AMPSCZScratchTask(TrainScratchTask):
 
 
 class MRArtFinetuningTask(FinetuningTask):
+    """Task to finetune on MR-ART"""
+
     def setup_training(self):
+        """Function used to define output pipeline and label loss
+        and change output num"""
         self.output_pipeline = nn.Identity()
         self.label_loss = nn.CrossEntropyLoss()
         self.model.classifier.change_output_num(3)
@@ -165,7 +196,11 @@ class MRArtFinetuningTask(FinetuningTask):
 
 
 class AMPSCZFinetuningTask(FinetuningTask):
+    """Task to finetune on AMPSCZ"""
+
     def setup_training(self):
+        """Function used to define output pipeline and label loss
+        and change output num"""
         self.output_pipeline = nn.Sequential(
             nn.Flatten(start_dim=0),
         )
@@ -177,12 +212,14 @@ class AMPSCZFinetuningTask(FinetuningTask):
 
 
 class PretrainingTask(lightning.LightningModule):
+    """Pretraining Task in lightning"""
+
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
-    label: list[float|int] = []
-    prediction: list[float|int] = []
-    
+    label: list[float | int] = []
+    prediction: list[float | int] = []
+
     def __init__(
         self,
         model_class: str,
@@ -218,7 +255,7 @@ class PretrainingTask(lightning.LightningModule):
         raw_output = self.model(x)
         return self.output_pipeline(raw_output)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, _):
         volumes: MetaTensor = batch["data"]
         labels = batch["label"]
 
@@ -235,7 +272,7 @@ class PretrainingTask(lightning.LightningModule):
 
         return label_loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.forward(volume)
@@ -261,7 +298,7 @@ class PretrainingTask(lightning.LightningModule):
         self.label = []
         self.prediction = []
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch, _):
         ## VAE TESTING PHASE##
         # INFERENCE
         volume = batch["data"]
