@@ -123,6 +123,8 @@ def create_job(
         nodes=1,
         cpus_per_task=n_cpus,
         gpus_per_node=n_gpus,
+        ntasks_per_node=n_gpus,
+        ntasks=n_gpus,
         mem=mem,
         time=time,
         account=account,
