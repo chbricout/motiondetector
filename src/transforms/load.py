@@ -1,11 +1,12 @@
-from typing import Dict, Hashable, Mapping, Union
+"""Module to load data during training"""
+
+from typing import Dict, Hashable, Mapping, Self, Union
 from monai.transforms import (
     Compose,
     LoadImaged,
     Orientationd,
     ScaleIntensityd,
     CenterSpatialCropd,
-    Transform,
     MapTransform,
 )
 from scipy.stats import norm
@@ -16,6 +17,14 @@ from src.config import BIN_RANGE, BIN_STEP, N_BINS
 
 
 class ToSoftLabel(MapTransform):
+    """
+    Utility transform to use soft labelling as define in :
+    Peng, H., Gong, W., Beckmann, C. F., Vedaldi, A., & Smith, S. M. (2021).
+    Accurate brain age prediction with lightweight deep neural networks.
+    Medical Image Analysis, 68, 101871.
+    https://doi.org/10.1016/j.media.2020.101871
+    """
+
     def __init__(
         self,
         keys,
@@ -26,7 +35,8 @@ class ToSoftLabel(MapTransform):
         require_grad=False,
     ):
         """
-        adapted from https://github.com/ha-ha-ha-han/UKBiobank_deep_pretrain/blob/master/dp_model/dp_utils.py
+        Adapted from :
+        https://github.com/ha-ha-ha-han/UKBiobank_deep_pretrain/blob/master/dp_model/dp_utils.py
 
         v,bin_centers = number2vector(x,bin_range,bin_step,sigma)
         bin_range: (start, end), size-2 tuple
@@ -67,11 +77,37 @@ class ToSoftLabel(MapTransform):
             else:
                 d[backup] = d[key]
 
-            d[key] = self.valueToSoftlabel(d[key])
+            d[key] = self.value_to_softlabel(d[key])
 
         return d
 
-    def valueToSoftlabel(self, x):
+    def _get_probs(self, x: torch.Tensor) -> torch.Tensor:
+        """Utility function to retrieve probability vector from input
+        If sum of every element is more than 1, we consider that the input
+        vector need a log_softmax
+
+        Args:
+            x (torch.Tensor): Input vector either :
+              - raw output
+              - log_softmax processed output
+
+        Returns:
+            torch.Tensor: _description_
+        """
+        if torch.sum(x) > 1.0:
+            x = torch.nn.functional.log_softmax(x.squeeze())
+
+        return torch.exp(x)
+
+    def value_to_softlabel(self, x: torch.Tensor | np.ndarray) -> torch.Tensor | np.ndarray:
+        """Convert a vector of single values to a vector of soft label
+
+        Args:
+            x (torch.Tensor | np.array): Vector of label as Tensor or array
+
+        Returns:
+            torch.Tensor |np.array: Vector of softlabel in the input type
+        """
         if torch.is_tensor(x):
             was_tensor = True
             x = x.squeeze().numpy()
@@ -108,19 +144,30 @@ class ToSoftLabel(MapTransform):
 
             return v if not was_tensor else torch.tensor(v)
 
-    def get_probs(self, x):
-        if torch.sum(x) > 1.0:
-            x = torch.nn.functional.log_softmax(x.squeeze())
+    def soft_to_hardlabel(self, x: torch.Tensor) -> torch.Tensor:
+        """Convert soft label to hard label
 
-        return torch.exp(x)
+        Args:
+            x (torch.Tensor): Vector of soft label or single soft label
 
-    def softLabelToHardLabel(self, x):
-        pred = self.get_probs(x) @ self.bin_centers
+        Returns:
+            torch.Tensor: Vector or single hard label
+        """
+        pred = self._get_probs(x) @ self.bin_centers
 
         return pred
 
-    def softLabelToMeanStd(self, x):
-        prob = self.get_probs(x)
+    def soft_label_to_mean_std(self, x: torch.Tensor) -> tuple[np.ndarray, np.ndarray]:
+        """Convert soft label to a list of weighted mean and standard deviation
+        of the soft label distribution
+
+        Args:
+            x (torch.Tensor): Vector of soft label or single soft label
+
+        Returns:
+            tuple[np.array, np.array]: Mean vector, standard deviation vector
+        """
+        prob = self._get_probs(x)
         if torch.is_tensor(prob):
             prob = prob.numpy()
 
@@ -138,7 +185,12 @@ class ToSoftLabel(MapTransform):
         return mean, np.sqrt(var)
 
     @staticmethod
-    def baseConfig():
+    def base_config() -> Self:
+        """Create an instance with basic configuration (see config.py)
+
+        Returns:
+            Self: Instance with basic config
+        """
         return ToSoftLabel(
             keys="label",
             backup_keys="motion_mm",
@@ -148,6 +200,8 @@ class ToSoftLabel(MapTransform):
 
 
 class LoadSynth(Compose):
+    """Transform to load synthetic motion data and create soft labels"""
+
     def __init__(self, num_bins=N_BINS, bin_range=BIN_RANGE):
         bin_step = (bin_range[1] - bin_range[0]) / num_bins
         self.soft_label = ToSoftLabel(
@@ -165,6 +219,8 @@ class LoadSynth(Compose):
 
 
 class FinetuneTransform(Compose):
+    """Transform to load data in finetune process"""
+
     def __init__(self):
         super().__init__(
             [

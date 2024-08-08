@@ -1,66 +1,57 @@
-import comet_ml
-import torch
-import tempfile
-import ast
+"""Module defining comet utility functions"""
+
 import glob
+import comet_ml
+from src.config import COMET_API_KEY
 from src.network.utils import parse_model
 from src.training.lightning_logic import PretrainingTask
 
 
-def get_pretrain_task(model_name:str, run_num:int, project_name:str):
+def get_pretrain_task(
+    model_name: str, run_num: int, project_name: str, api_key: str = COMET_API_KEY
+) -> PretrainingTask:
+    """Retrieve pretrain task from comet, used for Finetuning
+
+    Args:
+        model_name (str): name of the model to download
+        run_num (int): specific run num to load
+        project_name (str): name of the comet project
+
+    Returns:
+        PretrainingTask: loaded pretrained task
+    """
     api = comet_ml.api.API(
-        api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
+        api_key=api_key,
     )
     pretrain_exp = api.get("mrart", project_name, f"pretraining-{model_name}-{run_num}")
     model_class = parse_model(model_name)
 
-    output_path=f"/home/cbricout/scratch/{project_name}-{run_num}/{model_class.__name__}"
+    output_path = (
+        f"/home/cbricout/scratch/{project_name}-{run_num}/{model_class.__name__}"
+    )
     pretrain_exp.download_model(
         model_class.__name__,
         output_path=output_path,
     )
     file_path = glob.glob(f"{output_path}/*.ckpt")[0]
-    pretrained = PretrainingTask.load_from_checkpoint(
-        file_path
-    )
+    pretrained = PretrainingTask.load_from_checkpoint(checkpoint_path=file_path)
     return pretrained
 
-def get_model_from_exp(exp: comet_ml.ExistingExperiment, project_name):
-    model_name = exp.get_parameters_summary("model")["valueCurrent"]
-    im_shape = ast.literal_eval(exp.get_parameters_summary("im_shape")["valueCurrent"])
-    output_class = int(exp.get_parameters_summary("output_class")["valueCurrent"])
 
-    model_class = parse_model(model_name)
-    tempdir = tempfile.TemporaryDirectory()
-    net = model_class(
-        im_shape, run_name=tempdir.name, output_class=output_class, pretrain=True
-    )
+def get_experiment_key(
+    workspace_name: str, project_name: str, run_name: str, api_key: str = COMET_API_KEY
+) -> str | None:
+    """Find experiment key for a run, if it exists
 
-    if len(exp.get_parameters_summary("run_num")) > 0:
-        run_num = exp.get_parameters_summary("run_num")["valueCurrent"]
-        exp.download_model(
-            model_name,
-            output_path=f"/home/cbricout/scratch/{project_name}-{run_num}/{model_name}",
-        )
-        net.load_state_dict(
-            torch.load(
-                f"/home/cbricout/scratch/{project_name}-{run_num}/{model_name}/model-data/comet-torch-model.pth"
-            )
-        )
-    else:
-        exp.download_model(
-            model_name,
-            output_path=f"/home/cbricout/scratch/{project_name}/{model_name}",
-        )
-        net.load_state_dict(
-            torch.load(
-                f"/home/cbricout/scratch/{project_name}/{model_name}/model-data/comet-torch-model.pth"
-            )
-        )
-    return net
+    Args:
+        api_key (str): Comet API key
+        workspace_name (str): Comet workspace to use
+        project_name (str): Comet project to use
+        run_name (str): specific experiment to search
 
-
-def get_experiment_key(api_key, workspace_name, project_name, run_name):
+    Returns:
+        str|None: experiment key, None if not existing
+    """
     api = comet_ml.api.API(
         api_key=api_key,
     )

@@ -1,21 +1,27 @@
-import sys
+"""Module to use Monte Carlo Dropout on our models"""
 
-from src.config import IM_SHAPE
-
-sys.path.append(".")
 import torch
 import pandas as pd
 import numpy as np
-import comet_ml
-from monai.data.dataloader import DataLoader
+from torch.utils.data import DataLoader
+from comet_ml import ExistingExperiment, APIExperiment
 from tqdm import tqdm
-from src.dataset.mrart.mrart_dataset import ValMrArt
+from lightning import LightningModule
 from src.network.archi import Model
-from src.network.utils import parse_model
-from src.transforms.load import FinetuneTransform
 
 
-def bincount2d(arr, bins=None):
+def bincount2d(arr: np.ndarray, bins: int | None = None) -> np.ndarray:
+    """Count number of occurence of each bin / class in a list
+    of prediction for the same volume
+
+    Args:
+        arr (np.ndarray): two dimensional array (N_data_point, N_predictions)
+         containing multiple list of predictions (one by data point)
+        bins (int | None, optional): Number of bins / classes. Defaults to None.
+
+    Returns:
+        np.ndarray: Count of occurence for each bins (N_data_point, N_bins)
+    """
     if bins is None:
         bins = np.max(arr) + 1
     count = np.zeros(shape=[len(arr), bins], dtype=np.int64)
@@ -26,11 +32,29 @@ def bincount2d(arr, bins=None):
 
 
 def evaluate_mcdropout(
-    model: Model, dataloader, experiment, label="label", n_samples=100
-):
+    model: Model,
+    dataloader: DataLoader,
+    experiment: ExistingExperiment | APIExperiment | None = None,
+    label: str = "label",
+    n_samples: int = 100,
+) -> pd.DataFrame:
+    """Evaluate Monte Carlo Dropout bin count for finetune models
+
+    Args:
+        model (Model): Trained model
+        dataloader (DataLoader): Dataloader to use
+        experiment (ExistingExperiment | APIExperiment | None , optional):
+         Comet experiment to log on. Defaults to None.
+        label (str, optional): label key in dataloader. Defaults to "label".
+        n_samples (int, optional): number of prediction for MC Dropout.
+          Defaults to 100.
+
+    Returns:
+        pd.DataFrame: Dataframe with full results (logged on comet if experiment)
+    """
     model.mc_dropout()
     res = []
-    labels : list[int] = []
+    labels: list[int] = []
     with torch.no_grad():
         for _ in tqdm(range(n_samples)):
             sample_pred = []
@@ -52,14 +76,32 @@ def evaluate_mcdropout(
     full = pd.DataFrame(full_np.T, columns=["mean", "std", "labels"])
     full["count"] = count.tolist()
 
-    if experiment != None:
+    if experiment is not None:
         experiment.log_table("mcdropout-res.csv", full)
 
     return full
 
+
 def pretrain_mcdropout(
-    pl_module, dataloader, experiment, label="label", n_samples=100
-):
+    pl_module: LightningModule,
+    dataloader: DataLoader,
+    experiment: ExistingExperiment | APIExperiment | None = None,
+    label: str = "label",
+    n_samples: int = 100,
+) -> pd.DataFrame:
+    """Evaluate Monte Carlo Dropout for pretrain models
+
+    Args:
+        pl_module (LightningModule): Pretrained model
+        dataloader (DataLoader): Dataloader to use
+        experiment (ExistingExperiment | APIExperiment | None, optional):
+            Comet experiment to log on. Defaults to None.
+        label (str, optional): label key in dataloader. Defaults to "label".
+        n_samples (int, optional): number of prediction for MC Dropout. Defaults to 100.
+
+    Returns:
+        pd.DataFrame: Dataframe with full results (logged on comet if experiment)
+    """
     pl_module.model.mc_dropout()
     res: list[torch.Tensor] = []
     labels: list[float | int] = []
@@ -82,82 +124,7 @@ def pretrain_mcdropout(
     full_np = np.array([mean.tolist(), std.tolist(), labels])
     full = pd.DataFrame(full_np.T, columns=["mean", "std", "labels"])
 
-    if experiment != None:
+    if experiment is not None:
         experiment.log_table("mcdropout-res.csv", full)
 
     return full
-
-if __name__ == "__main__":
-    PROJECT_NAME = "estimate-motion"
-    DATASET = ValMrArt
-    NUM_OUT = 3
-    NUM_COUNT = 3
-    EXP_TO_TRY = [
-        "Conv5_FC3-4",
-        "Conv5_FC3-2",
-        "Conv5_FC3-1",
-        "SFCN-1",
-        "ViT-5",
-        "ViT-4",
-        "SFCN-2",
-        "ViT-1",
-        "Conv5_FC3-3",
-        "Conv5_FC3-5",
-        "SFCN-3",
-        "ViT-3",
-        "ViT-2",
-        "SFCN-5",
-        "SFCN-4",
-        "SERes-3",
-        "SERes-1",
-        "SERes-5",
-        "SERes-2",
-        "SERes-4",
-    ]
-    api = comet_ml.api.API(
-        api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
-    )
-    load_tsf = FinetuneTransform()
-
-    ds = DATASET.narval(load_tsf)
-    val_loader = DataLoader(
-        ds,
-        batch_size=20,
-        pin_memory=True,
-    )
-
-    for exp_name in tqdm(EXP_TO_TRY, desc="Processing experiments"):
-        exp: comet_ml.APIExperiment = api.get("mrart", PROJECT_NAME, exp_name)
-
-        model_name = exp.get_parameters_summary("model")["valueCurrent"]
-        model_class = parse_model(model_name)
-        net = model_class(
-            IM_SHAPE,
-            num_classes=NUM_OUT,
-        )
-
-        if len(exp.get_parameters_summary("run_num")) > 0:
-            run_num = exp.get_parameters_summary("run_num")["valueCurrent"]
-            exp.download_model(
-                model_name,
-                output_path=f"/home/cbricout/scratch/{PROJECT_NAME}-{run_num}/{model_name}",
-            )
-            net.load_state_dict(
-                torch.load(
-                    f"/home/cbricout/scratch/{PROJECT_NAME}-{run_num}/{model_name}/model-data/comet-torch-model.pth"
-                )
-            )
-        else:
-            exp.download_model(
-                model_name,
-                output_path=f"/home/cbricout/scratch/{PROJECT_NAME}/{model_name}",
-            )
-            net.load_state_dict(
-                torch.load(
-                    f"/home/cbricout/scratch/{PROJECT_NAME}/{model_name}/model-data/comet-torch-model.pth"
-                )
-            )
-        net = net.cuda()
-
-        print("processing : ", exp.get_name())
-        evaluate_mcdropout(net, val_loader, exp)
