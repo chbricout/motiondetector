@@ -2,6 +2,7 @@
 Module to launch different standard command through slurm jobs
 """
 
+import logging
 import sys
 import re
 from collections.abc import Sequence
@@ -20,6 +21,7 @@ def setup_python(job: Slurm):
     job.add_cmd("module load python cuda httpproxy")
     job.add_cmd("source ~/bowl/bin/activate")
     job.add_cmd('echo "python is setup"')
+    # job.add_cmd("export NCCL_DEBUG=INFO")
 
 
 def get_full_cmd() -> str:
@@ -98,7 +100,7 @@ def create_job(
     n_cpus: int,
     n_gpus: int,
     account=DEFAULT_SLURM_ACCOUNT,
-    mem="200G",
+    mem="300G",
     time="24:00:00",
 ) -> Slurm:
     """Generate a basic job with requeu and python setup
@@ -124,7 +126,6 @@ def create_job(
         cpus_per_task=n_cpus,
         gpus_per_node=n_gpus,
         ntasks_per_node=n_gpus,
-        ntasks=n_gpus,
         mem=mem,
         time=time,
         account=account,
@@ -156,7 +157,7 @@ def submit_pretrain(
         get_name("pretrain", model, array),
         array,
         get_output("pretrain", model, array),
-        n_cpus=20,
+        n_cpus=10,
         n_gpus=2,
     )
     if cmd is None:
@@ -165,7 +166,8 @@ def submit_pretrain(
         if not "--run_num" in cmd and array is not None:
             cmd += " --run_num $SLURM_ARRAY_TASK_ID"
 
-    job_id = job.sbatch(f"srun python {cmd}")
+    job_id = job.sbatch(f"srun python3 {cmd}")
+    print(job)
 
     if send_finetune:
         finetune_cmd = get_finetune_cmd_from_pretrain(cmd)

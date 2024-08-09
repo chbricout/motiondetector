@@ -244,7 +244,7 @@ class PretrainingTask(lightning.LightningModule):
 
         self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
         self.label_loss = KLDivLoss()
-        self.soft_label_util = ToSoftLabel.base_config()
+        self.soft_label_util :ToSoftLabel = ToSoftLabel.base_config()
 
         self.use_cutout = use_cutout
         if self.use_cutout:
@@ -283,7 +283,7 @@ class PretrainingTask(lightning.LightningModule):
         lab = batch["motion_mm"].detach().cpu()
 
         self.label += lab.tolist()
-        self.prediction += self.soft_label_util.softLabelToHardLabel(
+        self.prediction += self.soft_label_util.soft_to_hardlabel(
             prediction.detach()
         ).tolist()
         return label_loss
@@ -303,7 +303,7 @@ class PretrainingTask(lightning.LightningModule):
         # INFERENCE
         volume = batch["data"]
         prediction = self.forward(volume)
-        prediction = self.soft_label_util.softLabelToHardLabel(prediction)
+        prediction = self.soft_label_util.soft_to_hardlabel(prediction)
 
         return prediction
 

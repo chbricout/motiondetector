@@ -40,8 +40,8 @@ def get_run_dir(project_name: str, run_name: str, narval: bool) -> str:
         root_dir = f"/home/at70870/local_scratch/{project_name}"
 
     if not os.path.exists(root_dir):
-        os.mkdir(root_dir)
+        os.makedirs(root_dir, exist_ok=True)
     run_dir = f"{root_dir}/{run_name}"
     if not os.path.exists(run_dir):
-        os.mkdir(run_dir)
+        os.makedirs(run_dir, exist_ok=True)
     return run_dir

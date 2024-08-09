@@ -78,8 +78,8 @@ class PretrainingDataModule(BaseDataModule):
         return DataLoader(
             self.train_ds,
             batch_size=self.batch_size,
-            num_workers=20,
-            prefetch_factor=4,
+            num_workers=12,
+            prefetch_factor=6,
             shuffle=True,
             pin_memory=True,
             drop_last=True,
@@ -90,6 +90,6 @@ class PretrainingDataModule(BaseDataModule):
             self.val_ds,
             batch_size=self.batch_size,
             pin_memory=True,
-            num_workers=10,
-            prefetch_factor=2,
+            num_workers=8,
+            prefetch_factor=4,
         )
