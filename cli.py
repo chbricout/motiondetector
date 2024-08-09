@@ -109,7 +109,7 @@ def pretrain(
     seed,
     narval,
     slurm,
-    cutout
+    cutout,
 ):
     if slurm:
         submit_pretrain(
@@ -127,7 +127,7 @@ def pretrain(
             run_num=run_num,
             seed=seed,
             narval=narval,
-            use_cutout=cutout
+            use_cutout=cutout,
         )
 
 
@@ -184,7 +184,7 @@ def train(
     run_num,
     seed,
     narval,
-    slurm
+    slurm,
 ):
     if slurm:
         submit_scratch(
@@ -244,28 +244,41 @@ def launch_exp():
 
 run_confs = [
     {"name": "VIT", "batch_size": 12},
-    {"name": "SFCN", "batch_size": 28},
-    {"name": "CNN", "batch_size": 28},
-    {"name": "CONV5_FC3", "batch_size": 28},
-    {"name": "RES", "batch_size": 28},
-    {"name": "SERES", "batch_size": 28},
+    {"name": "SFCN", "batch_size": 30},
+    {"name": "CNN", "batch_size": 30},
+    {"name": "CONV5_FC3", "batch_size": 30},
+    {"name": "RES", "batch_size": 30},
+    {"name": "SERES", "batch_size": 30},
 ]
 
 
 @launch_exp.command()
 @cutout
-def pretrainer(cutout: bool):
+@click.option(
+    "-t",
+    "--test",
+    help="Flag to run one run for each conf (no array job)",
+    is_flag=True,
+    type=bool,
+)
+def pretrainer(cutout: bool, test: bool):
     for model in run_confs:
+
         cmd = f"cli.py pretrain -n  \
                 --batch_size {model['batch_size']}\
                 --model {model['name']}\
-                --learning_rate 2e-5\
-                --dropout_rate 0.8 "
+                --learning_rate 8e-5\
+                --dropout_rate 0.75 "
         if cutout:
             cmd += " --cutout"
+
+        array = range(1, 6)
+        if test:
+            array = 1
+
         submit_pretrain(
             model["name"],
-            range(1, 6),
+            array,
             cmd,
         )
 
@@ -284,15 +297,14 @@ def finetune():
         for dataset in ["MRART", "AMPSCZ"]:
             submit_finetune(
                 model["name"],
-                range(1,6),
+                range(1, 6),
                 f"cli.py finetune -n  \
                     --batch_size {model['batch_size']}\
                     --model {model['name']}\
                     --learning_rate 1e-5\
                     --dataset {dataset} ",
-                dataset=dataset
+                dataset=dataset,
             )
-
 
 
 if __name__ == "__main__":
