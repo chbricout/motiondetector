@@ -72,8 +72,8 @@ def launch_generate_data(new_dataset: str):
     load_tsf = Preprocess()
     synth_tsf = CreateSynthVolume(elastic_activate=True)
     crop_tsf = FinalCrop()
-    save_train = SaveElement("train")
-    save_val = SaveElement("val")
+    save_train = SaveElement(new_dataset,"train")
+    save_val = SaveElement(new_dataset,"val")
 
     val_ampscz_ds = PretrainValAMPSCZ.narval(load_tsf)
     val_hcpep_ds = ValHCPEP.narval(load_tsf)
@@ -83,9 +83,10 @@ def launch_generate_data(new_dataset: str):
     )
 
     lst_dict = []
-    for i in tqdm(range(20)):
+    for i in tqdm(range(60)):
         save_val.iteration = i
-        dataloader = DataLoader(synth_val_ds, batch_size=20, num_workers=20)
+        dataloader = DataLoader(synth_val_ds, batch_size=20, num_workers=30, prefetch_factor=15,
+)
         for element in tqdm(dataloader):
             records = [dict(zip(element, t)) for t in zip(*element.values())]
             for r in records:
@@ -108,9 +109,9 @@ def launch_generate_data(new_dataset: str):
         transform=Compose([synth_tsf, crop_tsf, save_train]),
     )
     lst_dict = []
-    for i in tqdm(range(20)):
+    for i in tqdm(range(60)):
         save_train.iteration = i
-        dataloader = DataLoader(synth_train_ds, batch_size=20, num_workers=20)
+        dataloader = DataLoader(synth_train_ds, batch_size=20, num_workers=30, prefetch_factor=15,)
         for element in tqdm(dataloader):
             records = [dict(zip(element, t)) for t in zip(*element.values())]
             for r in records:

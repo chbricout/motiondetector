@@ -121,11 +121,9 @@ def create_job(
     """
     job = Slurm(
         job_name=name,
-        array=array,
         nodes=1,
         cpus_per_task=n_cpus,
-        gpus_per_node=n_gpus,
-        ntasks_per_node=n_gpus,
+        ntasks_per_node=max(n_gpus, 1),
         mem=mem,
         time=time,
         account=account,
@@ -133,6 +131,10 @@ def create_job(
         requeue=True,
         output=output,
     )
+    if n_gpus > 0:
+        job.add_arguments(gpus_per_node=n_gpus)
+    if not array is None:
+        job.add_arguments(array=array)
     setup_python(job)
     return job
 
@@ -251,7 +253,7 @@ def submit_generate_ds():
     job = create_job(
         "generate-dataset",
         None,
-        f"generate-dataset.{Slurm.JOB_ARRAY_MASTER_ID}.out",
+        f"./logs/generate-dataset.{Slurm.JOB_ARRAY_MASTER_ID}.out",
         n_cpus=40,
         n_gpus=0,
         mem="100G",

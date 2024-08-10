@@ -112,7 +112,6 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
             while (
                 motion_mm > self.goal_motion + self.tolerance
                 or motion_mm < self.goal_motion - self.tolerance
-                or retry > 10_000
             ):
                 params = self.get_params(
                     self.degrees_range,
@@ -129,7 +128,6 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
                 motion_mm = get_motion_dist(affine_matrices)
                 retry += 1
 
-            assert retry > 10_000, "goal motion not reached before 10 000 retries"
 
             arguments["times"][name] = times_params
             arguments["degrees"][name] = degrees_params
@@ -207,7 +205,7 @@ class CreateSynthVolume(RandomizableTransform):
         self.apply_flip = self.R.rand() > 0.5
         self.apply_corrupt = self.R.rand() > 0.3
         if self.apply_motion:
-            self.goal_motion = self.R.uniform(0.1, 2)
+            self.goal_motion = self.R.uniform(0.05, 2)
 
             self.motion_tsf = CustomMotion(self.goal_motion, tolerance=0.01)
         else:
@@ -242,7 +240,7 @@ class CreateSynthVolume(RandomizableTransform):
             affine_matrice = get_matrices(sub.get_composed_history()[0])
             motion_mm = get_motion_dist(affine_matrice)
         else:
-            motion_mm = self.R.uniform(0, 0.15)
+            motion_mm = self.R.uniform(0, 0.05)
 
         img = sub["data"].data
 

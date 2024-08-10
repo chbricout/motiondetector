@@ -94,7 +94,7 @@ class ToSoftLabel(MapTransform):
         Returns:
             torch.Tensor: _description_
         """
-        if torch.sum(x) > 1.0:
+        if torch.sum(x) > 1.01:
             x = torch.nn.functional.log_softmax(x.squeeze())
 
         return torch.exp(x)
