@@ -26,3 +26,6 @@ SSIM_BIN_STEP = (SSIM_BIN_RANGE[1] - SSIM_BIN_RANGE[0]) / SSIM_N_BINS
 
 ## COMET
 COMET_API_KEY = os.environ.get("COMET_API_KEY")
+
+## GENERATE DATASET
+GENERATE_ROOT_DIR = os.environ.get("GENERATE_ROOT_DIR", "/home/cbricout/scratch/")

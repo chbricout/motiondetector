@@ -59,6 +59,20 @@ class BaseDataset(abc.ABC):
             Self: Dataset on narval cluster
         """
         return cls(transform, "/home/cbricout/scratch/")
+    
+    @classmethod
+    def from_arg(cls, narval:bool, transform: Callable | None = None) -> Self:
+        """Return corresponding dataset (Narval or Neuro-iX)
+
+        Args:
+            narval (bool): flag to run on narval
+            transform (Callable | None, optional): Transform to apply.
+              Defaults to None.
+
+        Returns:
+            Self: Dataset
+        """      
+        return cls.narval(transform) if narval else cls.lab(transform)  
 
 
 class BaseDataModule(abc.ABC, L.LightningDataModule):

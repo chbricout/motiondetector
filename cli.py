@@ -225,18 +225,19 @@ def train(
 
 @cli.command()
 @click.option(
-    "-n",
+    "-d",
     "--new_dataset",
     help="New dataset name",
     default="pretraining-motion",
     type=str,
 )
 @slurm
-def generate_data(new_dataset, slurm: bool):
+@narval
+def generate_data(new_dataset, slurm: bool, narval:bool):
     if slurm:
         submit_generate_ds()
     else:
-        launch_generate_data(new_dataset)
+        launch_generate_data(new_dataset, narval)
 
 
 @cli.command()
