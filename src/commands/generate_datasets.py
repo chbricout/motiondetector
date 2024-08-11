@@ -38,6 +38,8 @@ class SaveElement(Transform):
         return {
             "data": element["data"],
             "motion_mm": element["motion_mm"],
+            "ssim_loss": element["ssim_loss"],
+            "motion_binary": element["motion_binary"],
             "sub_id": str(element["sub_id"]),
             "ses_id": str(element["ses_id"]),
         }
@@ -83,7 +85,7 @@ def launch_generate_data(new_dataset: str):
     )
 
     lst_dict = []
-    for i in tqdm(range(60)):
+    for i in tqdm(range(20)):
         save_val.iteration = i
         dataloader = DataLoader(synth_val_ds, batch_size=20, num_workers=30, prefetch_factor=15,
 )
@@ -92,6 +94,8 @@ def launch_generate_data(new_dataset: str):
             for r in records:
                 new_dict = {
                     "motion_mm": r["motion_mm"].item(),
+                    "ssim_loss": r["ssim_loss"].item(),
+                    "motion_binary": r["motion_binary"],
                     "sub_id": r["sub_id"],
                     "ses_id": r["ses_id"],
                 }
@@ -109,7 +113,7 @@ def launch_generate_data(new_dataset: str):
         transform=Compose([synth_tsf, crop_tsf, save_train]),
     )
     lst_dict = []
-    for i in tqdm(range(60)):
+    for i in tqdm(range(20)):
         save_train.iteration = i
         dataloader = DataLoader(synth_train_ds, batch_size=20, num_workers=30, prefetch_factor=15,)
         for element in tqdm(dataloader):
@@ -117,6 +121,8 @@ def launch_generate_data(new_dataset: str):
             for r in records:
                 new_dict = {
                     "motion_mm": r["motion_mm"].item(),
+                    "ssim_loss": r["ssim_loss"].item(),
+                    "motion_binary": r["motion_binary"],
                     "sub_id": r["sub_id"],
                     "ses_id": r["ses_id"],
                 }

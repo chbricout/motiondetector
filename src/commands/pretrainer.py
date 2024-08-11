@@ -16,7 +16,12 @@ from lightning.pytorch.callbacks import (
 from src.utils.comet import get_experiment_key
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
 from src.training.callback import PretrainCallback
-from src.training.lightning_logic import PretrainingTask
+from src.training.lightning_logic import (
+    BinaryPretrainingTask,
+    MotionPretrainingTask,
+    PretrainingTask,
+    SSIMPretrainingTask,
+)
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.utils.log import get_run_dir
 
@@ -31,6 +36,7 @@ def launch_pretrain(
     seed: int | None,
     narval: bool,
     use_cutout: bool,
+    task: str,
 ):
     """Launch the pretraining process
 
@@ -44,29 +50,37 @@ def launch_pretrain(
         seed (int | None): random seed to run on
         narval (bool): flag to run on narval computers
         use_cutout(bool): flag to use cutout in model training
+        task(str): Pretraining task to use
     """
 
-    run_name = f"pretraining-{model}-{run_num}"
+    run_name = f"pretraining-{task}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name, narval)
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=COMET_API_KEY,
         project_name=PROJECT_NAME,
         experiment_name=run_name,
-        experiment_key=get_experiment_key(
-            "mrart", PROJECT_NAME, run_name
-        ),
+        experiment_key=get_experiment_key("mrart", PROJECT_NAME, run_name),
     )
 
     if seed is None:
         seed = random.randint(1, 10000)
     torch.manual_seed(seed)
     comet_logger.log_hyperparams(
-        {"seed": seed, "model": model, "run_num": run_num, "use_cutout": use_cutout}
+        {"seed": seed, "model": model, "run_num": run_num, "use_cutout": use_cutout, "task":task}
     )
     comet_logger.experiment.log_code(file_name="src/commands/pretrainer.py")
     logging.info("Run dir path is : %s", run_dir)
-    net = PretrainingTask(
+
+    task_class = PretrainingTask
+    if task == "MOTION":
+        task_class = MotionPretrainingTask
+    elif task == "SSIM":
+        task_class = SSIMPretrainingTask
+    elif task == "BINARY":
+        task_class = BinaryPretrainingTask
+
+    net = task_class(
         model_class=model,
         im_shape=IM_SHAPE,
         lr=learning_rate,
@@ -97,4 +111,4 @@ def launch_pretrain(
         ],
     )
 
-    trainer.fit(net, datamodule=PretrainingDataModule(narval, batch_size))
+    trainer.fit(net, datamodule=PretrainingDataModule(narval, batch_size, task))

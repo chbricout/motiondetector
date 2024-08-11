@@ -20,6 +20,7 @@ from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ
 from src.dataset.mrart.mrart_dataset import ValMrArt
 from src.utils.mcdropout import evaluate_mcdropout, pretrain_mcdropout
 from src.transforms.load import FinetuneTransform, ToSoftLabel
+from src.dataset.pretraining.pretraining_dataset import parse_label_from_task
 
 
 def get_correlations(model: nn.Module, exp: comet_ml.BaseExperiment):
@@ -56,7 +57,7 @@ def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataF
         pd.DataFrame: results dataframe containing "mean", "std", "file" and "label
     """
     model = model.cuda().eval()
-    soft_label :ToSoftLabel= ToSoftLabel.base_config()
+    soft_label :ToSoftLabel= ToSoftLabel.motion_config()
     means = []
     stds = []
     labels = []
@@ -148,13 +149,14 @@ class PretrainCallback(ModelCheckpoint):
     """Callback for the Pretraining process.
     Inherits from ModelCheckpoint to access the best model"""
 
-    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule):
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule, task:str):
         """On fit function end, log best model checkpoint,
           evaluate mcdropout, plot correlations and clear the checkpoint directory
 
         Args:
-            trainer (Trainer): _description_
-            pl_module (LightningModule): _description_
+            trainer (Trainer):  Trainer used for the fit process
+            pl_module (LightningModule): Trained Lightning module
+            task (str): Pretraining task
         """
         logging.info("Logging pretrain model")
         comet_logger = pl_module.logger
@@ -169,7 +171,7 @@ class PretrainCallback(ModelCheckpoint):
 
         logging.info("Running dropout on pretrain")
         pretrain_mcdropout(
-            best_net, trainer.val_dataloaders, comet_logger.experiment, "motion_mm"
+            best_net, trainer.val_dataloaders, comet_logger.experiment, parse_label_from_task(task)
         )
 
         logging.info("Removing Checkpoints")

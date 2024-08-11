@@ -74,7 +74,7 @@ def launch_finetune(
     comet_logger.experiment.log_code(file_name="src/commands/finetune.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    pretrained = get_pretrain_task(model, run_num, PROJECT_NAME)
+    pretrained = get_pretrain_task(model, run_num, PROJECT_NAME, scratch=narval)
     net = task(pretrained_model=pretrained.model, im_shape=IM_SHAPE, lr=learning_rate)
 
     trainer = lightning.Trainer(

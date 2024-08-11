@@ -12,6 +12,8 @@ from src.commands.launch_slurm import (
 )
 from src.commands.mr_art_to_bids import launch_convert_mrart_to_bids
 from src.commands.pretrainer import launch_pretrain
+from src.utils.comet import export_torchscript
+from src import config
 
 max_epoch = click.option(
     "--max_epochs",
@@ -28,7 +30,7 @@ learning_rate = click.option(
 dropout_rate = click.option(
     "--dropout_rate",
     help="dropout rate",
-    default=0.2,
+    default=0.7,
     type=float,
 )
 batch_size = click.option(
@@ -40,14 +42,14 @@ batch_size = click.option(
 dataset = click.option(
     "--dataset",
     help="Dataset for finetuning mode : MRART or AMPSCZ",
-    default="MRART",
+    default=click.Choice(["MRART", "AMPSCZ"], case_sensitive=True),
     type=str,
 )
 model = click.option(
     "--model",
     help="Model architecture : CNN, RES, SFCN, CONV5_FC3, SERES, VIT",
     default="CNN",
-    type=str,
+    type=click.Choice(['CNN', 'RES', 'SFCN', 'CONV5_FC3', 'SERES', 'VIT'], case_sensitive=True),
 )
 run_num = click.option(
     "--run_num",
@@ -81,6 +83,13 @@ cutout = click.option(
     is_flag=True,
     type=bool,
 )
+project = click.option(
+    "--project",
+    help="Comet project to use",
+    default=config.PROJECT_NAME,
+    type=str,
+)
+
 
 
 @click.group()
@@ -99,6 +108,12 @@ def cli():
 @narval
 @slurm
 @cutout
+@click.option(
+    "--task",
+    help="Pretraining task : MOTION, SSIM, BINARY",
+    default="MOTION",
+    type=click.Choice(['MOTION', 'SSIM', 'BINARY'], case_sensitive=True),
+)
 def pretrain(
     max_epochs,
     learning_rate,
@@ -110,6 +125,7 @@ def pretrain(
     narval,
     slurm,
     cutout,
+    task:str
 ):
     if slurm:
         submit_pretrain(
@@ -128,6 +144,7 @@ def pretrain(
             seed=seed,
             narval=narval,
             use_cutout=cutout,
+            task=task
         )
 
 
@@ -237,6 +254,14 @@ def mrart_to_bids(input_path, output_path):
     launch_convert_mrart_to_bids(input_path, output_path)
 
 
+@cli.command()
+@model
+@run_num
+@project
+def compile_pretrain(model:str, run_num:int, project:str):
+    logging.basicConfig(level="INFO")
+    export_torchscript(model, run_num, project_name=project)
+
 @cli.group()
 def launch_exp():
     pass
@@ -267,8 +292,8 @@ def pretrainer(cutout: bool, test: bool):
         cmd = f"cli.py pretrain -n  \
                 --batch_size {model['batch_size']}\
                 --model {model['name']}\
-                --learning_rate 8e-5\
-                --dropout_rate 0.75 "
+                --learning_rate 2e-5\
+                --dropout_rate 0.7 "
         if cutout:
             cmd += " --cutout"
 

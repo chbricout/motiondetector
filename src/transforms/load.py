@@ -13,7 +13,7 @@ from scipy.stats import norm
 import numpy as np
 import torch
 
-from src.config import BIN_RANGE, BIN_STEP, N_BINS
+from src import config
 
 
 class ToSoftLabel(MapTransform):
@@ -99,7 +99,9 @@ class ToSoftLabel(MapTransform):
 
         return torch.exp(x)
 
-    def value_to_softlabel(self, x: torch.Tensor | np.ndarray) -> torch.Tensor | np.ndarray:
+    def value_to_softlabel(
+        self, x: torch.Tensor | np.ndarray
+    ) -> torch.Tensor | np.ndarray:
         """Convert a vector of single values to a vector of soft label
 
         Args:
@@ -185,7 +187,7 @@ class ToSoftLabel(MapTransform):
         return mean, np.sqrt(var)
 
     @staticmethod
-    def base_config() -> Self:
+    def motion_config() -> Self:
         """Create an instance with basic configuration (see config.py)
 
         Returns:
@@ -194,28 +196,53 @@ class ToSoftLabel(MapTransform):
         return ToSoftLabel(
             keys="label",
             backup_keys="motion_mm",
-            bin_range=BIN_RANGE,
-            bin_step=BIN_STEP,
+            bin_range=config.MOTION_BIN_RANGE,
+            bin_step=config.MOTION_BIN_STEP,
+        )
+
+    @staticmethod
+    def ssim_config() -> Self:
+        """Create an instance with basic configuration (see config.py)
+
+        Returns:
+            Self: Instance with basic config
+        """
+        return ToSoftLabel(
+            keys="label",
+            backup_keys="ssim_loss",
+            bin_range=config.SSIM_BIN_RANGE,
+            bin_step=config.SSIM_BIN_STEP,
         )
 
 
 class LoadSynth(Compose):
     """Transform to load synthetic motion data and create soft labels"""
 
-    def __init__(self, num_bins=N_BINS, bin_range=BIN_RANGE):
-        bin_step = (bin_range[1] - bin_range[0]) / num_bins
-        self.soft_label = ToSoftLabel(
-            keys="label",
-            backup_keys="motion_mm",
-            bin_range=bin_range,
-            bin_step=bin_step,
-        )
+    def __init__(self, soft_label: ToSoftLabel):
+        self.soft_label = soft_label
         self.tsf = [
             LoadImaged(keys="data", ensure_channel_first=True, image_only=True),
             Orientationd(keys="data", axcodes="RAS"),
             self.soft_label,
         ]
         super().__init__(self.tsf)
+
+    @staticmethod
+    def from_task(task: str) -> Self:
+        """Load synthetic data depending on task
+
+        Args:
+            task (str): Pretrain task
+
+        Returns:
+            Self: corresponding Loader
+        """
+        if task == "MOTION":
+            return LoadSynth(ToSoftLabel.motion_config())
+        elif task == "SSIM":
+            return LoadSynth(ToSoftLabel.ssim_config())
+        elif task == "BINARY":
+            return LoadSynth(torch.nn.Identity())
 
 
 class FinetuneTransform(Compose):

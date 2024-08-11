@@ -13,11 +13,12 @@ from torch import nn
 from monai.transforms import CutOut
 from monai.data.meta_tensor import MetaTensor
 from sklearn.metrics import balanced_accuracy_score, r2_score
-from src.config import N_BINS
+from src import config
 from src.training.callback import get_calibration_curve
 from src.transforms.load import ToSoftLabel
 from src.network.archi import Model
 from src.network.utils import init_weights, parse_model, KLDivLoss
+from src.dataset.pretraining.pretraining_dataset import parse_label_from_task
 
 
 class BaseTrain(abc.ABC, lightning.LightningModule):
@@ -215,10 +216,12 @@ class PretrainingTask(lightning.LightningModule):
     """Pretraining Task in lightning"""
 
     model: Model
-    output_pipeline: nn.Module
+    output_pipeline: nn.Module = nn.Identity()
     label_loss: nn.Module
     label: list[float | int] = []
     prediction: list[float | int] = []
+    num_classes: int
+    label_key:str
 
     def __init__(
         self,
@@ -228,10 +231,11 @@ class PretrainingTask(lightning.LightningModule):
         dropout_rate=0.5,
         batch_size=14,
         use_cutout=False,
+        num_classes:int=1
     ):
         super().__init__()
+        self.num_classes=num_classes
         self.im_shape = im_shape
-        self.num_classes = N_BINS
         self.dropout_rate = dropout_rate
         self.batch_size = batch_size
         self.lr = lr
@@ -242,14 +246,21 @@ class PretrainingTask(lightning.LightningModule):
         if model_class != "VIT":
             self.model.apply(init_weights)
 
-        self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
-        self.label_loss = KLDivLoss()
-        self.soft_label_util :ToSoftLabel = ToSoftLabel.base_config()
-
         self.use_cutout = use_cutout
         if self.use_cutout:
             self.cutout = CutOut(self.batch_size)
         self.save_hyperparameters()
+
+    def post_output(self, out: torch.Tensor) -> torch.Tensor:
+        """Function to call after prediction to get final value
+
+        Args:
+            out (torch.Tensor): raw output from model
+
+        Returns:
+            torch.Tensor: postprocessed output
+        """
+        return out
 
     def forward(self, x: torch.Tensor):
         raw_output = self.model(x)
@@ -280,12 +291,10 @@ class PretrainingTask(lightning.LightningModule):
         label_loss = self.label_loss(prediction, label)
         self.log("val_loss", label_loss.item(), sync_dist=True)
 
-        lab = batch["motion_mm"].detach().cpu()
+        lab = batch[self.label_key].detach().cpu()
 
         self.label += lab.tolist()
-        self.prediction += self.soft_label_util.soft_to_hardlabel(
-            prediction.detach()
-        ).tolist()
+        self.prediction += self.post_output(prediction.detach()).tolist()
         return label_loss
 
     def on_validation_epoch_end(self) -> None:
@@ -303,7 +312,7 @@ class PretrainingTask(lightning.LightningModule):
         # INFERENCE
         volume = batch["data"]
         prediction = self.forward(volume)
-        prediction = self.soft_label_util.soft_to_hardlabel(prediction)
+        prediction = self.post_output(prediction)
 
         return prediction
 
@@ -319,3 +328,101 @@ class PretrainingTask(lightning.LightningModule):
                 "monitor": "val_loss",
             }
         ]
+
+
+class MotionPretrainingTask(PretrainingTask):
+    """
+    Pretraining Task for Motion mm metric
+    """
+
+    def __init__(
+        self,
+        model_class: str,
+        im_shape,
+        lr=1e-5,
+        dropout_rate=0.5,
+        batch_size=14,
+        use_cutout=False,
+    ):
+        super().__init__(
+            model_class=model_class,
+            im_shape=im_shape,
+            lr=lr,
+            dropout_rate=dropout_rate,
+            batch_size=batch_size,
+            use_cutout=use_cutout,
+            num_classes=config.MOTION_N_BINS
+        )
+
+        self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
+        self.label_loss = KLDivLoss()
+        self.soft_label_util: ToSoftLabel = ToSoftLabel.motion_config()
+        self.label_key=parse_label_from_task("MOTION")
+        
+    def post_output(self, out: torch.Tensor) -> torch.Tensor:
+        return self.soft_label_util.soft_to_hardlabel(out)
+
+
+class SSIMPretrainingTask(PretrainingTask):
+    """
+    Pretraining Task for SSIM metric
+    """
+
+    def __init__(
+        self,
+        model_class: str,
+        im_shape,
+        lr=1e-5,
+        dropout_rate=0.5,
+        batch_size=14,
+        use_cutout=False,
+    ):
+        super().__init__(
+            model_class=model_class,
+            im_shape=im_shape,
+            lr=lr,
+            dropout_rate=dropout_rate,
+            batch_size=batch_size,
+            use_cutout=use_cutout,
+            num_classes=config.SSIM_N_BINS
+        )
+        self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
+        self.label_loss = KLDivLoss()
+        self.soft_label_util: ToSoftLabel = ToSoftLabel.ssim_config()
+        self.label_key=parse_label_from_task("SSIM")
+        
+
+    def post_output(self, out: torch.Tensor) -> torch.Tensor:
+        return self.soft_label_util.soft_to_hardlabel(out)
+
+
+class BinaryPretrainingTask(PretrainingTask):
+    """
+    Pretraining Task for Binary motion prediction task
+    """
+
+    def __init__(
+        self,
+        model_class: str,
+        im_shape,
+        lr=1e-5,
+        dropout_rate=0.5,
+        batch_size=14,
+        use_cutout=False,
+    ):
+        super().__init__(
+            model_class=model_class,
+            im_shape=im_shape,
+            lr=lr,
+            dropout_rate=dropout_rate,
+            batch_size=batch_size,
+            use_cutout=use_cutout,
+            num_classes=1
+        )
+        self.output_pipeline = nn.Sequential(nn.Sigmoid())
+        self.label_loss = nn.BCELoss()
+        self.label_key=parse_label_from_task("BINARY")
+        
+
+    def post_output(self, out: torch.Tensor) -> torch.Tensor:
+        return out.round().int()

@@ -11,6 +11,7 @@ from monai.transforms import (
     CenterSpatialCropd,
     RandomizableTransform,
 )
+from monai.losses.ssim_loss import SSIMLoss
 from torchio.transforms import (
     RandomElasticDeformation,
     RandomGamma,
@@ -86,7 +87,7 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
         """
         self.transform_degrees = self.R.uniform(0, np.min((goal_motion / 3, 1)))
         self.goal_motion = goal_motion
-        self.num_transforms = self.R.randint(1, 8)
+        self.num_transforms = self.R.randint(4, 8)
         self.tolerance = tolerance
 
         super().__init__(
@@ -205,7 +206,7 @@ class CreateSynthVolume(RandomizableTransform):
         self.apply_flip = self.R.rand() > 0.5
         self.apply_corrupt = self.R.rand() > 0.3
         if self.apply_motion:
-            self.goal_motion = self.R.uniform(0.05, 2)
+            self.goal_motion = self.R.uniform(0.05, 4)
 
             self.motion_tsf = CustomMotion(self.goal_motion, tolerance=0.01)
         else:
@@ -225,6 +226,7 @@ class CreateSynthVolume(RandomizableTransform):
         )
         self.flip = RandomFlip(0, flip_probability=1)
         self.goal_motion = 0
+        self.ssim = SSIMLoss(spatial_dims=3)
 
     def __call__(self, data):
         img = data["data"]
@@ -235,6 +237,7 @@ class CreateSynthVolume(RandomizableTransform):
             img = self.elastic_tsf(img)
         sub = Subject(data=tio.ScalarImage(tensor=img))
 
+        before_motion = img
         if self.apply_motion:
             sub = self.motion_tsf(sub)
             affine_matrice = get_matrices(sub.get_composed_history()[0])
@@ -247,9 +250,12 @@ class CreateSynthVolume(RandomizableTransform):
         if self.apply_corrupt:
             img = self.corrupt(img)
 
+        ssim_val = self.ssim(before_motion.unsqueeze(0), sub["data"].data.unsqueeze(0))
         return {
             "data": img,
             "motion_mm": motion_mm,
+            "ssim_loss":ssim_val,
+            "motion_binary":self.apply_motion,
             "sub_id": data["sub_id"],
             "ses_id": data["ses_id"],
         }
