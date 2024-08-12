@@ -72,13 +72,14 @@ def launch_pretrain(
     comet_logger.experiment.log_code(file_name="src/commands/pretrainer.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    task_class = PretrainingTask
+    task_class: PretrainingTask=None
     if task == "MOTION":
         task_class = MotionPretrainingTask
     elif task == "SSIM":
         task_class = SSIMPretrainingTask
     elif task == "BINARY":
         task_class = BinaryPretrainingTask
+    assert not task_class is None, "Error, task doesnt exists"
 
     net = task_class(
         model_class=model,
