@@ -57,7 +57,7 @@ def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataF
         pd.DataFrame: results dataframe containing "mean", "std", "file" and "label
     """
     model = model.cuda().eval()
-    soft_label :ToSoftLabel= ToSoftLabel.motion_config()
+    soft_label: ToSoftLabel = ToSoftLabel.motion_config()
     means = []
     stds = []
     labels = []
@@ -97,7 +97,7 @@ def get_calibration_curve(
     """
     fig = plt.figure(figsize=(6, 5))
     sb.scatterplot(x=label, y=prediction, hue=hue)
-    min_lab= min(label)
+    min_lab = min(label)
     max_lab = max(label)
     plt.plot([min_lab, max_lab], [min_lab, max_lab], "r")
     plt.xlabel("Correct Label")
@@ -151,7 +151,7 @@ class PretrainCallback(ModelCheckpoint):
     """Callback for the Pretraining process.
     Inherits from ModelCheckpoint to access the best model"""
 
-    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule, task:str):
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule, task: str):
         """On fit function end, log best model checkpoint,
           evaluate mcdropout, plot correlations and clear the checkpoint directory
 
@@ -173,7 +173,10 @@ class PretrainCallback(ModelCheckpoint):
 
         logging.info("Running dropout on pretrain")
         pretrain_mcdropout(
-            best_net, trainer.val_dataloaders, comet_logger.experiment, parse_label_from_task(task)
+            best_net,
+            trainer.val_dataloaders,
+            comet_logger.experiment,
+            parse_label_from_task(task),
         )
 
         logging.info("Removing Checkpoints")

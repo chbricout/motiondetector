@@ -1,6 +1,6 @@
-'''
+"""
 File to regroup important constant for the project
-'''
+"""
 
 import os
 from dotenv import load_dotenv
@@ -29,3 +29,6 @@ COMET_API_KEY = os.environ.get("COMET_API_KEY")
 
 ## GENERATE DATASET
 GENERATE_ROOT_DIR = os.environ.get("GENERATE_ROOT_DIR", "/home/cbricout/scratch/")
+
+# PLOTS
+PLOT_DIR = "plots"

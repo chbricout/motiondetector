@@ -1,9 +1,9 @@
-'''
+"""
 This code comes from : https://github.com/Deep-MI/head-motion-tools/tree/main
 Presented in the article : Pollak, C., Kügler, D., Breteler, M.M. and Reuter, M., 2023. 
 Quantifying MR head motion in the Rhineland Study–A robust method for population
 cohorts. NeuroImage, 275, p.120176.
-'''
+"""
 
 import numpy as np
 from numba import njit

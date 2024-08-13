@@ -25,7 +25,7 @@ from src.training.lightning_logic import (
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.utils.log import get_run_dir
 
-torch.set_float32_matmul_precision('high')
+torch.set_float32_matmul_precision("high")
 
 
 def launch_pretrain(
@@ -69,12 +69,18 @@ def launch_pretrain(
         seed = random.randint(1, 10000)
     torch.manual_seed(seed)
     comet_logger.log_hyperparams(
-        {"seed": seed, "model": model, "run_num": run_num, "use_cutout": use_cutout, "task":task}
+        {
+            "seed": seed,
+            "model": model,
+            "run_num": run_num,
+            "use_cutout": use_cutout,
+            "task": task,
+        }
     )
     comet_logger.experiment.log_code(file_name="src/commands/pretrainer.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    task_class: PretrainingTask=None
+    task_class: PretrainingTask = None
     if task == "MOTION":
         task_class = MotionPretrainingTask
     elif task == "SSIM":

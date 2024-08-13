@@ -13,6 +13,7 @@ from src.training.lightning_logic import PretrainingTask
 
 def export_torchscript(
     model_name: str,
+    task: str,
     run_num: int,
     project_name: str = PROJECT_NAME,
     api_key: str = COMET_API_KEY,
@@ -22,18 +23,20 @@ def export_torchscript(
     - `{model_name}-{run_num}.pt` for normal prediction
 
     Args:
-        model_name (str): name of the model to download.
+        model_name (str): name of the pretraining model to download.
+        task (str): task of the pretraining model to download.
         run_num (int): specific run num to load.
         project_name (str): name of the comet project. Defaults to PROJECT_NAME.
         api_key (str, optional): comet api key. Defaults to COMET_API_KEY.
     """
     net = get_pretrain_task(
         model_name=model_name,
+        task=task,
         run_num=run_num,
         project_name=project_name,
         api_key=api_key,
         scratch=False,
-        del_folers=True
+        del_folers=True,
     )
 
     export_dir = os.path.join("exports", project_name, model_name)
@@ -52,6 +55,7 @@ def export_torchscript(
 
 def get_pretrain_task(
     model_name: str,
+    task: str,
     run_num: int,
     project_name: str,
     api_key: str = COMET_API_KEY,
@@ -62,6 +66,7 @@ def get_pretrain_task(
 
     Args:
         model_name (str): name of the model to download
+        task (str): task of the model to download
         run_num (int): specific run num to load
         project_name (str): name of the comet project
         api_key (str, optional): comet api key. Defaults to COMET_API_KEY.
@@ -76,7 +81,9 @@ def get_pretrain_task(
     api = comet_ml.api.API(
         api_key=api_key,
     )
-    pretrain_exp = api.get("mrart", project_name, f"pretraining-{model_name}-{run_num}")
+    pretrain_exp = api.get(
+        "mrart", project_name, f"pretraining-{task}-{model_name}-{run_num}"
+    )
     model_class = parse_model(model_name)
 
     if scratch:

@@ -1,8 +1,6 @@
 import warnings
-import logging
 import click
 
-from rich.logging import RichHandler
 from src.commands.base_trainer import launch_train_from_scratch
 from src.commands.finetune import launch_finetune
 from src.commands.generate_datasets import launch_generate_data
@@ -13,10 +11,13 @@ from src.commands.launch_slurm import (
     submit_scratch,
 )
 from src.commands.mr_art_to_bids import launch_convert_mrart_to_bids
+from src.commands.plot import pretrain_calibration_gif
 from src.commands.pretrainer import launch_pretrain
 from src.utils.comet import export_torchscript
+from src.utils.log import lightning_logger, rich_logger
 from src import config
-warnings.simplefilter(action='ignore', category=FutureWarning)
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 max_epoch = click.option(
     "--max_epochs",
@@ -138,9 +139,7 @@ def pretrain(
             array=run_num,
         )
     else:
-        log :logging.Logger= logging.getLogger("lightning.pytorch.utilities.rank_zero")
-        log.setLevel(level="INFO")
-        log.addHandler(RichHandler())
+        lightning_logger()
         launch_pretrain(
             max_epochs=max_epochs,
             learning_rate=learning_rate,
@@ -174,7 +173,7 @@ def finetune(
             array=run_num,
         )
     else:
-        logging.basicConfig(level="INFO")
+        lightning_logger()
         launch_finetune(
             max_epochs=max_epochs,
             learning_rate=learning_rate,
@@ -216,7 +215,7 @@ def train(
             array=run_num,
         )
     else:
-        logging.basicConfig(level="INFO")
+        lightning_logger()
         launch_train_from_scratch(
             max_epochs=max_epochs,
             learning_rate=learning_rate,
@@ -266,9 +265,10 @@ def mrart_to_bids(input_path, output_path):
 @model
 @run_num
 @project
-def compile_pretrain(model: str, run_num: int, project: str):
-    logging.basicConfig(level="INFO")
-    export_torchscript(model, run_num, project_name=project)
+@task
+def compile_pretrain(model: str, run_num: int, project: str, task: str):
+    rich_logger()
+    export_torchscript(model, task, run_num, project_name=project)
 
 
 @cli.group()
@@ -341,6 +341,23 @@ def finetune():
                     --dataset {dataset} ",
                 dataset=dataset,
             )
+
+
+@cli.group()
+def plot():
+    pass
+
+
+@plot.command()
+@model
+@run_num
+@project
+@task
+def calibration(model: str, run_num: int, project: str, task: str):
+    rich_logger()
+    pretrain_calibration_gif(
+        model_name=model, task=task, run_num=run_num, project_name=project
+    )
 
 
 if __name__ == "__main__":

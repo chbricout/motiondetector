@@ -1,9 +1,24 @@
 """Module defining utility function for logging"""
 
+import logging
 import os
 import torch
+from rich.logging import RichHandler
+from PIL import Image
 from torchvision.transforms import ToPILImage
 from monai.transforms.intensity.array import ScaleIntensity
+
+
+def save_array_as_gif(imgs: list[Image.Image], file_path: str):
+    """Save an array of Pillow Image as a gif
+
+    Args:
+        volume (list[Image.Image]): images to save
+        file_path (str): path to save gif to
+    """
+
+    # duration is the number of milliseconds between frames; this is 40 frames per second
+    imgs[0].save(file_path, save_all=True, append_images=imgs[1:], duration=50, loop=0)
 
 
 def save_volume_as_gif(volume: torch.Tensor, file_path: str):
@@ -18,8 +33,7 @@ def save_volume_as_gif(volume: torch.Tensor, file_path: str):
     scaled = scale_01(volume)
     imgs = [convert(img) for img in scaled]
 
-    # duration is the number of milliseconds between frames; this is 40 frames per second
-    imgs[0].save(file_path, save_all=True, append_images=imgs[1:], duration=50, loop=0)
+    save_array_as_gif(imgs, file_path)
 
 
 def get_run_dir(project_name: str, run_name: str, narval: bool) -> str:
@@ -45,3 +59,17 @@ def get_run_dir(project_name: str, run_name: str, narval: bool) -> str:
     if not os.path.exists(run_dir):
         os.makedirs(run_dir, exist_ok=True)
     return run_dir
+
+
+def lightning_logger():
+    """Setup python logging for use with lightning and rich print"""
+    log: logging.Logger = logging.getLogger("lightning.pytorch.utilities.rank_zero")
+    log.setLevel(level="INFO")
+    log.addHandler(RichHandler())
+
+
+def rich_logger():
+    """Setup python logging for rich print"""
+    logging.basicConfig(
+        level="INFO", handlers=[RichHandler()], format="%(message)s", datefmt="[%X]"
+    )

@@ -216,12 +216,12 @@ class PretrainingTask(lightning.LightningModule):
     """Pretraining Task in lightning"""
 
     model: Model
-    output_pipeline: nn.Module 
+    output_pipeline: nn.Module
     label_loss: nn.Module
     label: list[float | int] = []
     prediction: list[float | int] = []
     num_classes: int
-    label_key:str
+    label_key: str
 
     def __init__(
         self,
@@ -231,10 +231,10 @@ class PretrainingTask(lightning.LightningModule):
         dropout_rate=0.5,
         batch_size=14,
         use_cutout=False,
-        num_classes:int=1
+        num_classes: int = 1,
     ):
         super().__init__()
-        self.num_classes=num_classes
+        self.num_classes = num_classes
         self.im_shape = im_shape
         self.dropout_rate = dropout_rate
         self.batch_size = batch_size
@@ -335,10 +335,11 @@ class MotionPretrainingTask(PretrainingTask):
     """
     Pretraining Task for Motion mm metric
     """
+
     output_pipeline = nn.LogSoftmax(dim=1)
     label_loss = KLDivLoss()
     soft_label_util: ToSoftLabel = ToSoftLabel.motion_config()
-    label_key=parse_label_from_task("MOTION")
+    label_key = parse_label_from_task("MOTION")
 
     def __init__(
         self,
@@ -356,9 +357,9 @@ class MotionPretrainingTask(PretrainingTask):
             dropout_rate=dropout_rate,
             batch_size=batch_size,
             use_cutout=use_cutout,
-            num_classes=config.MOTION_N_BINS
+            num_classes=config.MOTION_N_BINS,
         )
-        
+
     def post_output(self, out: torch.Tensor) -> torch.Tensor:
         return self.soft_label_util.soft_to_hardlabel(out)
 
@@ -367,10 +368,11 @@ class SSIMPretrainingTask(PretrainingTask):
     """
     Pretraining Task for SSIM metric
     """
+
     output_pipeline = nn.LogSoftmax(dim=1)
     label_loss = KLDivLoss()
     soft_label_util: ToSoftLabel = ToSoftLabel.ssim_config()
-    label_key=parse_label_from_task("SSIM")
+    label_key = parse_label_from_task("SSIM")
 
     def __init__(
         self,
@@ -388,9 +390,8 @@ class SSIMPretrainingTask(PretrainingTask):
             dropout_rate=dropout_rate,
             batch_size=batch_size,
             use_cutout=use_cutout,
-            num_classes=config.SSIM_N_BINS
+            num_classes=config.SSIM_N_BINS,
         )
-        
 
     def post_output(self, out: torch.Tensor) -> torch.Tensor:
         return self.soft_label_util.soft_to_hardlabel(out)
@@ -403,7 +404,7 @@ class BinaryPretrainingTask(PretrainingTask):
 
     output_pipeline = nn.Sigmoid()
     label_loss = nn.BCELoss()
-    label_key=parse_label_from_task("BINARY")
+    label_key = parse_label_from_task("BINARY")
 
     def __init__(
         self,
@@ -421,10 +422,8 @@ class BinaryPretrainingTask(PretrainingTask):
             dropout_rate=dropout_rate,
             batch_size=batch_size,
             use_cutout=use_cutout,
-            num_classes=1
+            num_classes=1,
         )
-        
-        
 
     def post_output(self, out: torch.Tensor) -> torch.Tensor:
         return out.round().int()

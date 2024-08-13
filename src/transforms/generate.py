@@ -129,7 +129,6 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
                 motion_mm = get_motion_dist(affine_matrices)
                 retry += 1
 
-
             arguments["times"][name] = times_params
             arguments["degrees"][name] = degrees_params
             arguments["translation"][name] = translation_params
@@ -254,8 +253,8 @@ class CreateSynthVolume(RandomizableTransform):
         return {
             "data": img,
             "motion_mm": motion_mm,
-            "ssim_loss":ssim_val,
-            "motion_binary":self.apply_motion,
+            "ssim_loss": ssim_val,
+            "motion_binary": self.apply_motion,
             "sub_id": data["sub_id"],
             "ses_id": data["ses_id"],
         }
