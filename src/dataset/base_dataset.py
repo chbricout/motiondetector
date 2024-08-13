@@ -59,7 +59,7 @@ class BaseDataset(abc.ABC):
         Returns:
             Self: Dataset on narval cluster
         """
-        return cls(transform, os.path.join(os.environ.get("SLURM_TMPDIR"), "datasets"))
+        return cls(transform, os.path.join(os.environ.get("SLURM_TMPDIR"), "datasets")+"/")
 
     @classmethod
     def from_arg(cls, narval: bool, transform: Callable | None = None) -> Self:

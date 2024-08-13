@@ -1,3 +1,4 @@
+import warnings
 import logging
 import click
 
@@ -14,6 +15,7 @@ from src.commands.mr_art_to_bids import launch_convert_mrart_to_bids
 from src.commands.pretrainer import launch_pretrain
 from src.utils.comet import export_torchscript
 from src import config
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 max_epoch = click.option(
     "--max_epochs",

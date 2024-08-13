@@ -110,7 +110,7 @@ def create_job(
     n_cpus: int,
     n_gpus: int,
     account=DEFAULT_SLURM_ACCOUNT,
-    mem="200G",
+    mem="300G",
     time="24:00:00",
 ) -> Slurm:
     """Generate a basic job with requeu and python setup
@@ -169,7 +169,7 @@ def submit_pretrain(
         get_name("pretrain", model, array),
         array,
         get_output("pretrain", model, array),
-        n_cpus=1,
+        n_cpus=10,
         n_gpus=2,
     )
 

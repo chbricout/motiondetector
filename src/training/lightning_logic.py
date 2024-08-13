@@ -6,7 +6,7 @@ for every Dataset"""
 
 import gc
 import abc
-
+import logging
 import lightning
 import torch.optim
 from torch import nn
@@ -278,7 +278,8 @@ class PretrainingTask(lightning.LightningModule):
         predictions = self.forward(augvolumes)
         label_loss = self.label_loss(predictions, labels)
         self.log("train_loss", label_loss.item())
-
+        logging.info(predictions)
+        logging.info(label_loss)
         gc.collect()
 
         return label_loss
