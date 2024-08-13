@@ -4,11 +4,12 @@ import logging
 import torch
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sb
 from torch.utils.data import DataLoader
 from comet_ml import ExistingExperiment, APIExperiment
 from tqdm import tqdm
 from lightning import LightningModule
-from src.network.archi import Model
 
 
 def predict_mcdropout(
@@ -47,7 +48,9 @@ def predict_mcdropout(
                 labels += batch[label].tolist()
                 identifiers += batch["identifier"]
 
-                sample_pred.append(torch.as_tensor(pl_module.predict_step(batch, idx)).cpu())
+                sample_pred.append(
+                    torch.as_tensor(pl_module.predict_step(batch, idx)).cpu()
+                )
                 torch.cuda.empty_cache()
             res.append(torch.concat(sample_pred).unsqueeze(1))
     preds = torch.concat(res, 1).float()
@@ -68,7 +71,7 @@ def bincount2d(arr: np.ndarray | torch.Tensor, bins: int | None = None) -> np.nd
         np.ndarray: Count of occurence for each bins (N_data_point, N_bins)
     """
     if torch.is_tensor(arr):
-        arr=arr.numpy()
+        arr = arr.numpy()
     if bins is None:
         bins = np.max(arr) + 1
     count = np.zeros(shape=[len(arr), bins], dtype=np.int64)
@@ -127,6 +130,40 @@ def pretrain_pred_to_df(
     df = pd.DataFrame(np_concat.T, columns=["identifier", "mean", "std", "label"])
     df["predictions"] = preds.tolist()
     return df
+
+
+def get_prop_acc(df: pd.DataFrame, confidence: int):
+    filtered = df[df["confidence"] >= confidence]
+    filtered_accuracy = (
+        filtered["labels"] == filtered["max classe"].astype(int)
+    ).sum() / len(filtered)
+    filtered_prop = len(filtered) / len(df)
+    return filtered_accuracy, filtered_prop
+
+
+def finetune_confidence_plots(drop_df: pd.DataFrame):
+    accs = []
+    props = []
+    x = list(range(0, 101))
+    for i in x:
+        (a, p) = get_prop_acc(drop_df, confidence=i)
+        accs.append(a)
+        props.append(p)
+
+    confidence_fig = plt.figure(figsize=(6, 5))
+    confidence = confidence_fig.add_subplot(1, 1, 1)
+    confidence.plot(x, accs, label="accuracy")
+    confidence.plot(x, props, label="kept proportion")
+    confidence.xlabel("Confidence threshold (%)")
+    confidence.legend()
+
+    filtered_fig = plt.figure(figsize=(6, 5))
+    filtered = filtered_fig.add_subplot(1, 1, 1)
+
+    sb.swarmplot(
+        drop_df[drop_df["confidence"] >= 100], x="labels", y="max classe", ax=filtered
+    )
+    return confidence_fig, filtered_fig
 
 
 def evaluate_mcdropout(
