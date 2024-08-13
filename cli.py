@@ -2,6 +2,7 @@ import warnings
 import logging
 import click
 
+from rich.logging import RichHandler
 from src.commands.base_trainer import launch_train_from_scratch
 from src.commands.finetune import launch_finetune
 from src.commands.generate_datasets import launch_generate_data
@@ -137,7 +138,9 @@ def pretrain(
             array=run_num,
         )
     else:
-        logging.basicConfig(level="INFO")
+        log :logging.Logger= logging.getLogger("lightning.pytorch.utilities.rank_zero")
+        log.setLevel(level="INFO")
+        log.addHandler(RichHandler())
         launch_pretrain(
             max_epochs=max_epochs,
             learning_rate=learning_rate,

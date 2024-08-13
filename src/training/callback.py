@@ -97,7 +97,9 @@ def get_calibration_curve(
     """
     fig = plt.figure(figsize=(6, 5))
     sb.scatterplot(x=label, y=prediction, hue=hue)
-    plt.plot([0, 3], [0, 3], "r")
+    min_lab= min(label)
+    max_lab = max(label)
+    plt.plot([min_lab, max_lab], [min_lab, max_lab], "r")
     plt.xlabel("Correct Label")
     plt.ylabel("Estimated Label")
     return fig

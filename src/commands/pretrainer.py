@@ -4,7 +4,7 @@ Module to launch pretraining job on synthetic motion dataset.
 
 import logging
 import random
-
+import comet_ml
 import torch
 import lightning
 import lightning.pytorch.loggers
@@ -24,6 +24,8 @@ from src.training.lightning_logic import (
 )
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.utils.log import get_run_dir
+
+torch.set_float32_matmul_precision('high')
 
 
 def launch_pretrain(

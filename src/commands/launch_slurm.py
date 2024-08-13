@@ -2,7 +2,6 @@
 Module to launch different standard command through slurm jobs
 """
 
-import logging
 import sys
 import re
 from collections.abc import Sequence

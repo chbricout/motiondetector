@@ -46,7 +46,7 @@ class BaseDataset(abc.ABC):
         Returns:
             Self: Dataset on lab computer
         """
-        return cls(transform, "/home/at70870/narval/scratch/")
+        return cls(transform, "/home/at70870/local_scratch/")
 
     @classmethod
     def narval(cls, transform: Callable | None = None) -> Self:

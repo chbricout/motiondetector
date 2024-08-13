@@ -6,13 +6,13 @@ for every Dataset"""
 
 import gc
 import abc
-import logging
 import lightning
 import torch.optim
 from torch import nn
 from monai.transforms import CutOut
 from monai.data.meta_tensor import MetaTensor
 from sklearn.metrics import balanced_accuracy_score, r2_score
+import matplotlib.pyplot as plt
 from src import config
 from src.training.callback import get_calibration_curve
 from src.transforms.load import ToSoftLabel
@@ -216,7 +216,7 @@ class PretrainingTask(lightning.LightningModule):
     """Pretraining Task in lightning"""
 
     model: Model
-    output_pipeline: nn.Module = nn.Identity()
+    output_pipeline: nn.Module 
     label_loss: nn.Module
     label: list[float | int] = []
     prediction: list[float | int] = []
@@ -278,8 +278,7 @@ class PretrainingTask(lightning.LightningModule):
         predictions = self.forward(augvolumes)
         label_loss = self.label_loss(predictions, labels)
         self.log("train_loss", label_loss.item())
-        logging.info(predictions)
-        logging.info(label_loss)
+
         gc.collect()
 
         return label_loss
@@ -307,6 +306,7 @@ class PretrainingTask(lightning.LightningModule):
         )
         self.label = []
         self.prediction = []
+        plt.close()
 
     def predict_step(self, batch, _):
         ## VAE TESTING PHASE##
@@ -335,6 +335,10 @@ class MotionPretrainingTask(PretrainingTask):
     """
     Pretraining Task for Motion mm metric
     """
+    output_pipeline = nn.LogSoftmax(dim=1)
+    label_loss = KLDivLoss()
+    soft_label_util: ToSoftLabel = ToSoftLabel.motion_config()
+    label_key=parse_label_from_task("MOTION")
 
     def __init__(
         self,
@@ -354,11 +358,6 @@ class MotionPretrainingTask(PretrainingTask):
             use_cutout=use_cutout,
             num_classes=config.MOTION_N_BINS
         )
-
-        self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
-        self.label_loss = KLDivLoss()
-        self.soft_label_util: ToSoftLabel = ToSoftLabel.motion_config()
-        self.label_key=parse_label_from_task("MOTION")
         
     def post_output(self, out: torch.Tensor) -> torch.Tensor:
         return self.soft_label_util.soft_to_hardlabel(out)
@@ -368,6 +367,10 @@ class SSIMPretrainingTask(PretrainingTask):
     """
     Pretraining Task for SSIM metric
     """
+    output_pipeline = nn.LogSoftmax(dim=1)
+    label_loss = KLDivLoss()
+    soft_label_util: ToSoftLabel = ToSoftLabel.ssim_config()
+    label_key=parse_label_from_task("SSIM")
 
     def __init__(
         self,
@@ -387,10 +390,6 @@ class SSIMPretrainingTask(PretrainingTask):
             use_cutout=use_cutout,
             num_classes=config.SSIM_N_BINS
         )
-        self.output_pipeline = nn.Sequential(nn.LogSoftmax(dim=1))
-        self.label_loss = KLDivLoss()
-        self.soft_label_util: ToSoftLabel = ToSoftLabel.ssim_config()
-        self.label_key=parse_label_from_task("SSIM")
         
 
     def post_output(self, out: torch.Tensor) -> torch.Tensor:
@@ -401,6 +400,10 @@ class BinaryPretrainingTask(PretrainingTask):
     """
     Pretraining Task for Binary motion prediction task
     """
+
+    output_pipeline = nn.Sigmoid()
+    label_loss = nn.BCELoss()
+    label_key=parse_label_from_task("BINARY")
 
     def __init__(
         self,
@@ -420,9 +423,7 @@ class BinaryPretrainingTask(PretrainingTask):
             use_cutout=use_cutout,
             num_classes=1
         )
-        self.output_pipeline = nn.Sequential(nn.Sigmoid())
-        self.label_loss = nn.BCELoss()
-        self.label_key=parse_label_from_task("BINARY")
+        
         
 
     def post_output(self, out: torch.Tensor) -> torch.Tensor:
