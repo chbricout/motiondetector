@@ -10,40 +10,60 @@ from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import FinetuneTransform
 
 
-class TrainMrArt(CacheDataset, BaseDataset):
+class BaseMrArt(CacheDataset, BaseDataset):
+    """
+    Base dataset for common logic in MR-ART Data
+    """
+
+    csv_path: str
+
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
+        self.file = pd.read_csv(self.csv_path, index_col=0)
+        self.file["identifier"] = self.file["data"].apply(BaseMrArt.extract_identifier)
+        self.file["data"] = prefix + self.file["data"]
+
+        super().__init__(
+            self.file[["data", "identifier", "label"]].to_dict("records"), transform
+        )
+
+    @staticmethod
+    def extract_identifier(path: str) -> str:
+        """Retrieve volume identifier from path
+
+        Args:
+            path (str): path of file in dataframe
+
+        Returns:
+            str: formatted identifier
+        """
+        return "_".join(path.split("/")[2:4])
+
+
+class TrainMrArt(BaseMrArt):
     """
     Pytorch Dataset to use the train split of MR-ART (in finetune).
     It relies on the "train_preproc.csv" file
     """
 
-    def __init__(self, transform=None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/mrart/train_preproc.csv", index_col=0)
-        self.files["data"] = prefix + self.files["data"]
-        super().__init__(self.files.to_dict("records"), transform)
+    csv_path = "src/dataset/mrart/train_preproc.csv"
 
 
-class ValMrArt(CacheDataset, BaseDataset):
+class ValMrArt(BaseMrArt):
     """
     Pytorch Dataset to use the validation split of MR-ART (in finetune).
     It relies on the "val_preproc.csv" file
     """
 
-    def __init__(self, transform=None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/mrart/val_preproc.csv")
-        self.files["data"] = prefix + self.files["data"]
-        super().__init__(self.files.to_dict("records"), transform)
+    csv_path = "src/dataset/mrart/val_preproc.csv"
 
 
-class TestMrArt(Dataset, BaseDataset):
+class TestMrArt(BaseMrArt):
     """
     Pytorch Dataset to use the test split of MR-ART (in finetune).
     It relies on the "test_preproc.csv" file
     """
 
-    def __init__(self, transform=None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/mrart/test_preproc.csv")
-        self.files["data"] = prefix + self.files["data"]
-        super().__init__(self.files.to_dict("records"), transform)
+    csv_path = "src/dataset/mrart/test_preproc.csv"
 
 
 class MRArtDataModule(BaseDataModule):

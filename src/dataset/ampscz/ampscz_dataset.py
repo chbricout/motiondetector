@@ -10,124 +10,99 @@ from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import FinetuneTransform
 
 
-class PretrainTrainAMPSCZ(CacheDataset, BaseDataset):
+class BaseAMPSCZ(CacheDataset, BaseDataset):
+    """
+    Base dataset for common logic in AMPSCZ Data
+    """
+
+    csv_path: str
+    group: str
+    labelled: bool
+
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
+        self.file = pd.read_csv(self.csv_path, index_col=0)
+        self.file = self.file[self.file["group"] == self.group]
+        self.file["data"] = prefix + self.file["data"]
+        self.file["identifier"] = (
+            self.file["sub_id_gs"] + "_" + self.file["ses_id_gs"].astype(str)
+        )
+        subset : pd.DataFrame = self.file
+        if self.labelled:
+            self.file["label"] = self.file["motion"].astype(float)
+            subset = self.file[["data", "identifier", "label"]]
+            
+        else:
+            subset = self.file[["data", "identifier"]]
+
+        super().__init__(
+                subset.to_dict("records"), transform
+            )
+
+
+class PretrainTrainAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the train split of the pretrain dedicated part of AMPSCZ
     It relies on the "pretrain.csv" file
     """
 
-    def __init__(self, transform: Callable | None = None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/ampscz/pretrain.csv", index_col=0)
-        self.files = self.files[self.files["group"] == "train"]
-        self.files["data"] = prefix + self.files["data"]
-        self.files = self.files.rename(
-            columns={"sub_id_gs": "sub_id", "ses_id_gs": "ses_id"}
-        )
-
-        super().__init__(
-            self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
-        )
+    csv_path: str = "src/dataset/ampscz/pretrain.csv"
+    group: str = "train"
+    labelled: bool = False
 
 
-class PretrainValAMPSCZ(CacheDataset, BaseDataset):
+class PretrainValAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the validation split of the pretrain dedicated part of AMPSCZ
     It relies on the "pretrain.csv" file
     """
 
-    def __init__(self, transform: Callable | None = None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/ampscz/pretrain.csv", index_col=0)
-        self.files = self.files[self.files["group"] == "val"]
-        self.files["data"] = prefix + self.files["data"]
-        self.files = self.files.rename(
-            columns={"sub_id_gs": "sub_id", "ses_id_gs": "ses_id"}
-        )
-
-        super().__init__(
-            self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
-        )
+    csv_path: str = "src/dataset/ampscz/pretrain.csv"
+    group: str = "val"
+    labelled: bool = False
 
 
-class PretrainTestAMPSCZ(Dataset, BaseDataset):
+class PretrainTestAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the test split of the pretrain dedicated part of AMPSCZ
     It relies on the "pretrain.csv" file
     """
 
-    def __init__(self, transform: Callable | None = None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/ampscz/pretrain.csv", index_col=0)
-        self.files = self.files[self.files["group"] == "test"]
-        self.files["data"] = prefix + self.files["data"]
-        self.files = self.files.rename(
-            columns={"sub_id_gs": "sub_id", "ses_id_gs": "ses_id"}
-        )
-
-        super().__init__(
-            self.files[["data", "sub_id", "ses_id"]].to_dict("records"), transform
-        )
+    csv_path: str = "src/dataset/ampscz/pretrain.csv"
+    group: str = "test"
+    labelled: bool = False
 
 
-class FinetuneTrainAMPSCZ(CacheDataset, BaseDataset):
+class FinetuneTrainAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the train split of the finetune dedicated part of AMPSCZ
     It relies on the "finetune.csv" file
     """
 
-    def __init__(self, transform: Callable | None = None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
-        self.files = self.files[self.files["group"] == "train"]
-        self.files["data"] = prefix + self.files["data"]
-        self.files["label"] = self.files["motion"].astype(float)
-        self.files = self.files.rename(
-            columns={"sub_id_gs": "sub_id", "ses_id_gs": "ses_id"}
-        )
-
-        super().__init__(
-            self.files[["data", "label", "sub_id", "ses_id"]].to_dict("records"),
-            transform,
-        )
+    csv_path: str = "src/dataset/ampscz/finetune.csv"
+    group: str = "train"
+    labelled: bool = True
 
 
-class FinetuneValAMPSCZ(CacheDataset, BaseDataset):
+class FinetuneValAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the validation split of the finetune dedicated part of AMPSCZ
     It relies on the "finetune.csv" file
     """
 
-    def __init__(self, transform: Callable | None = None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
-        self.files = self.files[self.files["group"] == "val"]
-        self.files["data"] = prefix + self.files["data"]
-        self.files["label"] = self.files["motion"].astype(float)
-        self.files = self.files.rename(
-            columns={"sub_id_gs": "sub_id", "ses_id_gs": "ses_id"}
-        )
-
-        super().__init__(
-            self.files[["data", "label", "sub_id", "ses_id"]].to_dict("records"),
-            transform,
-        )
+    csv_path: str = "src/dataset/ampscz/finetune.csv"
+    group: str = "val"
+    labelled: bool = True
 
 
-class FinetuneTestAMPSCZ(Dataset, BaseDataset):
+class FinetuneTestAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the test split of the finetune dedicated part of AMPSCZ
     It relies on the "finetune.csv" file
     """
 
-    def __init__(self, transform: Callable | None = None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/ampscz/finetune.csv", index_col=0)
-        self.files = self.files[self.files["group"] == "test"]
-        self.files["data"] = prefix + self.files["data"]
-        self.files["label"] = self.files["motion"].astype(float)
-        self.files = self.files.rename(
-            columns={"sub_id_gs": "sub_id", "ses_id_gs": "ses_id"}
-        )
-
-        super().__init__(
-            self.files[["data", "label", "sub_id", "ses_id"]].to_dict("records"),
-            transform,
-        )
+    csv_path: str = "src/dataset/ampscz/finetune.csv"
+    group: str = "test"
+    labelled: bool = True
 
 
 class AMPSCZDataModule(BaseDataModule):

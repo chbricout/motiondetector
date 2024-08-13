@@ -2,11 +2,11 @@
 Module to use the synthetic motion pretraining dataset from python (require split csv files)
 """
 
+from typing import Callable
 from torch.utils.data import Dataset
 import pandas as pd
 from monai.data.dataloader import DataLoader
 
-from src.config import MOTION_BIN_RANGE, MOTION_N_BINS
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import LoadSynth
 
@@ -30,66 +30,71 @@ def parse_label_from_task(task: str) -> str:
     return label
 
 
-class PretrainTrain(Dataset, BaseDataset):
+class BasePretrain(Dataset, BaseDataset):
+    """
+    Base dataset for common logic in AMPSCZ Data
+    """
+
+    csv_path: str
+
+    def __init__(self, transform: Callable | None = None, prefix: str = ""):
+        self.file = pd.read_csv(self.csv_path, index_col=0)
+
+        self.file["identifier"] = self.file["data"].apply(
+            BasePretrain.extract_identifier
+        )
+        self.file["data"] = prefix + self.file["data"]
+        self.transform = transform
+
+        #Define default label
+        self.define_label()
+
+    @staticmethod
+    def extract_identifier(path: str) -> str:
+        """Retrieve volume identifier from path
+
+        Args:
+            path (str): path of file in dataframe
+
+        Returns:
+            str: formatted identifier
+        """
+        return path.split("/")[-1].split(".")[0]
+
+    def __len__(self):
+        return len(self.file)
+
+    def __getitem__(self, idx):
+        data = self.file.iloc[idx].to_dict()
+        if self.transform:
+            data = self.transform(data)
+        return data
+
+    def define_label(self, task: str = "MOTION"):
+        """Setup dataset label corresponding to task
+
+        Args:
+            task (str, optional): pretraining task. Defaults to "MOTION".
+        """
+        self.file["label"] = self.file[parse_label_from_task(task)]
+
+
+class PretrainTrain(BasePretrain):
     """
     Pytorch Dataset to use the train split of synthetic motion dataset (in pretrain).
     It relies on the "train.csv" file
     """
 
-    def __init__(self, transform=None, prefix: str = "", task: str = "MOTION"):
-        self.files = pd.read_csv("src/dataset/pretraining/train.csv", index_col=0)
-        if prefix != "":
-            self.files["data"] = prefix + self.files["data"]
-        self.transform = transform
-
-    def define_label(self, task: str = "MOTION"):
-        """Setup dataset label corresponding to task
-
-        Args:
-            task (str, optional): pretraining task. Defaults to "MOTION".
-        """
-        self.files["label"] = self.files[parse_label_from_task(task)]
-
-    def __len__(self):
-        return len(self.files)
-
-    def __getitem__(self, idx):
-        data = self.files.iloc[idx].to_dict()
-        if self.transform:
-            data = self.transform(data)
-
-        return data
+    csv_path: str = "src/dataset/pretraining/train.csv"
 
 
-class PretrainVal(Dataset, BaseDataset):
+class PretrainVal(BasePretrain):
     """
     Pytorch Dataset to use the validation split of synthetic motion dataset (in pretrain).
     It relies on the "val.csv" file
     """
 
-    def __init__(self, transform=None, prefix: str = ""):
-        self.files = pd.read_csv("src/dataset/pretraining/val.csv", index_col=0)
-        if prefix != "":
-            self.files["data"] = prefix + self.files["data"]
-        self.transform = transform
-
-    def define_label(self, task: str = "MOTION"):
-        """Setup dataset label corresponding to task
-
-        Args:
-            task (str, optional): pretraining task. Defaults to "MOTION".
-        """
-        self.files["label"] = self.files[parse_label_from_task(task)]
-
-    def __len__(self):
-        return len(self.files)
-
-    def __getitem__(self, idx):
-        data = self.files.iloc[idx].to_dict()
-        if self.transform:
-            data = self.transform(data)
-
-        return data
+    csv_path: str = "src/dataset/pretraining/val.csv"
 
 
 class PretrainingDataModule(BaseDataModule):

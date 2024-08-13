@@ -75,7 +75,7 @@ def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataF
     full = pd.DataFrame(columns=["mean"])
     full["mean"] = means
     full["std"] = stds
-    full["file"] = dataloader.dataset.files["data"].apply(lambda x: x.split("/")[-1])
+    full["file"] = dataloader.dataset.file["data"].apply(lambda x: x.split("/")[-1])
     full["label"] = labels
     return full
 

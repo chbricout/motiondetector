@@ -1,7 +1,7 @@
 """Module to generate synthetic motion data"""
 
 from collections import defaultdict
-from typing import Dict
+from typing import Callable, Dict
 import torch
 from monai.transforms import (
     Compose,
@@ -155,7 +155,7 @@ class RandomScaleIntensityd(RandomizableTransform):
     """Transform to randomly scale intensity from min to
     max_range drawn with uniform distribution"""
 
-    scaler: callable
+    scaler: Callable
 
     def __init__(self, keys="data", minv=0, max_range=(0.9, 1.1)):
         """
