@@ -49,7 +49,9 @@ model = click.option(
     "--model",
     help="Model architecture : CNN, RES, SFCN, CONV5_FC3, SERES, VIT",
     default="CNN",
-    type=click.Choice(['CNN', 'RES', 'SFCN', 'CONV5_FC3', 'SERES', 'VIT'], case_sensitive=True),
+    type=click.Choice(
+        ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"], case_sensitive=True
+    ),
 )
 run_num = click.option(
     "--run_num",
@@ -89,7 +91,12 @@ project = click.option(
     default=config.PROJECT_NAME,
     type=str,
 )
-
+task = click.option(
+    "--task",
+    help="Pretraining task : MOTION, SSIM, BINARY",
+    default="MOTION",
+    type=click.Choice(["MOTION", "SSIM", "BINARY"], case_sensitive=True),
+)
 
 
 @click.group()
@@ -108,12 +115,7 @@ def cli():
 @narval
 @slurm
 @cutout
-@click.option(
-    "--task",
-    help="Pretraining task : MOTION, SSIM, BINARY",
-    default="MOTION",
-    type=click.Choice(['MOTION', 'SSIM', 'BINARY'], case_sensitive=True),
-)
+@task
 def pretrain(
     max_epochs,
     learning_rate,
@@ -125,7 +127,7 @@ def pretrain(
     narval,
     slurm,
     cutout,
-    task:str
+    task: str,
 ):
     if slurm:
         submit_pretrain(
@@ -144,7 +146,7 @@ def pretrain(
             seed=seed,
             narval=narval,
             use_cutout=cutout,
-            task=task
+            task=task,
         )
 
 
@@ -233,7 +235,7 @@ def train(
 )
 @slurm
 @narval
-def generate_data(new_dataset, slurm: bool, narval:bool):
+def generate_data(new_dataset, slurm: bool, narval: bool):
     if slurm:
         submit_generate_ds()
     else:
@@ -259,9 +261,10 @@ def mrart_to_bids(input_path, output_path):
 @model
 @run_num
 @project
-def compile_pretrain(model:str, run_num:int, project:str):
+def compile_pretrain(model: str, run_num: int, project: str):
     logging.basicConfig(level="INFO")
     export_torchscript(model, run_num, project_name=project)
+
 
 @cli.group()
 def launch_exp():
@@ -287,14 +290,16 @@ run_confs = [
     is_flag=True,
     type=bool,
 )
-def pretrainer(cutout: bool, test: bool):
+@task
+def pretrainer(cutout: bool, test: bool, task: str):
     for model in run_confs:
 
         cmd = f"cli.py pretrain -n  \
                 --batch_size {model['batch_size']}\
                 --model {model['name']}\
                 --learning_rate 2e-5\
-                --dropout_rate 0.7 "
+                --dropout_rate 0.75\
+                --task {task}"
         if cutout:
             cmd += " --cutout"
 

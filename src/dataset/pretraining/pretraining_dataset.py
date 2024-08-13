@@ -39,9 +39,7 @@ class PretrainTrain(Dataset, BaseDataset):
     def __init__(self, transform=None, prefix: str = "", task: str = "MOTION"):
         self.files = pd.read_csv("src/dataset/pretraining/train.csv", index_col=0)
         if prefix != "":
-            self.files["data"] = self.files["data"].str.replace(
-                "/home/cbricout/scratch/", prefix
-            )
+            self.files["data"] = prefix + self.files["data"]
         self.transform = transform
 
     def define_label(self, task: str = "MOTION"):
@@ -72,9 +70,7 @@ class PretrainVal(Dataset, BaseDataset):
     def __init__(self, transform=None, prefix: str = ""):
         self.files = pd.read_csv("src/dataset/pretraining/val.csv", index_col=0)
         if prefix != "":
-            self.files["data"] = self.files["data"].str.replace(
-                "/home/cbricout/scratch/", prefix
-            )
+            self.files["data"] = prefix + self.files["data"]
         self.transform = transform
 
     def define_label(self, task: str = "MOTION"):

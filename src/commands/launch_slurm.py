@@ -169,7 +169,7 @@ def submit_pretrain(
         get_name("pretrain", model, array),
         array,
         get_output("pretrain", model, array),
-        n_cpus=10,
+        n_cpus=1,
         n_gpus=2,
     )
 
