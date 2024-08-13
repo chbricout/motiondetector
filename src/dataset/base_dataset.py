@@ -3,6 +3,7 @@ Module containing base structure and functions for every dataset
 """
 
 import abc
+import os
 import logging
 import re
 from typing import Callable, Self
@@ -58,10 +59,10 @@ class BaseDataset(abc.ABC):
         Returns:
             Self: Dataset on narval cluster
         """
-        return cls(transform, "/home/cbricout/scratch/")
-    
+        return cls(transform, os.path.join(os.environ.get("SLURM_TMPDIR"), "datasets"))
+
     @classmethod
-    def from_arg(cls, narval:bool, transform: Callable | None = None) -> Self:
+    def from_arg(cls, narval: bool, transform: Callable | None = None) -> Self:
         """Return corresponding dataset (Narval or Neuro-iX)
 
         Args:
@@ -71,8 +72,8 @@ class BaseDataset(abc.ABC):
 
         Returns:
             Self: Dataset
-        """      
-        return cls.narval(transform) if narval else cls.lab(transform)  
+        """
+        return cls.narval(transform) if narval else cls.lab(transform)
 
 
 class BaseDataModule(abc.ABC, L.LightningDataModule):

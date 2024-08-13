@@ -21,7 +21,17 @@ def setup_python(job: Slurm):
     job.add_cmd("module load python cuda httpproxy")
     job.add_cmd("source ~/bowl/bin/activate")
     job.add_cmd('echo "python is setup"')
-    # job.add_cmd("export NCCL_DEBUG=INFO")
+
+
+def copy_data_tmp_pretrain(job: Slurm):
+    """Extract data from scratch to $SLURM_TMPDIR for pretraining dataset
+
+    Args:
+        job (Slurm): slurm job to modify
+    """
+    job.add_cmd("mkdir $SLURM_TMPDIR/datasets")
+    job.add_cmd("tar -xf ~/scratch/generate_pretrain.tar -C $SLURM_TMPDIR/datasets")
+    job.add_cmd('echo "File copied"')
 
 
 def get_full_cmd() -> str:
@@ -100,7 +110,7 @@ def create_job(
     n_cpus: int,
     n_gpus: int,
     account=DEFAULT_SLURM_ACCOUNT,
-    mem="300G",
+    mem="200G",
     time="24:00:00",
 ) -> Slurm:
     """Generate a basic job with requeu and python setup
@@ -162,6 +172,9 @@ def submit_pretrain(
         n_cpus=10,
         n_gpus=2,
     )
+
+    copy_data_tmp_pretrain(job)
+
     if cmd is None:
         cmd = get_full_cmd()
     else:
