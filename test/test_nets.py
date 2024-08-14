@@ -34,7 +34,10 @@ def test_encoder_init(encoder_to_test: Encoder):
 def test_model_init(model_to_test):
     net = model_to_test(im_shape=IM_SHAPE, num_classes=40, dropout_rate=0.5).cuda()
     dummy = torch.rand(IM_SHAPE).unsqueeze(0).cuda()
-    assert net(dummy).shape == (1, 40)
+    preds = net(dummy)
+
+    assert preds.shape == (1, 40)
+    assert torch.isnan(preds).sum() == 0
 
 
 @pytest.mark.parametrize(
@@ -46,7 +49,9 @@ def test_model_change_num(model_to_test):
     net.classifier.change_output_num(3)
     net = net.cuda()
     dummy = torch.rand(IM_SHAPE).unsqueeze(0).cuda()
-    assert net(dummy).shape == (1, 3)
+    preds = net(dummy)
+    assert preds.shape == (1, 3)
+    assert torch.isnan(preds).sum() == 0
 
 
 @pytest.mark.parametrize(
@@ -58,4 +63,6 @@ def test_model_mc_dropout(model_to_test):
     net.classifier.change_output_num(3)
     net = net.cuda()
     dummy = torch.rand(IM_SHAPE).unsqueeze(0).cuda()
-    assert net(dummy).shape == (1, 3)
+    preds = net(dummy)
+    assert preds.shape == (1, 3)
+    assert torch.isnan(preds).sum() == 0

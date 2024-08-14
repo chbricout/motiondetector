@@ -23,33 +23,28 @@ def setup_python(job: Slurm):
     job.add_cmd('echo "python is setup"')
 
 
-def copy_data_tmp_pretrain(job: Slurm):
+def cpy_extract_tar(job: Slurm, tarballs_name: Sequence[str]):
+    job.add_cmd("mkdir -p $SLURM_TMPDIR/datasets")
+    for ds in tarballs_name:
+        job.add_cmd(
+            f"tar --skip-old-file -xf ~/scratch/{ds}.tar -C $SLURM_TMPDIR/datasets"
+        )
+        job.add_cmd(f'echo "{ds} copied"')
+
+
+def copy_data_tmp_generate(job: Slurm):
     """Extract data from scratch to $SLURM_TMPDIR for pretraining dataset
 
     Args:
         job (Slurm): slurm job to modify
     """
-    job.add_cmd("mkdir $SLURM_TMPDIR/datasets")
-    job.add_cmd("tar --skip-old-file -xf ~/scratch/generate_pretrain.tar -C $SLURM_TMPDIR/datasets")
-    job.add_cmd('echo "File copied"')
-
-def copy_data_tmp_finetune(job: Slurm, ds:str):
-    """Extract data from scratch to $SLURM_TMPDIR for pretraining dataset
-
-    Args:
-        job (Slurm): slurm job to modify
-    """
-    job.add_cmd("mkdir $SLURM_TMPDIR/datasets")
-
-    # If ds is not known, extract everything
-    load_every = ds not in ["MRART", "AMPSCZ"]
-    
-    if ds == "MRART" or load_every:
-        job.add_cmd("tar --skip-old-file -xf ~/scratch/MRART-Preproc.tar -C $SLURM_TMPDIR/datasets")
-    elif ds=="AMPSCZ" or load_every:
-        job.add_cmd("tar --skip-old-file -xf ~/scratch/AMPSCZ-Preproc.tar -C $SLURM_TMPDIR/datasets")
-    logging.warn("Dataset %s unkown", ds)
-    job.add_cmd('echo "File copied"')
+    to_cpy = ["HCPEP-Preproc", "AMPSCZ-Preproc"]
+    job.add_cmd("mkdir -p $SLURM_TMPDIR/datasets")
+    for ds in to_cpy:
+        job.add_cmd(
+            f"tar --skip-old-file -xf ~/scratch/{ds}.tar -C $SLURM_TMPDIR/datasets"
+        )
+        job.add_cmd(f'echo "{ds} copied"')
 
 
 def get_full_cmd() -> str:
@@ -189,9 +184,9 @@ def submit_pretrain(
         get_output("pretrain", model, array),
         n_cpus=10,
         n_gpus=2,
+        mem="100G",
     )
-
-    copy_data_tmp_pretrain(job)
+    cpy_extract_tar(job, ["generate_pretrain"])
 
     if cmd is None:
         cmd = get_full_cmd()
@@ -211,6 +206,16 @@ def submit_pretrain(
                 dependency=job_id,
                 dataset=dataset,
             )
+
+
+def cpy_finetune(job: Slurm, dataset: str):
+    to_load = ["MRART-Prepoc", "AMPSCZ-Preproc"]
+
+    if dataset == "MRART":
+        to_load = ["MRART-Prepoc"]
+    elif dataset == "AMPSCZ":
+        to_load = ["AMPSCZ-Prepoc"]
+    cpy_extract_tar(job, to_load)
 
 
 def submit_finetune(
@@ -242,7 +247,8 @@ def submit_finetune(
         mem="100G",
         time="5:00:00",
     )
-    copy_data_tmp_finetune(job, dataset)
+    cpy_finetune(job, dataset)
+
     if dependency:
         job.set_dependency(f"afterok:${dependency}")
     if cmd is None:
@@ -255,7 +261,10 @@ def submit_finetune(
 
 
 def submit_scratch(
-    model: str, array: Sequence[int] | int | None = None, cmd: str | None = None
+    model: str,
+    array: Sequence[int] | int | None = None,
+    cmd: str | None = None,
+    dataset: str = "",
 ):
     """Submit base train job on SLURM cluster
 
@@ -265,16 +274,20 @@ def submit_scratch(
             Defaults to None.
         cmd (str | None, optional): command to run, if None, retrieve the parameters
             used from the CLI. Defaults to None.
+        dataset (str, optional): dataset to run the finetune process on
+            (used for job name and output). Defaults to "".
     """
     job = create_job(
         get_name("base", model, array),
         array,
-        get_output("base", model, array),
+        get_output("base", model, array) + f"_{dataset}",
         n_cpus=20,
         n_gpus=1,
         mem="100G",
         time="5:00:00",
     )
+    cpy_finetune(job, dataset)
+
     if cmd is None:
         cmd = get_full_cmd()
     job.sbatch(f"srun python {cmd}")
@@ -291,4 +304,6 @@ def submit_generate_ds():
         mem="100G",
         time="10:00:00",
     )
+    cpy_extract_tar(job, ["HCPEP-Preproc", "AMPSCZ-Preproc"])
+
     job.sbatch(f"srun python {get_full_cmd()}")

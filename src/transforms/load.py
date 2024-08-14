@@ -155,6 +155,9 @@ class ToSoftLabel(MapTransform):
         Returns:
             torch.Tensor: Vector or single hard label
         """
+        if x.get_device() != -1:
+            # if not on CPU
+            x = x.cpu()
         pred = self._get_probs(x) @ self.bin_centers
 
         return pred

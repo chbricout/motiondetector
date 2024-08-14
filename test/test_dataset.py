@@ -1,3 +1,4 @@
+import itertools
 import os
 import pytest
 from src.dataset.ampscz.ampscz_dataset import (
@@ -10,7 +11,11 @@ from src.dataset.ampscz.ampscz_dataset import (
 )
 from src.dataset.hcpep.hcpep_dataset import TrainHCPEP, ValHCPEP, TestHCPEP
 from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt, TestMrArt
-from src.dataset.pretraining.pretraining_dataset import PretrainTrain, PretrainVal
+from src.dataset.pretraining.pretraining_dataset import (
+    PretrainTrain,
+    PretrainVal,
+    BasePretrain,
+)
 from src.dataset.base_dataset import BaseDataset
 
 
@@ -25,7 +30,7 @@ from src.dataset.base_dataset import BaseDataset
         (TestHCPEP, 14),
     ],
 )
-def test_no_label_dataset(dataset: BaseDataset, datapoints: int):
+def test_no_label_datasets(dataset: BaseDataset, datapoints: int):
     ds = dataset.lab()
     assert len(ds) == datapoints
     assert "data" in ds[0]
@@ -39,15 +44,36 @@ def test_no_label_dataset(dataset: BaseDataset, datapoints: int):
         (TrainMrArt, 258),
         (ValMrArt, 89),
         (TestMrArt, 89),
-        (PretrainTrain, 7380),
-        (PretrainVal, 940),
         (FinetuneTrainAMPSCZ, 115),
         (FinetuneValAMPSCZ, 39),
         (FinetuneTestAMPSCZ, 42),
     ],
 )
-def test_labelled_dataset(dataset: BaseDataset, datapoints: int):
+def test_labelled_datasets(dataset: BaseDataset, datapoints: int):
     ds = dataset.lab()
+    assert len(ds) == datapoints
+    assert "data" in ds[0]
+    assert "identifier" in ds[0]
+    assert "label" in ds[0]
+    assert os.path.exists(ds[0]["data"])
+
+
+@pytest.mark.parametrize(
+    "dataset,datapoints, task",
+    [
+        (*conf[0], conf[1])
+        for conf in itertools.product(
+            [
+                (PretrainTrain, 7380),
+                (PretrainVal, 940),
+            ],
+            ["MOTION", "SSIM", "BINARY"],
+        )
+    ],
+)
+def test_generated_datasets(dataset: BasePretrain, datapoints: int, task: str):
+    ds = dataset.lab()
+    ds.define_label()
     assert len(ds) == datapoints
     assert "data" in ds[0]
     assert "identifier" in ds[0]

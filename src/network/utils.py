@@ -14,6 +14,17 @@ from src.network.sfcn_net import SFCNModel
 from src.network.vit_net import ViTModel
 
 
+def init_model(model: nn.Module):
+    """Apply common initialization strategy to model
+    Not on ViT !
+
+    Args:
+        model (nn.Module): Model to initialize
+    """
+    if not "vit" in model.__class__.__name__.lower():
+        model.apply(init_weights)
+
+
 def init_weights(model: nn.Module):
     """Initialize weight for networks using Convolution or Linear layers
       (no transformers) using kaiming / He init

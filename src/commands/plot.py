@@ -28,9 +28,9 @@ def url_to_image(url: str) -> Image.Image:
 
     if response.status_code == 200:
         if ".svg" in url:
-            png =  cairosvg.svg2png(response.content)
+            png = cairosvg.svg2png(response.content)
         else:
-            png=response.content
+            png = response.content
         image = Image.open(BytesIO(png))
         return image
     else:
@@ -68,7 +68,7 @@ def pretrain_calibration_gif(
         lambda x: "calibration" in x["fileName"],
         pretrain_exp.get_asset_list(asset_type="image"),
     )
-    
+
     array_of_pil: list[Image.Image] = []
     for asset in tqdm.tqdm(sorted(calibration_img, key=lambda x: x["step"])):
         array_of_pil.append(url_to_image(asset["link"]))

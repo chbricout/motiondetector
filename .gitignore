@@ -3,3 +3,6 @@ __pycache__
 .coverage
 .env
 data_test
+plots
+.pytest_cache
+.mypy_cache

@@ -43,11 +43,11 @@ def predict_mcdropout(
     pl_module.cuda()
     res = []
     labels: list[int] = []
-    identifiers: list[str] = []
     with torch.no_grad():
         for _ in tqdm(range(n_preds)):
             sample_pred = []
             labels = []
+            identifiers: list[str] = []
             for idx, batch in enumerate(dataloader):
                 batch["data"] = batch["data"].cuda()
                 labels += batch[label].tolist()
@@ -235,11 +235,13 @@ def finetune_mcdropout(
     elif log_figs:
         log_figure(
             confidence_fig,
-            f"{pl_module.model.__name__}_{pl_module.__name__}",
+            f"{pl_module.model.__class__.__name__}_{pl_module.__class__.__name__}",
             "confidence",
         )
         log_figure(
-            filtered_fig, f"{pl_module.model.__name__}_{pl_module.__name__}", "filtered"
+            filtered_fig,
+            f"{pl_module.model.__class__.__name__}_{pl_module.__class__.__name__}",
+            "filtered",
         )
 
     return df

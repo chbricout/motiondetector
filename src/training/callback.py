@@ -17,13 +17,15 @@ from torch import nn
 from sklearn.metrics import r2_score
 from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ
 from src.dataset.mrart.mrart_dataset import ValMrArt
+from src.training.lightning_logic import PretrainingTask
 from src.utils.comet import log_figure_comet
 from src.utils.mcdropout import finetune_mcdropout, pretrain_mcdropout
 from src.transforms.load import FinetuneTransform, ToSoftLabel
 from src.dataset.pretraining.pretraining_dataset import parse_label_from_task
+from src.utils.metrics import separation_capacity
 
 
-def get_correlations(model: nn.Module, exp: comet_ml.BaseExperiment):
+def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
     """Plot and store prediction of a pretrain model on a finetuning task (MR-ART and AMPSCZ)
 
     Args:
@@ -34,14 +36,18 @@ def get_correlations(model: nn.Module, exp: comet_ml.BaseExperiment):
     for dataset in (ValMrArt, FinetuneValAMPSCZ):
         dl = DataLoader(dataset.narval(load_tsf))
         res = get_pred_from_pretrain(model, dl)
-        exp.log_metric(f"{dataset.__name__}-r2", r2_score(res["label"], res["mean"]))
+        acc, fig_thresh, thresholds = separation_capacity(res["label"], res["pred"])
+        exp.log_metric(f"{dataset.__name__}-acc", acc)
         exp.log_table(f"{dataset.__name__}-pred.csv", res)
+        exp.log_other(f"{dataset.__name__}-thresholds-value", thresholds)
+        fig_box = get_box_plot(res["pred"], res["label"])
+        log_figure_comet(fig_box, f"{dataset.__name__}-calibration")
+        log_figure_comet(fig_thresh, f"{dataset.__name__}-thresholds")
 
-        fig = get_box_plot(res["mean"], res["label"])
-        log_figure_comet(fig, f"{dataset.__name__}-calibration")
 
-
-def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataFrame:
+def get_pred_from_pretrain(
+    model: PretrainingTask, dataloader: DataLoader
+) -> pd.DataFrame:
     """Compute prediction of a model on a dataloader
 
     Args:
@@ -49,28 +55,26 @@ def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataF
         dataloader (DataLoader): Dictionnary based dataloader
 
     Returns:
-        pd.DataFrame: results dataframe containing "mean", "std", "file" and "label
+        pd.DataFrame: results dataframe containing "pred", "identifier" and "label
     """
     model = model.cuda().eval()
-    soft_label: ToSoftLabel = ToSoftLabel.motion_config()
-    means = []
-    stds = []
+    preds = []
     labels = []
+    ids = []
     with torch.no_grad():
-        for _, batch in enumerate(dataloader):
-            volume = batch["data"].cuda()
-            prediction = model(volume)
+        for idx, batch in enumerate(dataloader):
+            batch["data"] = batch["data"].cuda()
+            prediction = model.predict_step(batch, idx)
             prediction = prediction.cpu()
-            mean, std = soft_label.soft_label_to_mean_std(prediction)
-            means += mean.tolist()
-            stds += std.tolist()
+
+            preds += prediction.tolist()
             labels += batch["label"].tolist()
+            ids += batch["identifier"]
             torch.cuda.empty_cache()
 
-    full = pd.DataFrame(columns=["mean"])
-    full["mean"] = means
-    full["std"] = stds
-    full["file"] = dataloader.dataset.file["data"].apply(lambda x: x.split("/")[-1])
+    full = pd.DataFrame(columns=["pred"])
+    full["pred"] = preds
+    full["identifier"] = ids
     full["label"] = labels
     return full
 
@@ -121,7 +125,7 @@ class PretrainCallback(ModelCheckpoint):
     """Callback for the Pretraining process.
     Inherits from ModelCheckpoint to access the best model"""
 
-    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule, task: str):
+    def on_fit_end(self, trainer: Trainer, pl_module: LightningModule):
         """On fit function end, log best model checkpoint,
           evaluate mcdropout, plot correlations and clear the checkpoint directory
 
@@ -146,7 +150,6 @@ class PretrainCallback(ModelCheckpoint):
             best_net,
             trainer.val_dataloaders,
             comet_logger.experiment,
-            parse_label_from_task(task),
         )
 
         logging.info("Removing Checkpoints")

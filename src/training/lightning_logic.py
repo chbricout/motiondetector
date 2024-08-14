@@ -7,6 +7,7 @@ for every Dataset"""
 from collections.abc import Sequence
 import gc
 import abc
+import logging
 import lightning
 import torch.optim
 from torch import nn
@@ -19,7 +20,7 @@ import seaborn as sb
 from src import config
 from src.transforms.load import ToSoftLabel
 from src.network.archi import Model
-from src.network.utils import init_weights, parse_model, KLDivLoss
+from src.network.utils import init_model, parse_model, KLDivLoss
 from src.dataset.pretraining.pretraining_dataset import parse_label_from_task
 
 
@@ -67,6 +68,8 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.forward(volume)
+        logging.warn(f"{prediction.dtype}, {label.dtype}")
+
         label_loss = self.label_loss(prediction, label)
         self.log("train_loss", label_loss.item())
 
@@ -113,12 +116,10 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
         """
 
     def predict_step(self, batch, _):
-        ## VAE TESTING PHASE##
-        # INFERENCE
         volume = batch["data"]
-        _, prediction = self.forward(volume)
+        prediction = self.forward(volume)
 
-        prediction = self.treat_data_for_pred(prediction)
+        prediction = self.raw_to_pred(prediction)
         return prediction
 
     def configure_optimizers(self):
@@ -146,8 +147,7 @@ class TrainScratchTask(BaseTrain):
         self.model = self.model_class(
             self.im_shape, self.num_classes, self.dropout_rate
         )
-        if model_class != "ViT":
-            self.model.apply(init_weights)
+        init_model(self.model)
 
         self.setup_training()
         self.save_hyperparameters()
@@ -248,7 +248,6 @@ class PretrainingTask(lightning.LightningModule):
     label: list[float | int] = []
     prediction: list[float | int] = []
     num_classes: int
-    label_key: str
 
     def __init__(
         self,
@@ -270,8 +269,7 @@ class PretrainingTask(lightning.LightningModule):
         self.model = self.model_class(
             self.im_shape, self.num_classes, self.dropout_rate
         )
-        if model_class != "VIT":
-            self.model.apply(init_weights)
+        init_model(self.model)
 
         self.use_cutout = use_cutout
         if self.use_cutout:
@@ -303,6 +301,7 @@ class PretrainingTask(lightning.LightningModule):
             augvolumes = volumes
 
         predictions = self.forward(augvolumes)
+
         label_loss = self.label_loss(predictions, labels)
         self.log("train_loss", label_loss.item())
 
@@ -317,8 +316,7 @@ class PretrainingTask(lightning.LightningModule):
 
         label_loss = self.label_loss(prediction, label)
         self.log("val_loss", label_loss.item(), sync_dist=True)
-
-        lab = batch[self.label_key].detach().cpu()
+        lab = batch["label"].detach().cpu()
 
         self.label += lab.tolist()
         self.prediction += self.post_output(prediction.detach()).tolist()
@@ -336,8 +334,6 @@ class PretrainingTask(lightning.LightningModule):
         plt.close()
 
     def predict_step(self, batch, _):
-        ## VAE TESTING PHASE##
-        # INFERENCE
         volume = batch["data"]
         prediction = self.forward(volume)
         prediction = self.post_output(prediction)
@@ -366,7 +362,6 @@ class MotionPretrainingTask(PretrainingTask):
     output_pipeline = nn.LogSoftmax(dim=1)
     label_loss = KLDivLoss()
     soft_label_util: ToSoftLabel = ToSoftLabel.motion_config()
-    label_key = parse_label_from_task("MOTION")
 
     def __init__(
         self,
@@ -399,7 +394,6 @@ class SSIMPretrainingTask(PretrainingTask):
     output_pipeline = nn.LogSoftmax(dim=1)
     label_loss = KLDivLoss()
     soft_label_util: ToSoftLabel = ToSoftLabel.ssim_config()
-    label_key = parse_label_from_task("SSIM")
 
     def __init__(
         self,
@@ -429,9 +423,8 @@ class BinaryPretrainingTask(PretrainingTask):
     Pretraining Task for Binary motion prediction task
     """
 
-    output_pipeline = nn.Sigmoid()
+    output_pipeline = nn.Sequential(nn.Sigmoid(), nn.Flatten(start_dim=0))
     label_loss = nn.BCELoss()
-    label_key = parse_label_from_task("BINARY")
 
     def __init__(
         self,
@@ -453,4 +446,4 @@ class BinaryPretrainingTask(PretrainingTask):
         )
 
     def post_output(self, out: torch.Tensor) -> torch.Tensor:
-        return out.round().int()
+        return out.round().int().flatten()
