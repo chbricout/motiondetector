@@ -44,7 +44,6 @@ def test_no_label_dataset(dataset: BaseDataset, datapoints: int):
         (FinetuneTrainAMPSCZ, 115),
         (FinetuneValAMPSCZ, 39),
         (FinetuneTestAMPSCZ, 42),
-
     ],
 )
 def test_labelled_dataset(dataset: BaseDataset, datapoints: int):
@@ -54,6 +53,3 @@ def test_labelled_dataset(dataset: BaseDataset, datapoints: int):
     assert "identifier" in ds[0]
     assert "label" in ds[0]
     assert os.path.exists(ds[0]["data"])
-
-
-

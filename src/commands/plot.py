@@ -6,6 +6,8 @@ from io import BytesIO
 import requests
 import comet_ml
 from PIL import Image
+import tqdm
+import cairosvg
 from src import config
 from src.utils.log import save_array_as_gif
 
@@ -25,7 +27,11 @@ def url_to_image(url: str) -> Image.Image:
     response = requests.get(url, timeout=10)
 
     if response.status_code == 200:
-        image = Image.open(BytesIO(response.content))
+        if ".svg" in url:
+            png =  cairosvg.svg2png(response.content)
+        else:
+            png=response.content
+        image = Image.open(BytesIO(png))
         return image
     else:
         raise ValueError(
@@ -62,11 +68,12 @@ def pretrain_calibration_gif(
         lambda x: "calibration" in x["fileName"],
         pretrain_exp.get_asset_list(asset_type="image"),
     )
+    
     array_of_pil: list[Image.Image] = []
-    for asset in sorted(calibration_img, "step"):
-        logging.info("Step %i", asset["step"])
+    for asset in tqdm.tqdm(sorted(calibration_img, key=lambda x: x["step"])):
         array_of_pil.append(url_to_image(asset["link"]))
 
-    os.makedirs(config.PLOT_DIR, exist_ok=True)
-    save_dir = os.path.join(config.PLOT_DIR, comet_exp_name, "calibration.gif")
-    save_array_as_gif(array_of_pil, save_dir)
+    save_dir = os.path.join(config.PLOT_DIR, comet_exp_name)
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_array_as_gif(array_of_pil, os.path.join(save_dir, "calibration.gif"))

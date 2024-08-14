@@ -2,6 +2,7 @@
 Module to launch different standard command through slurm jobs
 """
 
+import logging
 import sys
 import re
 from collections.abc import Sequence
@@ -29,7 +30,25 @@ def copy_data_tmp_pretrain(job: Slurm):
         job (Slurm): slurm job to modify
     """
     job.add_cmd("mkdir $SLURM_TMPDIR/datasets")
-    job.add_cmd("tar -xf ~/scratch/generate_pretrain.tar -C $SLURM_TMPDIR/datasets")
+    job.add_cmd("tar --skip-old-file -xf ~/scratch/generate_pretrain.tar -C $SLURM_TMPDIR/datasets")
+    job.add_cmd('echo "File copied"')
+
+def copy_data_tmp_finetune(job: Slurm, ds:str):
+    """Extract data from scratch to $SLURM_TMPDIR for pretraining dataset
+
+    Args:
+        job (Slurm): slurm job to modify
+    """
+    job.add_cmd("mkdir $SLURM_TMPDIR/datasets")
+
+    # If ds is not known, extract everything
+    load_every = ds not in ["MRART", "AMPSCZ"]
+    
+    if ds == "MRART" or load_every:
+        job.add_cmd("tar --skip-old-file -xf ~/scratch/MRART-Preproc.tar -C $SLURM_TMPDIR/datasets")
+    elif ds=="AMPSCZ" or load_every:
+        job.add_cmd("tar --skip-old-file -xf ~/scratch/AMPSCZ-Preproc.tar -C $SLURM_TMPDIR/datasets")
+    logging.warn("Dataset %s unkown", ds)
     job.add_cmd('echo "File copied"')
 
 
@@ -223,6 +242,7 @@ def submit_finetune(
         mem="100G",
         time="5:00:00",
     )
+    copy_data_tmp_finetune(job, dataset)
     if dependency:
         job.set_dependency(f"afterok:${dependency}")
     if cmd is None:

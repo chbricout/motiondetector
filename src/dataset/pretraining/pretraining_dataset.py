@@ -46,7 +46,7 @@ class BasePretrain(Dataset, BaseDataset):
         self.file["data"] = prefix + self.file["data"]
         self.transform = transform
 
-        #Define default label
+        # Define default label
         self.define_label()
 
     @staticmethod

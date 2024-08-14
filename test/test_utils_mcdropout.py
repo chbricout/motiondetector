@@ -1,12 +1,17 @@
 from typing import Callable
 import itertools
 from lightning import LightningModule
+from matplotlib.figure import Figure
+import numpy as np
+import pandas as pd
 import torch
 import pytest
 import torch.utils
 import torch.utils.data
 from src.training.lightning_logic import (
+    BaseTrain,
     MotionPretrainingTask,
+    PretrainingTask,
     SSIMPretrainingTask,
     BinaryPretrainingTask,
     MRArtFinetuningTask,
@@ -16,8 +21,12 @@ from src.training.lightning_logic import (
 )
 from src.utils.mcdropout import (
     bincount2d,
+    finetune_confidence_plots,
+    finetune_mcdropout,
     finetune_pred_to_df,
+    get_acc_prop,
     predict_mcdropout,
+    pretrain_mcdropout,
     pretrain_pred_to_df,
 )
 from src import config
@@ -43,7 +52,13 @@ def test_pred_to_df(convert_func: Callable, has_bincount: bool):
     assert "label" in df.columns
     assert "predictions" in df.columns
     assert "identifier" in df.columns
+
     assert not has_bincount or "count" in df.columns
+    assert not has_bincount or "confidence" in df.columns
+    assert not has_bincount or (df["confidence"] <= 0).sum() == 0
+    assert not has_bincount or (df["confidence"] >= 1).sum() == 0
+    assert not has_bincount or "max_classe" in df.columns
+
     assert len(df["predictions"].iloc[0]) == n_preds
     assert len(df) == n_samples
 
@@ -85,7 +100,9 @@ def test_bincount(n_classes: int, indicate_bins: bool):
 def test_predict_mc_dropout(task_class: LightningModule, model: str):
     n_preds = 2
     n_samples = 3
-    ds = [{"data": torch.randn(config.IM_SHAPE), "label": 1, "identifier": "test"}] * n_samples
+    ds = [
+        {"data": torch.randn(config.IM_SHAPE), "label": 1, "identifier": "test"}
+    ] * n_samples
     dl = torch.utils.data.DataLoader(ds, batch_size=n_samples)
 
     module = task_class(
@@ -93,7 +110,114 @@ def test_predict_mc_dropout(task_class: LightningModule, model: str):
         im_shape=config.IM_SHAPE,
     )
 
-    preds, labels, identifiers = predict_mcdropout(module, dataloader=dl, n_preds=n_preds)
+    preds, labels, identifiers = predict_mcdropout(
+        module, dataloader=dl, n_preds=n_preds
+    )
     assert preds.shape == (n_samples, n_preds)
     assert len(labels) == n_samples
     assert len(identifiers) == n_preds
+
+
+@pytest.mark.parametrize(
+    "confidence",
+    np.arange(0, 1.05, 0.1),
+)
+def test_get_prop_acc(confidence: float):
+    data = np.array(
+        [[0, 0, 1, 1, 2, 2], [0, 1, 1, 2, 0, 2], [0.8, 0.7, 0.9, 0.1, 0.96, 0.2]]
+    )
+    df = pd.DataFrame(data.T, columns=["label", "max_classe", "confidence"])
+    acc, prop = get_acc_prop(df, confidence)
+    assert acc <= 1 and acc >= 0
+    assert prop <= 1 and prop >= 0
+
+
+@pytest.mark.parametrize(
+    "confidence",
+    [0, 1, 0.95],
+)
+def test_finetune_confidence_plots(confidence: float):
+    data = np.array(
+        [[0, 0, 1, 1, 2, 2], [0, 1, 1, 2, 0, 2], [0.8, 0.7, 0.9, 0.1, 0.96, 0.2]]
+    )
+    df = pd.DataFrame(data.T, columns=["label", "max_classe", "confidence"])
+    acc_fig, prop_fig = finetune_confidence_plots(df, confidence)
+    assert isinstance(acc_fig, Figure) and not acc_fig is None
+    assert isinstance(prop_fig, Figure) and not prop_fig is None
+
+
+@pytest.mark.parametrize(
+    "task_class,model",
+    itertools.product(
+        [
+            MotionPretrainingTask,
+            SSIMPretrainingTask,
+            BinaryPretrainingTask,
+        ],
+        ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"],
+    ),
+)
+def test_pretrain_mcdropout(task_class: PretrainingTask, model: str):
+    n_preds = 2
+    n_samples = 3
+    ds = [
+        {"data": torch.randn(config.IM_SHAPE), "label": 1, "identifier": "test"}
+    ] * n_samples
+    dl = torch.utils.data.DataLoader(ds, batch_size=n_samples)
+
+    module = task_class(
+        model_class=model,
+        im_shape=config.IM_SHAPE,
+    )
+
+    df = pretrain_mcdropout(pl_module=module, dataloader=dl, n_preds=n_preds)
+    assert "mean" in df.columns
+    assert "std" in df.columns
+    assert "label" in df.columns
+    assert "predictions" in df.columns
+    assert "identifier" in df.columns
+
+    assert len(df["predictions"].iloc[0]) == n_preds
+    assert len(df) == n_samples
+
+
+@pytest.mark.parametrize(
+    "task_class,model",
+    itertools.product(
+        [
+            MRArtFinetuningTask,
+            MRArtScratchTask,
+            AMPSCZFinetuningTask,
+            AMPSCZScratchTask,
+        ],
+        ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"],
+    ),
+)
+def test_finetune_mcdropout(task_class: BaseTrain, model: str):
+    n_preds = 2
+    n_samples = 3
+    ds = [
+        {"data": torch.randn(config.IM_SHAPE), "label": 1, "identifier": "test"}
+    ] * n_samples
+    dl = torch.utils.data.DataLoader(ds, batch_size=n_samples)
+
+    module = task_class(
+        model_class=model,
+        im_shape=config.IM_SHAPE,
+    )
+
+    df = finetune_mcdropout(pl_module=module, dataloader=dl, n_preds=n_preds)
+    assert "mean" in df.columns
+    assert "std" in df.columns
+    assert "label" in df.columns
+    assert "predictions" in df.columns
+    assert "identifier" in df.columns
+
+    assert "count" in df.columns
+    assert "confidence" in df.columns
+    assert (df["confidence"] <= 0).sum() == 0
+    assert (df["confidence"] >= 1).sum() == 0
+    assert "max_classe" in df.columns
+
+    assert len(df["predictions"].iloc[0]) == n_preds
+    assert len(df) == n_samples

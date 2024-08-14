@@ -3,7 +3,6 @@
 
 import logging
 import shutil
-import tempfile
 from typing import Sequence
 import comet_ml
 from matplotlib import pyplot as plt
@@ -18,7 +17,8 @@ from torch import nn
 from sklearn.metrics import r2_score
 from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ
 from src.dataset.mrart.mrart_dataset import ValMrArt
-from src.utils.mcdropout import evaluate_mcdropout, pretrain_mcdropout
+from src.utils.comet import log_figure_comet
+from src.utils.mcdropout import finetune_mcdropout, pretrain_mcdropout
 from src.transforms.load import FinetuneTransform, ToSoftLabel
 from src.dataset.pretraining.pretraining_dataset import parse_label_from_task
 
@@ -37,13 +37,8 @@ def get_correlations(model: nn.Module, exp: comet_ml.BaseExperiment):
         exp.log_metric(f"{dataset.__name__}-r2", r2_score(res["label"], res["mean"]))
         exp.log_table(f"{dataset.__name__}-pred.csv", res)
 
-        with tempfile.NamedTemporaryFile() as img_file:
-            fig = get_box_plot(res["mean"], res["label"])
-            fig.savefig(img_file)
-            exp.log_image(
-                img_file.name,
-                f"{dataset.__name__}-calibration",
-            )
+        fig = get_box_plot(res["mean"], res["label"])
+        log_figure_comet(fig, f"{dataset.__name__}-calibration")
 
 
 def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataFrame:
@@ -78,31 +73,6 @@ def get_pred_from_pretrain(model: nn.Module, dataloader: DataLoader) -> pd.DataF
     full["file"] = dataloader.dataset.file["data"].apply(lambda x: x.split("/")[-1])
     full["label"] = labels
     return full
-
-
-def get_calibration_curve(
-    prediction: Sequence[int | float],
-    label: Sequence[int | float],
-    hue: Sequence[int] = None,
-) -> Figure:
-    """Generate calibration curve with matplotlib's pyplot
-
-    Args:
-        prediction (Sequence[int | float]): prediction vector
-        label (Sequence[int | float]): ground truth vector
-        hue (Sequence[int], optional): vector for hue purpose. Defaults to None.
-
-    Returns:
-        Figure: matplotlib's Figure object for the plot
-    """
-    fig = plt.figure(figsize=(6, 5))
-    sb.scatterplot(x=label, y=prediction, hue=hue)
-    min_lab = min(label)
-    max_lab = max(label)
-    plt.plot([min_lab, max_lab], [min_lab, max_lab], "r")
-    plt.xlabel("Correct Label")
-    plt.ylabel("Estimated Label")
-    return fig
 
 
 def get_box_plot(
@@ -142,7 +112,7 @@ class FinetuneCallback(ModelCheckpoint):
         )
         best_net = pl_module.__class__.load_from_checkpoint(self.best_model_path)
 
-        evaluate_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
+        finetune_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
         logging.info("Removing Checkpoints")
         shutil.rmtree(trainer.default_root_dir)
 

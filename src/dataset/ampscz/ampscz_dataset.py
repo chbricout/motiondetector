@@ -26,17 +26,15 @@ class BaseAMPSCZ(CacheDataset, BaseDataset):
         self.file["identifier"] = (
             self.file["sub_id_gs"] + "_" + self.file["ses_id_gs"].astype(str)
         )
-        subset : pd.DataFrame = self.file
+        subset: pd.DataFrame = self.file
         if self.labelled:
             self.file["label"] = self.file["motion"].astype(float)
             subset = self.file[["data", "identifier", "label"]]
-            
+
         else:
             subset = self.file[["data", "identifier"]]
 
-        super().__init__(
-                subset.to_dict("records"), transform
-            )
+        super().__init__(subset.to_dict("records"), transform)
 
 
 class PretrainTrainAMPSCZ(BaseAMPSCZ):

@@ -1,15 +1,20 @@
 """Module to use Monte Carlo Dropout on our models"""
 
 import logging
+
+from comet_ml import ExistingExperiment, APIExperiment
 import torch
+from torch.utils.data import DataLoader
+from lightning import LightningModule
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import seaborn as sb
-from torch.utils.data import DataLoader
-from comet_ml import ExistingExperiment, APIExperiment
 from tqdm import tqdm
-from lightning import LightningModule
+from src import config
+from src.utils.comet import log_figure_comet
+from src.utils.log import log_figure
 
 
 def predict_mcdropout(
@@ -93,7 +98,8 @@ def finetune_pred_to_df(
         identifiers (list[str]): Volumes identifiers
 
     Returns:
-        pd.DataFrame: Dataframe with: mean, std, label, count and predictions
+        pd.DataFrame: Dataframe with: mean, std, label, count, predictions list,
+        max_classe and confidence
     """
     mean = torch.mean(preds, dim=1, dtype=float)
     std = torch.std(preds, dim=1)
@@ -104,7 +110,8 @@ def finetune_pred_to_df(
     df = pd.DataFrame(np_concat.T, columns=["identifier", "mean", "std", "label"])
     df["count"] = count.tolist()
     df["predictions"] = preds.tolist()
-
+    df["max_classe"] = np.argmax(count)
+    df["confidence"] = np.max(count) / np.sum(count)
     return df
 
 
@@ -132,21 +139,47 @@ def pretrain_pred_to_df(
     return df
 
 
-def get_prop_acc(df: pd.DataFrame, confidence: int):
+def get_acc_prop(df: pd.DataFrame, confidence: float) -> tuple[float, float]:
+    """Compute accuracy by keeping only prediction with confidence higher than `confidence`
+
+    Args:
+        df (pd.DataFrame): Dataframe with colums "label", "max_classe" and "confidence"
+        confidence (int): lower acceptable confidence (included)
+
+    Returns:
+        tuple[float, float]: accuracy, proportion of original dataset kept
+    """
+    assert set(["confidence", "label", "max_classe"]).issubset(df.columns)
+
     filtered = df[df["confidence"] >= confidence]
-    filtered_accuracy = (
-        filtered["labels"] == filtered["max classe"].astype(int)
-    ).sum() / len(filtered)
+    if len(filtered) > 0:
+        filtered_accuracy = (
+            filtered["label"] == filtered["max_classe"].astype(int)
+        ).sum() / len(filtered)
+    else:
+        filtered_accuracy = 0
     filtered_prop = len(filtered) / len(df)
     return filtered_accuracy, filtered_prop
 
 
-def finetune_confidence_plots(drop_df: pd.DataFrame):
+def finetune_confidence_plots(
+    df: pd.DataFrame, filt_conf: float = config.CONFIDENCE_FILTER
+) -> tuple[Figure, Figure]:
+    """Plot finetuning confidence/accurac/proportion plot and
+    swarmplot of prediction at confidence > `filt_conf`
+
+    Args:
+        df (pd.DataFrame): Dataframe from finetune MC-Dropout
+        filt_conf (float): Confidence for swarmplot filter
+
+    Returns:
+        tuple[Figure, Figure]: Confidence plot, Swarm filter plot
+    """
     accs = []
     props = []
-    x = list(range(0, 101))
+    x = np.arange(0, 1, 0.01)
     for i in x:
-        (a, p) = get_prop_acc(drop_df, confidence=i)
+        (a, p) = get_acc_prop(df, confidence=i)
         accs.append(a)
         props.append(p)
 
@@ -154,24 +187,25 @@ def finetune_confidence_plots(drop_df: pd.DataFrame):
     confidence = confidence_fig.add_subplot(1, 1, 1)
     confidence.plot(x, accs, label="accuracy")
     confidence.plot(x, props, label="kept proportion")
-    confidence.xlabel("Confidence threshold (%)")
+    confidence.set_xlabel("Confidence threshold (%)")
     confidence.legend()
 
     filtered_fig = plt.figure(figsize=(6, 5))
     filtered = filtered_fig.add_subplot(1, 1, 1)
 
     sb.swarmplot(
-        drop_df[drop_df["confidence"] >= 100], x="labels", y="max classe", ax=filtered
+        df[df["confidence"] >= filt_conf], x="label", y="max_classe", ax=filtered
     )
     return confidence_fig, filtered_fig
 
 
-def evaluate_mcdropout(
+def finetune_mcdropout(
     pl_module: LightningModule,
     dataloader: DataLoader,
     experiment: ExistingExperiment | APIExperiment | None = None,
     label: str = "label",
     n_preds: int = 100,
+    log_figs: bool = True,
 ) -> pd.DataFrame:
     """Evaluate Monte Carlo Dropout bin count for finetune models
 
@@ -183,6 +217,7 @@ def evaluate_mcdropout(
         label (str, optional): label key in dataloader. Defaults to "label".
         n_preds (int, optional): number of prediction for MC Dropout.
           Defaults to 100.
+        log_figs (bool, optional): Flag to log figure. Defaults to True.
 
     Returns:
         pd.DataFrame: Dataframe with full results (logged on comet if experiment)
@@ -191,9 +226,21 @@ def evaluate_mcdropout(
         pl_module=pl_module, dataloader=dataloader, n_preds=n_preds, label=label
     )
     df = finetune_pred_to_df(*mcdrop_res)
+    confidence_fig, filtered_fig = finetune_confidence_plots(df)
 
-    if experiment is not None:
+    if experiment is not None and log_figs:
         experiment.log_table("mcdropout-res.csv", df)
+        log_figure_comet(confidence_fig, "confidence", experiment)
+        log_figure_comet(filtered_fig, "filtered", experiment)
+    elif log_figs:
+        log_figure(
+            confidence_fig,
+            f"{pl_module.model.__name__}_{pl_module.__name__}",
+            "confidence",
+        )
+        log_figure(
+            filtered_fig, f"{pl_module.model.__name__}_{pl_module.__name__}", "filtered"
+        )
 
     return df
 

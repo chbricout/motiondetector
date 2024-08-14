@@ -4,6 +4,7 @@
 - Finetuning
 for every Dataset"""
 
+from collections.abc import Sequence
 import gc
 import abc
 import lightning
@@ -12,13 +13,39 @@ from torch import nn
 from monai.transforms import CutOut
 from monai.data.meta_tensor import MetaTensor
 from sklearn.metrics import balanced_accuracy_score, r2_score
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+import seaborn as sb
 from src import config
-from src.training.callback import get_calibration_curve
 from src.transforms.load import ToSoftLabel
 from src.network.archi import Model
 from src.network.utils import init_weights, parse_model, KLDivLoss
 from src.dataset.pretraining.pretraining_dataset import parse_label_from_task
+
+
+def get_calibration_curve(
+    prediction: Sequence[int | float],
+    label: Sequence[int | float],
+    hue: Sequence[int] = None,
+) -> Figure:
+    """Generate calibration curve with matplotlib's pyplot
+
+    Args:
+        prediction (Sequence[int | float]): prediction vector
+        label (Sequence[int | float]): ground truth vector
+        hue (Sequence[int], optional): vector for hue purpose. Defaults to None.
+
+    Returns:
+        Figure: matplotlib's Figure object for the plot
+    """
+    fig = plt.figure(figsize=(6, 5))
+    sb.scatterplot(x=label, y=prediction, hue=hue)
+    min_lab = min(label)
+    max_lab = max(label)
+    plt.plot([min_lab, max_lab], [min_lab, max_lab], "r")
+    plt.xlabel("Correct Label")
+    plt.ylabel("Estimated Label")
+    return fig
 
 
 class BaseTrain(abc.ABC, lightning.LightningModule):

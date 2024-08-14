@@ -32,3 +32,4 @@ GENERATE_ROOT_DIR = os.environ.get("GENERATE_ROOT_DIR", "/home/cbricout/scratch/
 
 # PLOTS
 PLOT_DIR = "plots"
+CONFIDENCE_FILTER = 0.95  # Min confidence for swarm plot filter

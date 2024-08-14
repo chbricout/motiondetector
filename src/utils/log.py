@@ -2,11 +2,14 @@
 
 import logging
 import os
+from matplotlib.figure import Figure
 import torch
 from rich.logging import RichHandler
 from PIL import Image
 from torchvision.transforms import ToPILImage
 from monai.transforms.intensity.array import ScaleIntensity
+
+from src import config
 
 
 def save_array_as_gif(imgs: list[Image.Image], file_path: str):
@@ -73,3 +76,17 @@ def rich_logger():
     logging.basicConfig(
         level="INFO", handlers=[RichHandler()], format="%(message)s", datefmt="[%X]"
     )
+
+
+def log_figure(figure: Figure, dir: str, name: str, root_dir=config.PLOT_DIR):
+    """Log Figure to a local directory
+
+    Args:
+        figure (Figure): Figure to log
+        dir (str): directory corresponding to experiment
+        name (str): file name
+        root_dir (_type_, optional): root directory for every figures. Defaults to config.PLOT_DIR.
+    """
+    img_path = os.path.join(root_dir, dir, name)
+    figure.savefig(img_path)
+    logging.debug("logged figure to %s", img_path)
