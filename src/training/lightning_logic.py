@@ -95,7 +95,7 @@ class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
         predictions = self.forward(volumes)
 
         label_loss = self.label_loss(predictions, labels)
-        self.log("train_loss", label_loss.item(), batch_size=self.datamodule.batch_size)
+        self.log("train_loss", label_loss.item(), batch_size=self.trainer.datamodule.batch_size)
 
         gc.collect()
 
@@ -130,7 +130,7 @@ class BaseFinalTrain(EncodeClassifyTask):
         prediction = self.forward(volume)
 
         label_loss = self.label_loss(prediction, label)
-        self.log("val_loss", label_loss.item(), batch_size=self.datamodule.batch_size)
+        self.log("val_loss", label_loss.item(), batch_size=self.trainer.datamodule.batch_size)
 
         lab = label.detach().cpu()
         prediction = prediction.detach().cpu()
@@ -147,7 +147,7 @@ class BaseFinalTrain(EncodeClassifyTask):
             "val_balanced_accuracy",
             balanced_accuracy_score(self.label, self.prediction),
             sync_dist=True,
-            batch_size=self.datamodule.batch_size,
+            batch_size=self.trainer.datamodule.batch_size,
         )
         self.label = []
         self.prediction = []
@@ -323,7 +323,7 @@ class PretrainingTask(EncodeClassifyTask):
             "val_loss",
             label_loss.item(),
             sync_dist=True,
-            batch_size=self.datamodule.batch_size,
+            batch_size=self.trainer.datamodule.batch_size,
         )
         lab = batch[self.hard_label_tag].detach().cpu()
 
@@ -336,7 +336,7 @@ class PretrainingTask(EncodeClassifyTask):
             "r2_score",
             r2_score(self.label, self.prediction),
             sync_dist=True,
-            batch_size=self.datamodule.batch_size,
+            batch_size=self.trainer.datamodule.batch_size,
         )
         self.logger.experiment.log_figure(
             figure=get_calibration_curve(self.prediction, self.label),
