@@ -78,4 +78,7 @@ def test_generated_datasets(dataset: BasePretrain, datapoints: int, task: str):
     assert "data" in ds[0]
     assert "identifier" in ds[0]
     assert "label" in ds[0]
+    assert "motion_mm" in ds[0]
+    assert "ssim_loss" in ds[0]
+    assert "motion_binary" in ds[0]
     assert os.path.exists(ds[0]["data"])

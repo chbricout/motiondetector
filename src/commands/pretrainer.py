@@ -4,6 +4,8 @@ Module to launch pretraining job on synthetic motion dataset.
 
 import logging
 import random
+import shutil
+from typing import Type
 import comet_ml
 import torch
 import lightning
@@ -15,15 +17,12 @@ from lightning.pytorch.callbacks import (
 
 from src.utils.comet import get_experiment_key
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
-from src.training.callback import PretrainCallback
-from src.training.lightning_logic import (
-    BinaryPretrainingTask,
-    MotionPretrainingTask,
-    PretrainingTask,
-    SSIMPretrainingTask,
-)
+from src.training.eval import SaveBestCheckpoint, get_correlations
+from src.training.lightning_logic import PretrainingTask
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.utils.log import get_run_dir
+from src.utils.mcdropout import pretrain_mcdropout
+from src.utils.task import EnsureOneProcess, label_from_task, str_to_task
 
 torch.set_float32_matmul_precision("high")
 
@@ -36,7 +35,6 @@ def launch_pretrain(
     model: str,
     run_num: int,
     seed: int | None,
-    narval: bool,
     use_cutout: bool,
     task: str,
 ):
@@ -50,13 +48,12 @@ def launch_pretrain(
         model (str): model to train
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
-        narval (bool): flag to run on narval computers
         use_cutout(bool): flag to use cutout in model training
         task(str): Pretraining task to use
     """
 
     run_name = f"pretraining-{task}-{model}-{run_num}"
-    run_dir = get_run_dir(PROJECT_NAME, run_name, narval)
+    run_dir = get_run_dir(PROJECT_NAME, run_name)
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=COMET_API_KEY,
@@ -80,14 +77,7 @@ def launch_pretrain(
     comet_logger.experiment.log_code(file_name="src/commands/pretrainer.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    task_class: PretrainingTask = None
-    if task == "MOTION":
-        task_class = MotionPretrainingTask
-    elif task == "SSIM":
-        task_class = SSIMPretrainingTask
-    elif task == "BINARY":
-        task_class = BinaryPretrainingTask
-    assert not task_class is None, "Error, task doesnt exists"
+    task_class: Type[PretrainingTask] = str_to_task(task)
 
     net = task_class(
         model_class=model,
@@ -97,6 +87,8 @@ def launch_pretrain(
         batch_size=batch_size,
         use_cutout=use_cutout,
     )
+
+    checkpoint = SaveBestCheckpoint(monitor="r2_score", mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
@@ -111,13 +103,29 @@ def launch_pretrain(
             EarlyStopping(
                 monitor="val_loss",
                 mode="min",
-                patience=40,
+                patience=20,
                 check_on_train_epoch_end=False,
                 verbose=True,
             ),
-            PretrainCallback(monitor="r2_score", mode="max"),
+            checkpoint,
             LearningRateMonitor(logging_interval="epoch"),
         ],
     )
 
-    trainer.fit(net, datamodule=PretrainingDataModule(narval, batch_size, task))
+    trainer.fit(net, datamodule=PretrainingDataModule(batch_size, task))
+
+    with EnsureOneProcess(trainer):
+        best_net = task_class.load_from_checkpoint(checkpoint.best_model_path)
+        logging.info("Running correlation on pretrain")
+        get_correlations(best_net, comet_logger.experiment)
+
+        logging.info("Running dropout on pretrain")
+        pretrain_mcdropout(
+            best_net,
+            trainer.val_dataloaders,
+            comet_logger.experiment,
+            label=label_from_task(task),
+        )
+
+        logging.info("Removing Checkpoints")
+        shutil.rmtree(trainer.default_root_dir)

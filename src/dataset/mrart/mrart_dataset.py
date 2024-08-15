@@ -71,8 +71,8 @@ class MRArtDataModule(BaseDataModule):
     Lightning data module to use MR-ART data in lightning trainers (for finetune)
     """
 
-    def __init__(self, narval=True, batch_size: int = 32):
-        super().__init__(narval, batch_size)
+    def __init__(self, batch_size: int = 32):
+        super().__init__(batch_size)
         self.load_tsf: Callable = FinetuneTransform()
         self.val_ds_class = ValMrArt
         self.train_ds_class = TrainMrArt

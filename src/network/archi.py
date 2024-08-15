@@ -37,7 +37,7 @@ class Encoder(abc.ABC, nn.Module):
         if self._latent_size <= 0:
             shape_like = (1, *self.im_shape)
             out_encoder: torch.Tensor = self.forward(torch.empty(shape_like))
-            self._latent_shape = out_encoder.shape[2:]
+            self._latent_shape = out_encoder.shape[1:]
             self._latent_size = out_encoder.numel()
 
     @property

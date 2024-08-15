@@ -71,7 +71,14 @@ def get_module_dl(
     elif issubclass(task_class, (MRArtFinetuningTask, MRArtScratchTask)):
         label = torch.tensor(1)
     ds = [
-        {"data": torch.randn(config.IM_SHAPE), "label": label, "identifier": "test"}
+        {
+            "data": torch.randn(config.IM_SHAPE),
+            "label": label,
+            "identifier": "test",
+            "motion_mm": torch.tensor(1.0),
+            "ssim_loss": torch.tensor(1.0),
+            "motion_binary": True,
+        }
     ] * num_samples
     dl = torch.utils.data.DataLoader(ds, batch_size=batch_size)
 

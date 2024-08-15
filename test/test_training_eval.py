@@ -2,7 +2,7 @@ import itertools
 from typing import Type
 import pytest
 
-from src.training.callback import get_pred_from_pretrain
+from src.training.eval import get_pred_from_pretrain
 from src.training.lightning_logic import (
     BinaryPretrainingTask,
     MotionPretrainingTask,

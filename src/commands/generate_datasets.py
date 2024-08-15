@@ -64,7 +64,7 @@ def setup_dataset_tree(dataset_dir: str):
     os.mkdir(f"{dataset_dir}/val")
 
 
-def launch_generate_data(new_dataset: str, narval: bool):
+def launch_generate_data(new_dataset: str):
     """Generate synthetic motion dataset and store everything (Volumes and CSVs)
 
     Args:
@@ -80,8 +80,8 @@ def launch_generate_data(new_dataset: str, narval: bool):
     save_train = SaveElement(dataset_dir, "train")
     save_val = SaveElement(dataset_dir, "val")
 
-    val_ampscz_ds = PretrainValAMPSCZ.from_arg(narval, load_tsf)
-    val_hcpep_ds = ValHCPEP.from_arg(narval, load_tsf)
+    val_ampscz_ds = PretrainValAMPSCZ.from_env(load_tsf)
+    val_hcpep_ds = ValHCPEP.from_env(load_tsf)
     synth_val_ds = Dataset(
         data=ConcatDataset([val_ampscz_ds, val_hcpep_ds]),
         transform=Compose([synth_tsf, crop_tsf, save_val]),
@@ -111,8 +111,8 @@ def launch_generate_data(new_dataset: str, narval: bool):
                 lst_dict.append(new_dict)
     pd.DataFrame.from_records(lst_dict).to_csv(f"{dataset_dir}/val.csv")
 
-    train_ampscz_ds = PretrainTrainAMPSCZ.from_arg(narval, load_tsf)
-    train_hcpep_ds = TrainHCPEP.from_arg(narval, load_tsf)
+    train_ampscz_ds = PretrainTrainAMPSCZ.from_env(load_tsf)
+    train_hcpep_ds = TrainHCPEP.from_env(load_tsf)
     synth_train_ds = Dataset(
         data=ConcatDataset([train_hcpep_ds, train_ampscz_ds]),
         transform=Compose([synth_tsf, crop_tsf, save_train]),

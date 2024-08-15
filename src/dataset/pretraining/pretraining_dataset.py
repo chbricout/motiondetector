@@ -9,25 +9,7 @@ from monai.data.dataloader import DataLoader
 
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import LoadSynth
-
-
-def parse_label_from_task(task: str) -> str:
-    """Retrieve label column name in dataframe from Pretrain task
-
-    Args:
-        task (str): Task to pretrain on
-
-    Returns:
-        str: label for dataset
-    """
-    label = ""
-    if task == "MOTION":
-        label = "motion_mm"
-    elif task == "SSIM":
-        label = "ssim_loss"
-    elif task == "BINARY":
-        label = "motion_binary"
-    return label
+from src.utils.task import label_from_task
 
 
 class BasePretrain(Dataset, BaseDataset):
@@ -76,7 +58,7 @@ class BasePretrain(Dataset, BaseDataset):
         Args:
             task (str, optional): pretraining task. Defaults to "MOTION".
         """
-        self.file["label"] = self.file[parse_label_from_task(task)]
+        self.file["label"] = self.file[label_from_task(task)]
 
 
 class PretrainTrain(BasePretrain):
@@ -102,8 +84,8 @@ class PretrainingDataModule(BaseDataModule):
     Lightning data module to use synthetic motion pretraining data in lightning trainers
     """
 
-    def __init__(self, narval=True, batch_size: int = 32, task: str = "MOTION"):
-        super().__init__(narval, batch_size)
+    def __init__(self, batch_size: int = 32, task: str = "MOTION"):
+        super().__init__(batch_size)
         self.load_tsf = LoadSynth.from_task(task)
         self.val_ds_class = PretrainVal
         self.train_ds_class = PretrainTrain
@@ -121,12 +103,12 @@ class PretrainingDataModule(BaseDataModule):
             drop_last=True,
         )
 
-    def val_dataloader(self):
+    def val_dataloader(self, num_workers=9):
         self.val_ds.define_label(self.task)
         return DataLoader(
             self.val_ds,
             batch_size=self.batch_size,
             pin_memory=True,
-            num_workers=9,
+            num_workers=num_workers,
             prefetch_factor=2,
         )

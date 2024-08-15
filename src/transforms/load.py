@@ -8,6 +8,7 @@ from monai.transforms import (
     ScaleIntensityd,
     CenterSpatialCropd,
     MapTransform,
+    ToTensord,
 )
 from scipy.stats import norm
 import numpy as np
@@ -146,8 +147,8 @@ class ToSoftLabel(MapTransform):
 
             return v if not was_tensor else torch.tensor(v)
 
-    def soft_to_hardlabel(self, x: torch.Tensor) -> torch.Tensor:
-        """Convert soft label to hard label
+    def logsoft_to_hardlabel(self, x: torch.Tensor) -> torch.Tensor:
+        """Convert soft label (in log format) to hard label
 
         Args:
             x (torch.Tensor): Vector of soft label or single soft label
@@ -160,7 +161,7 @@ class ToSoftLabel(MapTransform):
             x = x.cpu()
         pred = self._get_probs(x) @ self.bin_centers
 
-        return pred
+        return torch.as_tensor(pred)
 
     def soft_label_to_mean_std(self, x: torch.Tensor) -> tuple[np.ndarray, np.ndarray]:
         """Convert soft label to a list of weighted mean and standard deviation
@@ -227,6 +228,7 @@ class LoadSynth(Compose):
             LoadImaged(keys="data", ensure_channel_first=True, image_only=True),
             Orientationd(keys="data", axcodes="RAS"),
             self.soft_label,
+            ToTensord(keys="data", track_meta=False),
         ]
         super().__init__(self.tsf)
 
@@ -258,5 +260,6 @@ class FinetuneTransform(Compose):
                 Orientationd(keys="data", axcodes="RAS"),
                 CenterSpatialCropd(keys="data", roi_size=(160, 192, 160)),
                 ScaleIntensityd(keys="data", minv=0, maxv=1),
+                ToTensord(keys="data", track_meta=False),
             ]
         )

@@ -108,8 +108,8 @@ class AMPSCZDataModule(BaseDataModule):
     Lightning data module to use AMPSCZ finetune data in lightning trainers
     """
 
-    def __init__(self, narval: bool = True, batch_size: int = 32):
-        super().__init__(narval, batch_size)
+    def __init__(self, batch_size: int = 32):
+        super().__init__(batch_size)
         self.load_tsf: Callable = FinetuneTransform()
         self.val_ds_class = FinetuneValAMPSCZ
         self.train_ds_class = FinetuneTrainAMPSCZ

@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+## NARVAL ENV
+IS_NARVAL = os.getenv("IS_NARVAL", "False").lower() in ("true", "1", "t")
+
 ## SLURM
 DEFAULT_SLURM_ACCOUNT = "ctb-sbouix"
 
@@ -16,12 +19,12 @@ PROJECT_NAME = "estimate-motion-mm"
 
 ## MOTION MM PARAMETERS
 MOTION_N_BINS = 50
-MOTION_BIN_RANGE = (0, 4)
+MOTION_BIN_RANGE = (-0.8, 4.8)
 MOTION_BIN_STEP = (MOTION_BIN_RANGE[1] - MOTION_BIN_RANGE[0]) / MOTION_N_BINS
 
 ## SSIM PARAMETERS
-SSIM_N_BINS = 40
-SSIM_BIN_RANGE = (0, 0.5)
+SSIM_N_BINS = 50
+SSIM_BIN_RANGE = (-0.08, 0.48)
 SSIM_BIN_STEP = (SSIM_BIN_RANGE[1] - SSIM_BIN_RANGE[0]) / SSIM_N_BINS
 
 ## COMET

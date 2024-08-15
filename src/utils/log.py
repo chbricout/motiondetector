@@ -39,19 +39,18 @@ def save_volume_as_gif(volume: torch.Tensor, file_path: str):
     save_array_as_gif(imgs, file_path)
 
 
-def get_run_dir(project_name: str, run_name: str, narval: bool) -> str:
+def get_run_dir(project_name: str, run_name: str) -> str:
     """Define a directory for a specific run, used to store checkpoint
     Check existence and create needed folder
 
     Args:
         project_name (str): Name of the project (usually same as comet)
         run_name (str): Unique identifier for the specific run
-        narval (bool): flag to use narval file structure
 
     Returns:
         str: run directory full path
     """
-    if narval:
+    if config.IS_NARVAL:
         root_dir = f"/home/cbricout/scratch/{project_name}"
     else:
         root_dir = f"/home/at70870/local_scratch/{project_name}"

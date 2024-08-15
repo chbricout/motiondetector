@@ -122,5 +122,5 @@ class SFCNModel(Model):
         )
         self.encoder = SFCNEncoder(self.im_shape, self.dropout_rate)
         self.classifier = SFCNClassifier(
-            self.encoder.latent_shape, self.num_classes, self.dropout_rate
+            self.encoder.latent_shape[1:], self.num_classes, self.dropout_rate
         )

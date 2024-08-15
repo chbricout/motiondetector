@@ -10,7 +10,7 @@ import torch.utils
 import torch.utils.data
 from src.network.utils import parse_model
 from src.training.lightning_logic import (
-    BaseTrain,
+    BaseFinalTrain,
     FinetuningTask,
     MotionPretrainingTask,
     PretrainingTask,
@@ -184,7 +184,9 @@ def test_pretrain_mcdropout(task_class: Type[PretrainingTask], model: str):
         ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"],
     ),
 )
-def test_finetune_mcdropout(task_class: Type[FinetuningTask | BaseTrain], model: str):
+def test_finetune_mcdropout(
+    task_class: Type[FinetuningTask | BaseFinalTrain], model: str
+):
     n_preds = 2
     n_samples = 3
 

@@ -21,7 +21,6 @@ from src import config
 from src.transforms.load import ToSoftLabel
 from src.network.archi import Model
 from src.network.utils import init_model, parse_model, KLDivLoss
-from src.dataset.pretraining.pretraining_dataset import parse_label_from_task
 
 
 def get_calibration_curve(
@@ -49,7 +48,72 @@ def get_calibration_curve(
     return fig
 
 
-class BaseTrain(abc.ABC, lightning.LightningModule):
+class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
+    """Basic lightning task describing model that encode and classify
+    Unlike `Model`s class which are more generique implementation,
+    classes that inherit from this one also implements the post
+    processing pipeline needed to get clean results.
+    This class is mostly used to have a common strategy of
+    optimising mc-dropout
+    """
+
+    output_pipeline: nn.Module
+    model: Model
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        raw_output = self.model(x)
+        return self.output_pipeline(raw_output)
+
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode the input tensor
+
+        Args:
+            x (torch.Tensor): volume to encode
+
+        Returns:
+            torch.Tensor: resulting embedding
+        """
+        return self.model.encode_forward(x)
+
+    def classify(self, embedding: torch.Tensor) -> torch.Tensor:
+        """Classify an embedding
+
+        Args:
+            embedding (torch.Tensor): Embedding to classify
+
+        Returns:
+            torch.Tensor: Fully processed class
+        """
+        raw = self.model.classifier(embedding)
+        out = self.output_pipeline(raw)
+        return self.raw_to_pred(out)
+
+    def training_step(self, batch, _):
+        volumes: MetaTensor = batch["data"]
+        labels = batch["label"]
+
+        predictions = self.forward(volumes)
+
+        label_loss = self.label_loss(predictions, labels)
+        self.log("train_loss", label_loss.item(), batch_size=self.datamodule.batch_size)
+
+        gc.collect()
+
+        return label_loss
+
+    @abc.abstractmethod
+    def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
+        """Transform raw output of the model to a final prediction
+
+        Args:
+            pred (torch.Tensor): Raw prediction
+
+        Returns:
+            torch.Tensor: final prediction
+        """
+
+
+class BaseFinalTrain(EncodeClassifyTask):
     """
     Base class used for training from scratch and finetuning tasks
     """
@@ -60,30 +124,13 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
     label: list[float | int] = []
     prediction: list[float | int] = []
 
-    def forward(self, x: torch.Tensor):
-        raw_output = self.model(x)
-        return self.output_pipeline(raw_output)
-
-    def training_step(self, batch, _):
-        volume = batch["data"]
-        label = batch["label"]
-        prediction = self.forward(volume)
-        logging.warn(f"{prediction.dtype}, {label.dtype}")
-
-        label_loss = self.label_loss(prediction, label)
-        self.log("train_loss", label_loss.item())
-
-        gc.collect()
-
-        return label_loss
-
     def validation_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.forward(volume)
 
         label_loss = self.label_loss(prediction, label)
-        self.log("val_loss", label_loss.item())
+        self.log("val_loss", label_loss.item(), batch_size=self.datamodule.batch_size)
 
         lab = label.detach().cpu()
         prediction = prediction.detach().cpu()
@@ -100,20 +147,10 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
             "val_balanced_accuracy",
             balanced_accuracy_score(self.label, self.prediction),
             sync_dist=True,
+            batch_size=self.datamodule.batch_size,
         )
         self.label = []
         self.prediction = []
-
-    @abc.abstractmethod
-    def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
-        """Transform raw output of the model to a final prediction
-
-        Args:
-            pred (torch.Tensor): Raw prediction
-
-        Returns:
-            torch.Tensor: final prediction
-        """
 
     def predict_step(self, batch, _):
         volume = batch["data"]
@@ -127,7 +164,7 @@ class BaseTrain(abc.ABC, lightning.LightningModule):
         return optim
 
 
-class TrainScratchTask(BaseTrain):
+class TrainScratchTask(BaseFinalTrain):
     """Common class for task to train from scratch"""
 
     num_classes: int
@@ -153,7 +190,7 @@ class TrainScratchTask(BaseTrain):
         self.save_hyperparameters()
 
 
-class FinetuningTask(BaseTrain):
+class FinetuningTask(BaseFinalTrain):
     """Common class for task to finetune"""
 
     model: Model
@@ -239,12 +276,12 @@ class AMPSCZFinetuningTask(FinetuningTask):
         return pred.sigmoid().round().int()
 
 
-class PretrainingTask(lightning.LightningModule):
+class PretrainingTask(EncodeClassifyTask):
     """Pretraining Task in lightning"""
 
     model: Model
-    output_pipeline: nn.Module
     label_loss: nn.Module
+    hard_label_tag: str  # Used to retrieve hard label without computation from batch
     label: list[float | int] = []
     prediction: list[float | int] = []
     num_classes: int
@@ -266,8 +303,8 @@ class PretrainingTask(lightning.LightningModule):
         self.batch_size = batch_size
         self.lr = lr
         self.model_class = parse_model(model_class)
-        self.model = self.model_class(
-            self.im_shape, self.num_classes, self.dropout_rate
+        self.model = torch.compile(
+            self.model_class(self.im_shape, self.num_classes, self.dropout_rate)
         )
         init_model(self.model)
 
@@ -276,54 +313,31 @@ class PretrainingTask(lightning.LightningModule):
             self.cutout = CutOut(self.batch_size)
         self.save_hyperparameters()
 
-    def post_output(self, out: torch.Tensor) -> torch.Tensor:
-        """Function to call after prediction to get final value
-
-        Args:
-            out (torch.Tensor): raw output from model
-
-        Returns:
-            torch.Tensor: postprocessed output
-        """
-        return out
-
-    def forward(self, x: torch.Tensor):
-        raw_output = self.model(x)
-        return self.output_pipeline(raw_output)
-
-    def training_step(self, batch, _):
-        volumes: MetaTensor = batch["data"]
-        labels = batch["label"]
-
-        if self.use_cutout:
-            augvolumes = self.cutout(volumes)
-        else:
-            augvolumes = volumes
-
-        predictions = self.forward(augvolumes)
-
-        label_loss = self.label_loss(predictions, labels)
-        self.log("train_loss", label_loss.item())
-
-        gc.collect()
-
-        return label_loss
-
     def validation_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.forward(volume)
 
         label_loss = self.label_loss(prediction, label)
-        self.log("val_loss", label_loss.item(), sync_dist=True)
-        lab = batch["label"].detach().cpu()
+        self.log(
+            "val_loss",
+            label_loss.item(),
+            sync_dist=True,
+            batch_size=self.datamodule.batch_size,
+        )
+        lab = batch[self.hard_label_tag].detach().cpu()
 
         self.label += lab.tolist()
-        self.prediction += self.post_output(prediction.detach()).tolist()
+        self.prediction += self.raw_to_pred(prediction.detach()).tolist()
         return label_loss
 
     def on_validation_epoch_end(self) -> None:
-        self.log("r2_score", r2_score(self.label, self.prediction), sync_dist=True)
+        self.log(
+            "r2_score",
+            r2_score(self.label, self.prediction),
+            sync_dist=True,
+            batch_size=self.datamodule.batch_size,
+        )
         self.logger.experiment.log_figure(
             figure=get_calibration_curve(self.prediction, self.label),
             figure_name="calibration",
@@ -336,7 +350,7 @@ class PretrainingTask(lightning.LightningModule):
     def predict_step(self, batch, _):
         volume = batch["data"]
         prediction = self.forward(volume)
-        prediction = self.post_output(prediction)
+        prediction = self.raw_to_pred(prediction)
 
         return prediction
 
@@ -359,6 +373,7 @@ class MotionPretrainingTask(PretrainingTask):
     Pretraining Task for Motion mm metric
     """
 
+    hard_label_tag = "motion_mm"
     output_pipeline = nn.LogSoftmax(dim=1)
     label_loss = KLDivLoss()
     soft_label_util: ToSoftLabel = ToSoftLabel.motion_config()
@@ -382,8 +397,8 @@ class MotionPretrainingTask(PretrainingTask):
             num_classes=config.MOTION_N_BINS,
         )
 
-    def post_output(self, out: torch.Tensor) -> torch.Tensor:
-        return self.soft_label_util.soft_to_hardlabel(out)
+    def raw_to_pred(self, out: torch.Tensor) -> torch.Tensor:
+        return self.soft_label_util.logsoft_to_hardlabel(out)
 
 
 class SSIMPretrainingTask(PretrainingTask):
@@ -391,6 +406,7 @@ class SSIMPretrainingTask(PretrainingTask):
     Pretraining Task for SSIM metric
     """
 
+    hard_label_tag = "ssim_loss"
     output_pipeline = nn.LogSoftmax(dim=1)
     label_loss = KLDivLoss()
     soft_label_util: ToSoftLabel = ToSoftLabel.ssim_config()
@@ -414,8 +430,8 @@ class SSIMPretrainingTask(PretrainingTask):
             num_classes=config.SSIM_N_BINS,
         )
 
-    def post_output(self, out: torch.Tensor) -> torch.Tensor:
-        return self.soft_label_util.soft_to_hardlabel(out)
+    def raw_to_pred(self, out: torch.Tensor) -> torch.Tensor:
+        return self.soft_label_util.logsoft_to_hardlabel(out)
 
 
 class BinaryPretrainingTask(PretrainingTask):
@@ -423,6 +439,7 @@ class BinaryPretrainingTask(PretrainingTask):
     Pretraining Task for Binary motion prediction task
     """
 
+    hard_label_tag = "motion_binary"
     output_pipeline = nn.Sequential(nn.Sigmoid(), nn.Flatten(start_dim=0))
     label_loss = nn.BCELoss()
 
@@ -445,5 +462,5 @@ class BinaryPretrainingTask(PretrainingTask):
             num_classes=1,
         )
 
-    def post_output(self, out: torch.Tensor) -> torch.Tensor:
+    def raw_to_pred(self, out: torch.Tensor) -> torch.Tensor:
         return out.round().int().flatten()

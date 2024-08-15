@@ -5,6 +5,7 @@ import logging
 from comet_ml import ExistingExperiment, APIExperiment
 import torch
 from torch.utils.data import DataLoader
+from monai.data import MetaTensor
 from lightning import LightningModule
 import pandas as pd
 import numpy as np
@@ -15,6 +16,7 @@ from tqdm import tqdm
 from src import config
 from src.utils.comet import log_figure_comet
 from src.utils.log import log_figure
+from src.utils.task import label_from_task_class
 
 
 def predict_mcdropout(
@@ -41,22 +43,32 @@ def predict_mcdropout(
 
     pl_module.model.mc_dropout()
     pl_module.cuda()
+    encoder = torch.compile(pl_module.encode)
+    classifier = torch.compile(pl_module.classify)
     res = []
     labels: list[int] = []
     with torch.no_grad():
+        cache_ds = []
+        labels = []
+        identifiers: list[str] = []
+        for idx, batch in enumerate(dataloader):
+            labels += batch[label].tolist()
+            identifiers += batch["identifier"]
+
+            with torch.autocast(device_type="cuda"):
+                if isinstance(batch["data"], MetaTensor):
+                    batch["data"] = batch["data"].as_tensor()
+                batch["data"] = batch["data"].cuda()
+
+                encoding = encoder(batch["data"])
+                cache_ds.append(encoding.cpu())
+
         for _ in tqdm(range(n_preds)):
             sample_pred = []
-            labels = []
-            identifiers: list[str] = []
-            for idx, batch in enumerate(dataloader):
-                batch["data"] = batch["data"].cuda()
-                labels += batch[label].tolist()
-                identifiers += batch["identifier"]
-
-                sample_pred.append(
-                    torch.as_tensor(pl_module.predict_step(batch, idx)).cpu()
-                )
-                torch.cuda.empty_cache()
+            for encoding in cache_ds:
+                with torch.autocast(device_type="cuda"):
+                    batch_pred = classifier(encoding.cuda())
+                    sample_pred.append(batch_pred.cpu())
             res.append(torch.concat(sample_pred).unsqueeze(1))
     preds = torch.concat(res, 1).float()
 
@@ -131,8 +143,7 @@ def pretrain_pred_to_df(
     """
     mean = torch.mean(preds, dim=1, dtype=float)
     std = torch.std(preds, dim=1)
-
-    logging.debug(mean, std)
+    logging.debug("mean %f \nstd %f std", mean, std)
     np_concat = np.array([identifiers, mean.tolist(), std.tolist(), labels])
     df = pd.DataFrame(np_concat.T, columns=["identifier", "mean", "std", "label"])
     df["predictions"] = preds.tolist()
@@ -251,7 +262,7 @@ def pretrain_mcdropout(
     pl_module: LightningModule,
     dataloader: DataLoader,
     experiment: ExistingExperiment | APIExperiment | None = None,
-    label: str = "label",
+    label: str | None = None,
     n_preds: int = 100,
 ) -> pd.DataFrame:
     """Evaluate Monte Carlo Dropout for pretrain models
@@ -261,12 +272,14 @@ def pretrain_mcdropout(
         dataloader (DataLoader): Dataloader to use
         experiment (ExistingExperiment | APIExperiment | None, optional):
             Comet experiment to log on. Defaults to None.
-        label (str, optional): label key in dataloader. Defaults to "label".
+        label (str | None, optional): label key in dataloader. Defaults to None.
         n_preds (int, optional): number of prediction for MC Dropout. Defaults to 100.
 
     Returns:
         pd.DataFrame: Dataframe with full results (logged on comet if experiment)
     """
+    if label is None:
+        label = label_from_task_class(pl_module.__class__)
     mcdrop_res = predict_mcdropout(
         pl_module=pl_module, dataloader=dataloader, n_preds=n_preds, label=label
     )

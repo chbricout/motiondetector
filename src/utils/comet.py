@@ -8,6 +8,7 @@ import tempfile
 import comet_ml
 from matplotlib.figure import Figure
 import torch
+from src import config
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.network.utils import parse_model
 from src.training.lightning_logic import PretrainingTask
@@ -37,7 +38,6 @@ def export_torchscript(
         run_num=run_num,
         project_name=project_name,
         api_key=api_key,
-        scratch=False,
         del_folers=True,
     )
 
@@ -61,7 +61,6 @@ def get_pretrain_task(
     run_num: int,
     project_name: str,
     api_key: str = COMET_API_KEY,
-    scratch: bool = True,
     del_folers: bool = False,
 ) -> PretrainingTask:
     """Retrieve pretrain task from comet, used for Finetuning
@@ -72,8 +71,6 @@ def get_pretrain_task(
         run_num (int): specific run num to load
         project_name (str): name of the comet project
         api_key (str, optional): comet api key. Defaults to COMET_API_KEY.
-        scratch (bool, optional): flag to use scratch for storage (on Narval).
-            Defaults to True
         del_folders (bool, optional): flag to delete exp folders after loading.
             Defaults to False
 
@@ -88,9 +85,8 @@ def get_pretrain_task(
     )
     model_class = parse_model(model_name)
 
-    if scratch:
+    if config.IS_NARVAL:
         output_dir = "/home/cbricout/scratch/"
-
     else:
         output_dir = "comet_downloads/"
     output_dir += f"{project_name}-{run_num}/"

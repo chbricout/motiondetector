@@ -3,12 +3,9 @@ from typing import Type
 from lightning import LightningModule
 import pytest
 import torch
-from src import config
 from src.training.lightning_logic import (
-    BaseTrain,
     FinetuningTask,
     MotionPretrainingTask,
-    PretrainingTask,
     SSIMPretrainingTask,
     BinaryPretrainingTask,
     MRArtFinetuningTask,

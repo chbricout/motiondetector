@@ -4,6 +4,7 @@ Module to launch finetuning job on pretrained model.
 
 import logging
 import random
+import shutil
 
 import torch
 import lightning
@@ -13,7 +14,7 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from src.dataset.mrart.mrart_dataset import MRArtDataModule
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
 from src.config import IM_SHAPE, PROJECT_NAME
-from src.training.callback import FinetuneCallback
+from src.training.eval import SaveBestCheckpoint
 from src.training.lightning_logic import (
     MRArtFinetuningTask,
     AMPSCZFinetuningTask,
@@ -21,6 +22,8 @@ from src.training.lightning_logic import (
 )
 from src.utils.comet import get_pretrain_task
 from src.utils.log import get_run_dir
+from src.utils.mcdropout import finetune_mcdropout
+from src.utils.task import EnsureOneProcess
 
 
 def launch_finetune(
@@ -31,7 +34,6 @@ def launch_finetune(
     model: str,
     run_num: int,
     seed: int | None,
-    narval: bool,
 ):
     """Launch the finetuning process
 
@@ -43,12 +45,11 @@ def launch_finetune(
         model (str): model to train
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
-        narval (bool): flag to run on narval computers
     """
     assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
 
     run_name = f"finetune-{dataset}-{model}-{run_num}"
-    run_dir = get_run_dir(PROJECT_NAME, run_name, narval)
+    run_dir = get_run_dir(PROJECT_NAME, run_name)
 
     task: TrainScratchTask = None
     datamodule: lightning.LightningDataModule = None
@@ -74,8 +75,10 @@ def launch_finetune(
     comet_logger.experiment.log_code(file_name="src/commands/finetune.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    pretrained = get_pretrain_task(model, run_num, PROJECT_NAME, scratch=narval)
+    pretrained = get_pretrain_task(model, run_num, PROJECT_NAME)
     net = task(pretrained_model=pretrained.model, im_shape=IM_SHAPE, lr=learning_rate)
+
+    checkpoint = SaveBestCheckpoint(monitor="val_balanced_accuracy", mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
@@ -87,8 +90,15 @@ def launch_finetune(
         log_every_n_steps=10,
         callbacks=[
             EarlyStopping(monitor="val_loss", mode="min", patience=100),
-            FinetuneCallback(monitor="val_balanced_accuracy", mode="max"),
+            checkpoint,
         ],
     )
 
-    trainer.fit(net, datamodule=datamodule(narval, batch_size))
+    trainer.fit(net, datamodule=datamodule(batch_size))
+
+    with EnsureOneProcess(trainer):
+        best_net = task.load_from_checkpoint(checkpoint.best_model_path)
+
+        finetune_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
+        logging.info("Removing Checkpoints")
+        shutil.rmtree(trainer.default_root_dir)

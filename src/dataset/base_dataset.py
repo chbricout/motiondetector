@@ -9,6 +9,8 @@ import re
 from typing import Callable, Self
 import lightning as L
 
+from src import config
+
 
 def extract_sub(path: str) -> str:
     """Use regex to extract subject ID from the AMPSCZ path
@@ -77,6 +79,20 @@ class BaseDataset(abc.ABC):
         """
         return cls.narval(transform) if narval else cls.lab(transform)
 
+    @classmethod
+    def from_env(cls, transform: Callable | None = None) -> Self:
+        """Return corresponding dataset using IS_NARVAL env variable
+        (Narval or Neuro-iX)
+
+        Args:
+            transform (Callable | None, optional): Transform to apply.
+              Defaults to None.
+
+        Returns:
+            Self: Dataset
+        """
+        return cls.narval(transform) if config.IS_NARVAL else cls.lab(transform)
+
 
 class BaseDataModule(abc.ABC, L.LightningDataModule):
     """
@@ -89,22 +105,13 @@ class BaseDataModule(abc.ABC, L.LightningDataModule):
     val_ds_class: BaseDataset
     train_ds_class: BaseDataset
 
-    def __init__(self, narval: bool = True, batch_size: int = 32):
+    def __init__(self, batch_size: int = 32):
         super().__init__()
-        self.narval = narval
         self.batch_size = batch_size
 
     def setup(self, stage: str):
-        self.val_ds = (
-            self.val_ds_class.narval(self.load_tsf)
-            if self.narval
-            else self.val_ds_class.lab(self.load_tsf)
-        )
-        self.train_ds = (
-            self.train_ds_class.narval(self.load_tsf)
-            if self.narval
-            else self.train_ds_class.lab(self.load_tsf)
-        )
+        self.val_ds = self.val_ds_class.from_env(self.load_tsf)
+        self.train_ds = self.train_ds_class.from_env(self.load_tsf)
         logging.info(
             "Train dataset contains %d datas  \nVal dataset contains %d",
             len(self.train_ds),

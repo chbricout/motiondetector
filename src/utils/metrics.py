@@ -27,7 +27,7 @@ def separation_capacity(
         tuple[float, Figure, list[float]]: accuracy using thresholds,
         swarm plot using thresholds, list of thresholds
     """
-    n_clusters = max(label) + 1
+    n_clusters = int(max(label) + 1)
     pred_np = np.array(pred).reshape(-1, 1)
     model = KMeans(n_clusters=n_clusters)
     model.fit(pred_np, label)

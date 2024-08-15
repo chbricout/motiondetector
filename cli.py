@@ -18,6 +18,11 @@ from src.utils.log import lightning_logger, rich_logger
 from src import config
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning, message=".*has_cuda.*")
+warnings.filterwarnings("ignore", category=UserWarning, message=".*has_cudnn.*")
+warnings.filterwarnings("ignore", category=UserWarning, message=".*has_mps.*")
+warnings.filterwarnings("ignore", category=UserWarning, message=".*has_mkldnn.*")
+
 
 max_epoch = click.option(
     "--max_epochs",
@@ -69,13 +74,6 @@ seed = click.option(
     default=None,
     type=int,
 )
-narval = click.option(
-    "-n",
-    "--narval",
-    help="Flag if running on narval (for datasets paths)",
-    is_flag=True,
-    type=bool,
-)
 slurm = click.option(
     "-S",
     "--slurm",
@@ -116,7 +114,6 @@ def cli():
 @model
 @run_num
 @seed
-@narval
 @slurm
 @cutout
 @task
@@ -128,7 +125,6 @@ def pretrain(
     model,
     run_num,
     seed,
-    narval,
     slurm,
     cutout,
     task: str,
@@ -148,7 +144,6 @@ def pretrain(
             model=model,
             run_num=run_num,
             seed=seed,
-            narval=narval,
             use_cutout=cutout,
             task=task,
         )
@@ -162,10 +157,9 @@ def pretrain(
 @model
 @run_num
 @seed
-@narval
 @slurm
 def finetune(
-    max_epochs, learning_rate, dataset, batch_size, model, run_num, seed, narval, slurm
+    max_epochs, learning_rate, dataset, batch_size, model, run_num, seed, slurm
 ):
     if slurm:
         submit_finetune(
@@ -182,7 +176,6 @@ def finetune(
             model=model,
             run_num=run_num,
             seed=seed,
-            narval=narval,
         )
 
 
@@ -195,7 +188,6 @@ def finetune(
 @model
 @run_num
 @seed
-@narval
 @slurm
 def train(
     max_epochs,
@@ -206,14 +198,10 @@ def train(
     model,
     run_num,
     seed,
-    narval,
     slurm,
 ):
     if slurm:
-        submit_scratch(
-            model=model,
-            array=run_num,
-        )
+        submit_scratch(model=model, array=run_num, dataset=dataset)
     else:
         lightning_logger()
         launch_train_from_scratch(
@@ -225,25 +213,23 @@ def train(
             model=model,
             run_num=run_num,
             seed=seed,
-            narval=narval,
         )
 
 
 @cli.command()
 @click.option(
     "-d",
-    "--new_dataset",
+    "-ew_dataset",
     help="New dataset name",
     default="pretraining-motion",
     type=str,
 )
 @slurm
-@narval
-def generate_data(new_dataset, slurm: bool, narval: bool):
+def generate_data(new_dataset, slurm: bool):
     if slurm:
         submit_generate_ds()
     else:
-        launch_generate_data(new_dataset, narval)
+        launch_generate_data(new_dataset)
 
 
 @cli.command()
@@ -299,7 +285,7 @@ run_confs = [
 def pretrainer(cutout: bool, test: bool, task: str):
     for model in run_confs:
 
-        cmd = f"cli.py pretrain -n  \
+        cmd = f"cli.py pretrain  \
                 --batch_size {model['batch_size']}\
                 --model {model['name']}\
                 --learning_rate 2e-5\
@@ -334,7 +320,7 @@ def finetune():
             submit_finetune(
                 model["name"],
                 range(1, 6),
-                f"cli.py finetune -n  \
+                f"cli.py finetune   \
                     --batch_size {model['batch_size']}\
                     --model {model['name']}\
                     --learning_rate 1e-5\
