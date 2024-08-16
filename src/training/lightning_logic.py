@@ -59,6 +59,7 @@ class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
 
     output_pipeline: nn.Module
     model: Model
+    batch_size:int
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         raw_output = self.model(x)
@@ -95,7 +96,7 @@ class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
         predictions = self.forward(volumes)
 
         label_loss = self.label_loss(predictions, labels)
-        self.log("train_loss", label_loss.item(), batch_size=self.trainer.datamodule.batch_size)
+        self.log("train_loss", label_loss.item(), batch_size=self.batch_size)
 
         gc.collect()
 
@@ -121,6 +122,8 @@ class BaseFinalTrain(EncodeClassifyTask):
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
+    batch_size:int
+
     label: list[float | int] = []
     prediction: list[float | int] = []
 
@@ -130,7 +133,7 @@ class BaseFinalTrain(EncodeClassifyTask):
         prediction = self.forward(volume)
 
         label_loss = self.label_loss(prediction, label)
-        self.log("val_loss", label_loss.item(), batch_size=self.trainer.datamodule.batch_size)
+        self.log("val_loss", label_loss.item(), batch_size=self.batch_size)
 
         lab = label.detach().cpu()
         prediction = prediction.detach().cpu()
@@ -147,7 +150,7 @@ class BaseFinalTrain(EncodeClassifyTask):
             "val_balanced_accuracy",
             balanced_accuracy_score(self.label, self.prediction),
             sync_dist=True,
-            batch_size=self.trainer.datamodule.batch_size,
+            batch_size=self.batch_size,
         )
         self.label = []
         self.prediction = []
@@ -168,6 +171,7 @@ class TrainScratchTask(BaseFinalTrain):
     """Common class for task to train from scratch"""
 
     num_classes: int
+    batch_size:int
 
     def __init__(
         self,
@@ -175,11 +179,13 @@ class TrainScratchTask(BaseFinalTrain):
         im_shape,
         lr=1e-5,
         dropout_rate=0.5,
+        batch_size=14
     ):
         super().__init__()
         self.im_shape = im_shape
         self.dropout_rate = dropout_rate
         self.lr = lr
+        self.batch_size=batch_size
         self.model_class = parse_model(model_class)
         self.model = self.model_class(
             self.im_shape, self.num_classes, self.dropout_rate
@@ -196,17 +202,20 @@ class FinetuningTask(BaseFinalTrain):
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
+    batch_size:int
 
     def __init__(
         self,
         pretrained_model: Model,
         im_shape,
         lr=1e-5,
+        batch_size=14
     ):
         super().__init__()
         self.im_shape = im_shape
         self.lr = lr
         self.model = pretrained_model
+        self.batch_size=batch_size
         self.setup_training()
         self.save_hyperparameters()
 
@@ -303,10 +312,9 @@ class PretrainingTask(EncodeClassifyTask):
         self.batch_size = batch_size
         self.lr = lr
         self.model_class = parse_model(model_class)
-        self.model = torch.compile(
-            self.model_class(self.im_shape, self.num_classes, self.dropout_rate)
-        )
+        self.model =  self.model_class(self.im_shape, self.num_classes, self.dropout_rate)
         init_model(self.model)
+        self.model =torch.compile(self.model)
 
         self.use_cutout = use_cutout
         if self.use_cutout:
@@ -323,7 +331,7 @@ class PretrainingTask(EncodeClassifyTask):
             "val_loss",
             label_loss.item(),
             sync_dist=True,
-            batch_size=self.trainer.datamodule.batch_size,
+            batch_size=self.batch_size,
         )
         lab = batch[self.hard_label_tag].detach().cpu()
 
@@ -336,7 +344,7 @@ class PretrainingTask(EncodeClassifyTask):
             "r2_score",
             r2_score(self.label, self.prediction),
             sync_dist=True,
-            batch_size=self.trainer.datamodule.batch_size,
+            batch_size=self.batch_size,
         )
         self.logger.experiment.log_figure(
             figure=get_calibration_curve(self.prediction, self.label),

@@ -219,13 +219,14 @@ def train(
 @cli.command()
 @click.option(
     "-d",
-    "-ew_dataset",
+    "--new_dataset",
     help="New dataset name",
     default="pretraining-motion",
     type=str,
 )
 @slurm
 def generate_data(new_dataset, slurm: bool):
+    rich_logger()
     if slurm:
         submit_generate_ds()
     else:

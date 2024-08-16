@@ -11,7 +11,7 @@ from src.network.conv5_fc3_net import Conv5FC3Model
 from src.network.res_net import ResModel
 from src.network.seres_net import SEResModel
 from src.network.sfcn_net import SFCNModel
-from src.network.vit_net import ViTModel
+from src.network.vit_net import ViTModel, ViTClassifier, ViTEncoder
 
 
 def init_model(model: nn.Module):
@@ -21,7 +21,7 @@ def init_model(model: nn.Module):
     Args:
         model (nn.Module): Model to initialize
     """
-    if not "vit" in model.__class__.__name__.lower():
+    if not isinstance(model, (ViTModel, ViTClassifier, ViTEncoder)):
         model.apply(init_weights)
 
 

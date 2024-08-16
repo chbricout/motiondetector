@@ -22,26 +22,12 @@ class BasePretrain(Dataset, BaseDataset):
     def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.file = pd.read_csv(self.csv_path, index_col=0)
 
-        self.file["identifier"] = self.file["data"].apply(
-            BasePretrain.extract_identifier
-        )
+        self.file["identifier"] = self.file["identifier"]
         self.file["data"] = prefix + self.file["data"]
         self.transform = transform
 
         # Define default label
         self.define_label()
-
-    @staticmethod
-    def extract_identifier(path: str) -> str:
-        """Retrieve volume identifier from path
-
-        Args:
-            path (str): path of file in dataframe
-
-        Returns:
-            str: formatted identifier
-        """
-        return path.split("/")[-1].split(".")[0]
 
     def __len__(self):
         return len(self.file)

@@ -76,7 +76,12 @@ def launch_finetune(
     logging.info("Run dir path is : %s", run_dir)
 
     pretrained = get_pretrain_task(model, run_num, PROJECT_NAME)
-    net = task(pretrained_model=pretrained.model, im_shape=IM_SHAPE, lr=learning_rate)
+    net = task(
+        pretrained_model=pretrained.model,
+        im_shape=IM_SHAPE,
+        lr=learning_rate,
+        batch_size=batch_size,
+    )
 
     checkpoint = SaveBestCheckpoint(monitor="val_balanced_accuracy", mode="max")
 

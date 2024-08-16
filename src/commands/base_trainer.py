@@ -73,6 +73,7 @@ def launch_train_from_scratch(
         im_shape=IM_SHAPE,
         lr=learning_rate,
         dropout_rate=dropout_rate,
+        batch_size=batch_size
     )
 
     checkpoint = SaveBestCheckpoint(monitor="val_balanced_accuracy", mode="max")

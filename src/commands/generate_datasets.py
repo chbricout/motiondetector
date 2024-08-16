@@ -2,66 +2,111 @@
 Module to generate synthetic motion datasets used for pretraining
 """
 
+import logging
 import os
 import shutil
+import tarfile
+from typing import Type
 
 from monai.data.dataloader import DataLoader
 from monai.data.dataset import Dataset
 from monai.transforms.compose import Compose
-from monai.transforms import SaveImage, Transform
 from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 import pandas as pd
 
-from src.dataset.ampscz.ampscz_dataset import PretrainTrainAMPSCZ, PretrainValAMPSCZ
-from src.dataset.hcpep.hcpep_dataset import TrainHCPEP, ValHCPEP
-from src.transforms.generate import Preprocess, CreateSynthVolume, FinalCrop
+from src.dataset.ampscz.ampscz_dataset import (
+    PretrainTrainAMPSCZ,
+    PretrainValAMPSCZ,
+    PretrainTestAMPSCZ,
+)
+from src.dataset.base_dataset import BaseDataset
+from src.dataset.hcpep.hcpep_dataset import TrainHCPEP, ValHCPEP, TestHCPEP
+from src.transforms.generate import (
+    Preprocess,
+    CreateSynthVolume,
+    FinalCrop,
+    SyntheticPipeline,
+)
 from src import config
 
 
-class SaveElement(Transform):
-    """Special tranform to save the newly created volume in your intended folder"""
-
-    def __init__(self, dataset_dir: str, mode="train", iteration=0):
-        super().__init__()
-        self.mode = mode
-        self.save = SaveImage(savepath_in_metadict=True, resample=False)
-        self.iteration = iteration
-        self.dataset_dir = dataset_dir
-        self.base_path = f"{self.dataset_dir}/{self.mode}/"
-
-    def __call__(self, element):
-        path = (
-            self.base_path + f"{element['sub_id']}-{element['ses_id']}-{self.iteration}"
-        )
-        self.save(element["data"], filename=path)
-
-        return {
-            "data": element["data"],
-            "motion_mm": element["motion_mm"],
-            "ssim_loss": element["ssim_loss"],
-            "motion_binary": element["motion_binary"],
-            "sub_id": str(element["sub_id"]),
-            "ses_id": str(element["ses_id"]),
-        }
-
-
-def setup_dataset_tree(dataset_dir: str):
+def setup_dataset_tree(dataset_dir: str, modes: list[str]):
     """Create every folder needed for the new dataset (if needed) and remove previous
     generation attempt if the main folder already exists
 
     Args:
         dataset_dir (str): Path to the new dataset
+        modes (list[str]): list of mode to create folder for.
     """
-    if not os.path.exists(dataset_dir):
-        os.mkdir(dataset_dir)
-    else:
-        if os.path.exists(f"{dataset_dir}/train"):
-            shutil.rmtree(f"{dataset_dir}/train")
-        if os.path.exists(f"{dataset_dir}/val"):
-            shutil.rmtree(f"{dataset_dir}/val")
-    os.mkdir(f"{dataset_dir}/train")
-    os.mkdir(f"{dataset_dir}/val")
+    os.makedirs(dataset_dir, exist_ok=True)
+    for mode in modes:
+        if os.path.exists(f"{dataset_dir}/{mode}"):
+            shutil.rmtree(f"{dataset_dir}/{mode}")
+        os.mkdir(f"{dataset_dir}/{mode}")
+
+
+def load_data(datasets: list[Type[BaseDataset]]) -> Dataset:
+    """load data from every dataset in advance and return
+    a concatenated dataset ready for synthethic generation
+
+    Args:
+        datasets (list[Type[BaseDataset]]): list of datasets to use
+
+    Returns:
+        Dataset: Concatenated loaded dataset
+    """
+    load_tsf = Preprocess()
+    loaded = [ds.from_env(load_tsf) for ds in datasets]
+    return ConcatDataset(loaded)
+
+
+def generate_data(dataset: Dataset, dataset_dir: str, mode: str, num_iter: int):
+    """Generate a synthetic dataset by processing and storing
+    the whole dataloader `n_iter` times.
+    Store file path and artifacts labels to `csv_path`.
+
+    Args:
+        dataloader (DataLoader): Dataloader with synthetic transform
+        dataset_dir (str): Directory to store dataset.
+        mode (str): Dataset's mode (train, val, test)
+        num_iter (int): Number of iteration for generation
+    """
+    lst_dict = []
+    synth_pipeline = SyntheticPipeline(dataset_dir=dataset_dir, mode=mode)
+    synth_dataset = Dataset(dataset, transform=synth_pipeline)
+    dataloader = DataLoader(
+        synth_dataset,
+        batch_size=1,
+        num_workers=20,
+        prefetch_factor=2,
+    )
+    for i in tqdm(range(num_iter)):
+        synth_pipeline.iteration = i
+        for element in tqdm(dataloader):
+            lst_dict += element
+
+    pd.DataFrame.from_records(lst_dict).to_csv(f"{dataset_dir}/{mode}.csv")
+    synth_pipeline.save_parameters()
+
+
+def generated_to_tar(root_dir: str, new_dataset: str, to_archive: str):
+    """Archive generated files for future usage
+
+    Args:
+        root_dir (str): Root dir of all datasets
+        new_dataset (str): New dataset name
+        to_archive (str): path to generated dataset
+    """
+    filename = "generate_dataset.tar"
+    dataset_dir = os.path.join(root_dir, new_dataset+"_archive")
+    os.makedirs(dataset_dir, exist_ok=True)
+
+    logging.info("Writing dataset to tar archive")
+    tar_obj = tarfile.open(os.path.join(dataset_dir, filename), "w")
+    tar_obj.add(to_archive)
+    tarfile.close()
+    logging.info("Dataset archived, remember to remove folder")
 
 
 def launch_generate_data(new_dataset: str):
@@ -71,73 +116,24 @@ def launch_generate_data(new_dataset: str):
         new_dataset (str): Name of the new dataset
     """
     root_dir = config.GENERATE_ROOT_DIR
+    logging.info("root dataset is %s", root_dir)
     dataset_dir = os.path.join(root_dir, new_dataset)
-    setup_dataset_tree(dataset_dir)
 
-    load_tsf = Preprocess()
-    synth_tsf = CreateSynthVolume(elastic_activate=True)
-    crop_tsf = FinalCrop()
-    save_train = SaveElement(dataset_dir, "train")
-    save_val = SaveElement(dataset_dir, "val")
+    confs = {
+        "test": [PretrainTestAMPSCZ, TestHCPEP],
+        "val": [PretrainValAMPSCZ, ValHCPEP],
+        "train": [PretrainTrainAMPSCZ, TrainHCPEP],
+    }
 
-    val_ampscz_ds = PretrainValAMPSCZ.from_env(load_tsf)
-    val_hcpep_ds = ValHCPEP.from_env(load_tsf)
-    synth_val_ds = Dataset(
-        data=ConcatDataset([val_ampscz_ds, val_hcpep_ds]),
-        transform=Compose([synth_tsf, crop_tsf, save_val]),
-    )
+    setup_dataset_tree(dataset_dir, modes=confs.keys())
 
-    lst_dict = []
-    for i in tqdm(range(20)):
-        save_val.iteration = i
-        dataloader = DataLoader(
-            synth_val_ds,
-            batch_size=20,
-            num_workers=30,
-            prefetch_factor=20,
+    for mode, datasets in confs.items():
+        logging.info("Creating dataset for mode : %s", mode)
+        loaded_ds = load_data(datasets)
+        generate_data(
+            dataset=loaded_ds,
+            dataset_dir=dataset_dir,
+            mode=mode,
+            num_iter=20,
         )
-        for element in tqdm(dataloader):
-            records = [dict(zip(element, t)) for t in zip(*element.values())]
-            for r in records:
-                new_dict = {
-                    "motion_mm": r["motion_mm"].item(),
-                    "ssim_loss": r["ssim_loss"].item(),
-                    "motion_binary": r["motion_binary"],
-                    "sub_id": r["sub_id"],
-                    "ses_id": r["ses_id"],
-                }
-                new_dict["group"] = "val"
-                new_dict["data"] = r["data"].meta["saved_to"]
-                lst_dict.append(new_dict)
-    pd.DataFrame.from_records(lst_dict).to_csv(f"{dataset_dir}/val.csv")
-
-    train_ampscz_ds = PretrainTrainAMPSCZ.from_env(load_tsf)
-    train_hcpep_ds = TrainHCPEP.from_env(load_tsf)
-    synth_train_ds = Dataset(
-        data=ConcatDataset([train_hcpep_ds, train_ampscz_ds]),
-        transform=Compose([synth_tsf, crop_tsf, save_train]),
-    )
-    lst_dict = []
-    for i in tqdm(range(20)):
-        save_train.iteration = i
-        dataloader = DataLoader(
-            synth_train_ds,
-            batch_size=20,
-            num_workers=30,
-            prefetch_factor=20,
-        )
-        for element in tqdm(dataloader):
-            records = [dict(zip(element, t)) for t in zip(*element.values())]
-            for r in records:
-                new_dict = {
-                    "motion_mm": r["motion_mm"].item(),
-                    "ssim_loss": r["ssim_loss"].item(),
-                    "motion_binary": r["motion_binary"],
-                    "sub_id": r["sub_id"],
-                    "ses_id": r["ses_id"],
-                }
-                new_dict["group"] = "train"
-                new_dict["data"] = r["data"].meta["saved_to"]
-                lst_dict.append(new_dict)
-
-    pd.DataFrame.from_records(lst_dict).to_csv(f"{dataset_dir}/train.csv")
+    generated_to_tar(root_dir, new_dataset, dataset_dir)

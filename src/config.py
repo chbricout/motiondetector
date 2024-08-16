@@ -5,7 +5,7 @@ File to regroup important constant for the project
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 ## NARVAL ENV
 IS_NARVAL = os.getenv("IS_NARVAL", "False").lower() in ("true", "1", "t")
@@ -28,10 +28,10 @@ SSIM_BIN_RANGE = (-0.08, 0.48)
 SSIM_BIN_STEP = (SSIM_BIN_RANGE[1] - SSIM_BIN_RANGE[0]) / SSIM_N_BINS
 
 ## COMET
-COMET_API_KEY = os.environ.get("COMET_API_KEY")
+COMET_API_KEY = os.getenv("COMET_API_KEY")
 
 ## GENERATE DATASET
-GENERATE_ROOT_DIR = os.environ.get("GENERATE_ROOT_DIR", "/home/cbricout/scratch/")
+GENERATE_ROOT_DIR = os.getenv("GENERATE_ROOT_DIR", "/home/cbricout/scratch/")
 
 # PLOTS
 PLOT_DIR = "plots"

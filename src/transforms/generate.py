@@ -1,6 +1,9 @@
 """Module to generate synthetic motion data"""
 
 from collections import defaultdict
+import json
+from numbers import Number
+import os
 from typing import Callable, Dict
 import torch
 from monai.transforms import (
@@ -10,6 +13,8 @@ from monai.transforms import (
     ScaleIntensityd,
     CenterSpatialCropd,
     RandomizableTransform,
+    SaveImage,
+    Transform,
 )
 from monai.losses.ssim_loss import SSIMLoss
 from torchio.transforms import (
@@ -78,7 +83,12 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
     We use it to have a more uniform label distribution in the synthetic dataset
     """
 
-    def __init__(self, goal_motion: float, tolerance: float = 0.02):
+    def __init__(
+        self,
+        goal_motion: float,
+        tolerance: float = 0.02,
+        num_transforms_range: tuple[int, int] = (4, 8),
+    ):
         """Randomly generate a motion in the range [goal_motion-tolerance, goal_motion+tolerance]
 
         Args:
@@ -87,7 +97,7 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
         """
         self.transform_degrees = self.R.uniform(0, np.min((goal_motion / 3, 1)))
         self.goal_motion = goal_motion
-        self.num_transforms = self.R.randint(4, 8)
+        self.num_transforms = self.R.randint(*num_transforms_range)
         self.tolerance = tolerance
 
         super().__init__(
@@ -193,21 +203,52 @@ class CreateSynthVolume(RandomizableTransform):
     apply_elastic: bool
     apply_flip: bool
     apply_corrupt: bool
+
+    # Synthetic Parameters, not meant to be change often
+    motion_prob: float = 0.9
+    elastic_prob: float = 0.05
+    flip_prob: float = 0.5
+    corrupt_prob: float = 0.3
+    goal_motion_range: tuple[float, float] = (0.05, 4.0)
+    num_transforms_range: tuple[int, int] = (4, 8)
+    tolerance: float = 0.01
+
     motion_tsf: CustomMotion
     goal_motion: float
     num_transforms: int
 
+    def get_parameters(self) -> dict[str, Number | tuple[Number, Number]]:
+        """Return a dictionnary summarizing all parameters for transformation
+
+        Returns:
+            dict[str, Number | tuple[Number, Number]]: Parameters for synthetic
+            generation
+        """
+        return {
+            "motion_prob": self.motion_prob,
+            "elastic_prob": self.elastic_prob,
+            "flip_prob": self.flip_prob,
+            "corrupt_prob": self.corrupt_prob,
+            "goal_motion_range": self.goal_motion_range,
+            "num_transforms_range": self.num_transforms_range,
+            "tolerance": self.tolerance,
+        }
+
     def randomize(self):
         """Determine wich transform to apply"""
         super().randomize(None)
-        self.apply_motion = self.R.rand() > 0.1
-        self.apply_elastic = self.R.rand() > 0.05
-        self.apply_flip = self.R.rand() > 0.5
-        self.apply_corrupt = self.R.rand() > 0.3
+        self.apply_motion = self.R.rand() <= self.motion_prob
+        self.apply_elastic = self.R.rand() <= self.elastic_prob
+        self.apply_flip = self.R.rand() <= self.flip_prob
+        self.apply_corrupt = self.R.rand() <= self.corrupt_prob
         if self.apply_motion:
-            self.goal_motion = self.R.uniform(0.05, 4)
+            self.goal_motion = self.R.uniform(*self.goal_motion_range)
 
-            self.motion_tsf = CustomMotion(self.goal_motion, tolerance=0.01)
+            self.motion_tsf = CustomMotion(
+                self.goal_motion,
+                tolerance=self.tolerance,
+                num_transforms_range=self.num_transforms_range,
+            )
         else:
             self.num_transforms = 0
 
@@ -255,8 +296,7 @@ class CreateSynthVolume(RandomizableTransform):
             "motion_mm": motion_mm,
             "ssim_loss": ssim_val,
             "motion_binary": self.apply_motion,
-            "sub_id": data["sub_id"],
-            "ses_id": data["ses_id"],
+            "identifier": data["identifier"],
         }
 
 
@@ -270,3 +310,50 @@ class FinalCrop(Compose):
             RandomScaleIntensityd(keys="data", minv=0, max_range=(0.9, 1.1)),
         ]
         super().__init__(tsfs)
+
+
+class SyntheticPipeline(Transform):
+    """Transform representing Synthetic generation process until volume storing"""
+
+    def __init__(self, dataset_dir: str, mode="train", iteration=0):
+        super().__init__()
+        self.mode = mode
+        self.iteration = iteration
+        self.dataset_dir = dataset_dir
+        self.base_path = f"{self.dataset_dir}/{self.mode}/"
+
+        self.save = SaveImage(savepath_in_metadict=True, resample=False)
+        self.synthetic_tsf = CreateSynthVolume(elastic_activate=True)
+        self.process = Compose([self.synthetic_tsf, FinalCrop()])
+
+    def __call__(self, element: dict[str, any]) -> dict[str, int | float | str | bool]:
+        """Tranform and store the synthetic volume,
+        returns all metadata to store as a dict
+
+        Args:
+            element (dict[str, any]): Element to process
+
+        Returns:
+            dict[str, int | float | str | bool]: dict containing
+            the data to store as csv
+        """
+        synth = self.synthetic_tsf(element)
+        new_identifier = f"{element['identifier']}-{self.iteration}"
+        path = os.path.join(self.base_path, new_identifier)
+        self.save(synth["data"], filename=path)
+
+        relative_path = os.path.relpath(path, os.path.dirname(self.dataset_dir))
+        return {
+            "data": relative_path,
+            "motion_mm": synth["motion_mm"],
+            "ssim_loss": synth["ssim_loss"],
+            "motion_binary": synth["motion_binary"],
+            "identifier": new_identifier,
+            "group": self.mode,
+        }
+
+    def save_parameters(self):
+        """Save synthetic parameters for reproducibility purpose"""
+        params = self.synthetic_tsf.get_parameters()
+        with open(f"{self.dataset_dir}/parameters.json", "w") as file:
+            json.dump(params, file)
