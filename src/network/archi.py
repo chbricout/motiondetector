@@ -164,3 +164,8 @@ class Model(abc.ABC, nn.Module):
         for m in self.modules():
             if m.__class__.__name__.startswith("Dropout"):
                 m.train()
+
+    def freeze_encoder(self):
+        """Freeze all encoder weights for finetuning"""
+        for param in self.encoder.parameters():
+            param.requires_grad = False

@@ -40,10 +40,11 @@ def test_pretrain_mcdropout(task_class: Type[PretrainingTask], model: str):
 def test_get_box_plot():
     n_sample = 20
     predictions = torch.randn(n_sample).tolist()
-    labels = torch.randint(0,3,(n_sample,)).tolist()
+    labels = torch.randint(0, 3, (n_sample,)).tolist()
     fig = get_box_plot(predictions, labels)
     assert fig is not None
     assert isinstance(fig, Figure)
+
 
 @pytest.mark.parametrize(
     "task_class,model",

@@ -99,7 +99,7 @@ def generated_to_tar(root_dir: str, new_dataset: str, to_archive: str):
         to_archive (str): path to generated dataset
     """
     filename = "generate_dataset.tar"
-    dataset_dir = os.path.join(root_dir, new_dataset+"_archive")
+    dataset_dir = os.path.join(root_dir, new_dataset + "_archive")
     os.makedirs(dataset_dir, exist_ok=True)
 
     logging.info("Writing dataset to tar archive")

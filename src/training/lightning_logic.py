@@ -59,7 +59,7 @@ class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
 
     output_pipeline: nn.Module
     model: Model
-    batch_size:int
+    batch_size: int
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         raw_output = self.model(x)
@@ -122,7 +122,7 @@ class BaseFinalTrain(EncodeClassifyTask):
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
-    batch_size:int
+    batch_size: int
 
     label: list[float | int] = []
     prediction: list[float | int] = []
@@ -171,29 +171,24 @@ class TrainScratchTask(BaseFinalTrain):
     """Common class for task to train from scratch"""
 
     num_classes: int
-    batch_size:int
+    batch_size: int
 
     def __init__(
-        self,
-        model_class: str,
-        im_shape,
-        lr=1e-5,
-        dropout_rate=0.5,
-        batch_size=14
+        self, model_class: str, im_shape, lr=1e-5, dropout_rate=0.5, batch_size=14
     ):
         super().__init__()
         self.im_shape = im_shape
         self.dropout_rate = dropout_rate
         self.lr = lr
-        self.batch_size=batch_size
+        self.batch_size = batch_size
         self.model_class = parse_model(model_class)
         self.model = self.model_class(
             self.im_shape, self.num_classes, self.dropout_rate
         )
         init_model(self.model)
-
         self.setup_training()
         self.save_hyperparameters()
+        self.model = torch.compile(self.model)
 
 
 class FinetuningTask(BaseFinalTrain):
@@ -202,22 +197,18 @@ class FinetuningTask(BaseFinalTrain):
     model: Model
     output_pipeline: nn.Module
     label_loss: nn.Module
-    batch_size:int
+    batch_size: int
 
-    def __init__(
-        self,
-        pretrained_model: Model,
-        im_shape,
-        lr=1e-5,
-        batch_size=14
-    ):
+    def __init__(self, pretrained_model: Model, im_shape, lr=1e-5, batch_size=14):
         super().__init__()
         self.im_shape = im_shape
         self.lr = lr
         self.model = pretrained_model
-        self.batch_size=batch_size
+        self.model.freeze_encoder()
+        self.batch_size = batch_size
         self.setup_training()
         self.save_hyperparameters()
+        self.model = torch.compile(self.model)
 
     @abc.abstractmethod
     def setup_training(self):
@@ -312,9 +303,11 @@ class PretrainingTask(EncodeClassifyTask):
         self.batch_size = batch_size
         self.lr = lr
         self.model_class = parse_model(model_class)
-        self.model =  self.model_class(self.im_shape, self.num_classes, self.dropout_rate)
+        self.model = self.model_class(
+            self.im_shape, self.num_classes, self.dropout_rate
+        )
         init_model(self.model)
-        self.model =torch.compile(self.model)
+        self.model = torch.compile(self.model)
 
         self.use_cutout = use_cutout
         if self.use_cutout:
