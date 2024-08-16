@@ -1,5 +1,6 @@
 from typing import Callable, Type
 import itertools
+import comet_ml
 from lightning import LightningModule
 from matplotlib.figure import Figure
 import numpy as np
@@ -161,7 +162,7 @@ def test_pretrain_mcdropout(task_class: Type[PretrainingTask], model: str):
 
     module, dl = get_module_dl(task_class, model, n_samples, n_samples)
 
-    df = pretrain_mcdropout(pl_module=module, dataloader=dl, n_preds=n_preds)
+    df = pretrain_mcdropout(pl_module=module, dataloader=dl,experiment=comet_ml.testlib.TestExperiment(), n_preds=n_preds)
     assert "mean" in df.columns
     assert "std" in df.columns
     assert "label" in df.columns
@@ -193,7 +194,7 @@ def test_finetune_mcdropout(
     module, dl = get_module_dl(task_class, model, n_samples, n_samples)
 
     df = finetune_mcdropout(
-        pl_module=module, dataloader=dl, n_preds=n_preds, log_figs=False
+        pl_module=module, dataloader=dl,experiment=comet_ml.testlib.TestExperiment(), n_preds=n_preds, log_figs=True
     )
     assert "mean" in df.columns
     assert "std" in df.columns
