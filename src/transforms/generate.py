@@ -87,7 +87,7 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
         self,
         goal_motion: float,
         tolerance: float = 0.02,
-        num_transforms_range: tuple[int, int] = (4, 8),
+        num_transforms_range: tuple[int, int] = (2, 8),
     ):
         """Randomly generate a motion in the range [goal_motion-tolerance, goal_motion+tolerance]
 
@@ -95,14 +95,15 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
             goal_motion (float): quantify motion wanted
             tolerance (float, optional): acceptable tolerance. Defaults to 0.02.
         """
-        self.transform_degrees = self.R.uniform(0, np.min((goal_motion / 3, 1)))
-        self.goal_motion = goal_motion
+        self.transform_degrees =goal_motion + self.R.uniform(-0.5, 0.5)
+        self.goal_motion = goal_motion + self.R.uniform(-0.5, 0.5)
         self.num_transforms = self.R.randint(*num_transforms_range)
+        print(self.transform_degrees, self.goal_motion, self.num_transforms)
         self.tolerance = tolerance
 
         super().__init__(
             self.transform_degrees,
-            goal_motion,
+            self.goal_motion,
             self.num_transforms,
             image_interpolation="bspline",
         )
