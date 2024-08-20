@@ -13,7 +13,7 @@ import pandas as pd
 import seaborn as sb
 import torch
 from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ
-from src.dataset.mrart.mrart_dataset import ValMrArt
+from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
 from src.training.lightning_logic import PretrainingTask
 from src.utils.comet import log_figure_comet
 from src.transforms.load import FinetuneTransform
@@ -28,7 +28,7 @@ def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
         exp (comet_ml.BaseExperiment): Experiment to log on.
     """
     load_tsf = FinetuneTransform()
-    for dataset in (ValMrArt, FinetuneValAMPSCZ):
+    for dataset in ((TrainMrArt, ValMrArt), FinetuneValAMPSCZ):
         dl = DataLoader(dataset.from_env(load_tsf))
         res = get_pred_from_pretrain(model, dl)
         acc, fig_thresh, thresholds = separation_capacity(res["label"], res["pred"])
@@ -108,5 +108,5 @@ class SaveBestCheckpoint(ModelCheckpoint):
         logging.info("Logging pretrain model")
         comet_logger = pl_module.logger
         comet_logger.experiment.log_model(
-            name=pl_module.model_class.__name__, file_or_folder=self.best_model_path
+            name=pl_module.model.__class__.__name__, file_or_folder=self.best_model_path
         )

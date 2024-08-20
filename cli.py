@@ -150,6 +150,7 @@ def pretrain(
 
 
 @cli.command()
+@task
 @max_epoch
 @learning_rate
 @dataset
@@ -159,7 +160,7 @@ def pretrain(
 @seed
 @slurm
 def finetune(
-    max_epochs, learning_rate, dataset, batch_size, model, run_num, seed, slurm
+    task, max_epochs, learning_rate, dataset, batch_size, model, run_num, seed, slurm
 ):
     if slurm:
         submit_finetune(
@@ -169,6 +170,7 @@ def finetune(
     else:
         lightning_logger()
         launch_finetune(
+            pretrain_task=task,
             max_epochs=max_epochs,
             learning_rate=learning_rate,
             dataset=dataset,

@@ -84,8 +84,15 @@ def generate_data(dataset: Dataset, dataset_dir: str, mode: str, num_iter: int):
     for i in tqdm(range(num_iter)):
         synth_pipeline.iteration = i
         for element in tqdm(dataloader):
-            lst_dict += element
-
+            lst_dict.append({
+            "data": element['data'][0],
+            "motion_mm": element["motion_mm"].item(),
+            "ssim_loss": element["ssim_loss"].item(),
+            "motion_binary": element["motion_binary"].item(),
+            "identifier": element['identifier'][0],
+            "group": element['group'][0],
+        })
+    
     pd.DataFrame.from_records(lst_dict).to_csv(f"{dataset_dir}/{mode}.csv")
     synth_pipeline.save_parameters()
 
@@ -103,9 +110,8 @@ def generated_to_tar(root_dir: str, new_dataset: str, to_archive: str):
     os.makedirs(dataset_dir, exist_ok=True)
 
     logging.info("Writing dataset to tar archive")
-    tar_obj = tarfile.open(os.path.join(dataset_dir, filename), "w")
-    tar_obj.add(to_archive)
-    tarfile.close()
+    with tarfile.open(os.path.join(dataset_dir, filename), "w") as tar_obj:
+        tar_obj.add(to_archive)
     logging.info("Dataset archived, remember to remove folder")
 
 
@@ -134,6 +140,6 @@ def launch_generate_data(new_dataset: str):
             dataset=loaded_ds,
             dataset_dir=dataset_dir,
             mode=mode,
-            num_iter=20,
+            num_iter=40,
         )
     generated_to_tar(root_dir, new_dataset, dataset_dir)
