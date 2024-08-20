@@ -78,7 +78,7 @@ def generate_data(dataset: Dataset, dataset_dir: str, mode: str, num_iter: int):
     dataloader = DataLoader(
         synth_dataset,
         batch_size=1,
-        num_workers=20,
+        num_workers=64,
         prefetch_factor=2,
     )
     for i in tqdm(range(num_iter)):
@@ -140,6 +140,6 @@ def launch_generate_data(new_dataset: str):
             dataset=loaded_ds,
             dataset_dir=dataset_dir,
             mode=mode,
-            num_iter=100,
+            num_iter=300,
         )
     generated_to_tar(root_dir, new_dataset, dataset_dir)

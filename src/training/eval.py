@@ -12,7 +12,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 import pandas as pd
 import seaborn as sb
 import torch
-from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ
+from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ, FinetuneTrainAMPSCZ
 from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
 from src.training.lightning_logic import PretrainingTask
 from src.utils.comet import log_figure_comet
@@ -28,26 +28,35 @@ def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
         exp (comet_ml.BaseExperiment): Experiment to log on.
     """
     load_tsf = FinetuneTransform()
-    for dataset in ((TrainMrArt, ValMrArt), FinetuneValAMPSCZ):
-        dl = DataLoader(dataset.from_env(load_tsf))
-        res = get_pred_from_pretrain(model, dl)
-        acc, fig_thresh, thresholds = separation_capacity(res["label"], res["pred"])
-        exp.log_metric(f"{dataset.__name__}-acc", acc)
-        exp.log_table(f"{dataset.__name__}-pred.csv", res)
-        exp.log_other(f"{dataset.__name__}-thresholds-value", thresholds)
-        fig_box = get_box_plot(res["pred"], res["label"])
-        log_figure_comet(fig_box, f"{dataset.__name__}-calibration", exp=exp)
-        log_figure_comet(fig_thresh, f"{dataset.__name__}-thresholds", exp=exp)
+    task_conf = {
+        "MRART": {"train": TrainMrArt, "val": ValMrArt},
+        "AMPSCZ": {"train": FinetuneTrainAMPSCZ, "val": FinetuneValAMPSCZ},
+    }
+    for data_name, datasets_mode in task_conf.items():
+        all_mode_df = []
+        for mode, dataset in datasets_mode.items():
+            dl = DataLoader(dataset.from_env(load_tsf))
+            all_mode_df.append(get_pred_from_pretrain(model, dl, mode))
+        all_mode_df = pd.concat(all_mode_df)
+
+        acc, fig_thresh, thresholds = separation_capacity(all_mode_df)
+        exp.log_metric(f"{data_name}-acc", acc)
+        exp.log_table(f"{data_name}-pred.csv", all_mode_df)
+        exp.log_other(f"{data_name}-thresholds-value", thresholds)
+        fig_box = get_box_plot(all_mode_df["pred"], all_mode_df["label"])
+        log_figure_comet(fig_box, f"{data_name}-calibration", exp=exp)
+        log_figure_comet(fig_thresh, f"{data_name}-thresholds", exp=exp)
 
 
 def get_pred_from_pretrain(
-    model: PretrainingTask, dataloader: DataLoader
+    model: PretrainingTask, dataloader: DataLoader, mode: str
 ) -> pd.DataFrame:
     """Compute prediction of a model on a dataloader
 
     Args:
         model (nn.Module): Model to use for prediction
         dataloader (DataLoader): Dictionnary based dataloader
+        mode (str) : Dataset mode
 
     Returns:
         pd.DataFrame: results dataframe containing "pred", "identifier" and "label
@@ -71,6 +80,7 @@ def get_pred_from_pretrain(
     full["pred"] = preds
     full["identifier"] = ids
     full["label"] = labels
+    full["mode"] = mode
     return full
 
 

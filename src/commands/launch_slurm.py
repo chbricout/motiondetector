@@ -125,6 +125,7 @@ def create_job(
     account=DEFAULT_SLURM_ACCOUNT,
     mem="300G",
     time="24:00:00",
+    nodes=1
 ) -> Slurm:
     """Generate a basic job with requeu and python setup
 
@@ -144,7 +145,7 @@ def create_job(
     """
     job = Slurm(
         job_name=name,
-        nodes=1,
+        nodes=nodes,
         cpus_per_task=n_cpus,
         ntasks_per_node=max(n_gpus, 1),
         mem=mem,
@@ -299,10 +300,10 @@ def submit_generate_ds():
         "generate-dataset",
         None,
         f"./logs/generate-dataset.{Slurm.JOB_ARRAY_MASTER_ID}.out",
-        n_cpus=40,
+        n_cpus=64,
         n_gpus=0,
-        mem="100G",
-        time="10:00:00",
+        mem="200G",
+        time="50:00:00",
     )
     cpy_extract_tar(job, ["HCPEP-Preproc", "AMPSCZ-Preproc"])
 
