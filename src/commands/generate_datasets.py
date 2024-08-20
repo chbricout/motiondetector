@@ -140,6 +140,6 @@ def launch_generate_data(new_dataset: str):
             dataset=loaded_ds,
             dataset_dir=dataset_dir,
             mode=mode,
-            num_iter=40,
+            num_iter=100,
         )
     generated_to_tar(root_dir, new_dataset, dataset_dir)

@@ -95,10 +95,9 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
             goal_motion (float): quantify motion wanted
             tolerance (float, optional): acceptable tolerance. Defaults to 0.02.
         """
-        self.transform_degrees =goal_motion + self.R.uniform(-0.5, 0.5)
-        self.goal_motion = goal_motion + self.R.uniform(-0.5, 0.5)
-        self.num_transforms = self.R.randint(*num_transforms_range)
-        print(self.transform_degrees, self.goal_motion, self.num_transforms)
+        self.transform_degrees = self.R.uniform(0, np.min((goal_motion / 3, 1)))
+        self.goal_motion = max(goal_motion + self.R.uniform(-0.2, 0.2),0.1)
+        self.num_transforms = self.R.randint(low=num_transforms_range[0], high=num_transforms_range[1])
         self.tolerance = tolerance
 
         super().__init__(
@@ -206,13 +205,13 @@ class CreateSynthVolume(RandomizableTransform):
     apply_corrupt: bool
 
     # Synthetic Parameters, not meant to be change often
-    motion_prob: float = 0.9
-    elastic_prob: float = 0.05
+    motion_prob: float = 0.95
+    elastic_prob: float = 0.7
     flip_prob: float = 0.5
-    corrupt_prob: float = 0.3
+    corrupt_prob: float = 0.5
     goal_motion_range: tuple[float, float] = (0.05, 4.0)
-    num_transforms_range: tuple[int, int] = (4, 8)
-    tolerance: float = 0.01
+    num_transforms_range: tuple[int, int] = (2, 8)
+    tolerance: float = 0.02
 
     motion_tsf: CustomMotion
     goal_motion: float
