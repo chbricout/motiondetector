@@ -103,7 +103,7 @@ def launch_pretrain(
             EarlyStopping(
                 monitor="val_loss",
                 mode="min",
-                patience=20,
+                patience=30,
                 check_on_train_epoch_end=False,
                 verbose=True,
             ),

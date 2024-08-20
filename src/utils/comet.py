@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
+from typing import Type
 import comet_ml
 from matplotlib.figure import Figure
 import torch
@@ -12,6 +13,7 @@ from src import config
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.network.utils import parse_model
 from src.training.lightning_logic import PretrainingTask
+from src.utils.task import str_to_task
 
 
 def export_torchscript(
@@ -80,9 +82,11 @@ def get_pretrain_task(
     api = comet_ml.api.API(
         api_key=api_key,
     )
+    exp_name = f"pretraining-{task}-{model_name}-{run_num}"
     pretrain_exp = api.get(
-        "mrart", project_name, f"pretraining-{task}-{model_name}-{run_num}"
+        "mrart", project_name, exp_name
     )
+    logging.error("Retrieving experiment %s from project %s",exp_name,project_name )
     model_class = parse_model(model_name)
 
     if config.IS_NARVAL:
@@ -96,7 +100,9 @@ def get_pretrain_task(
         output_path=output_path,
     )
     file_path = glob.glob(f"{output_path}/*.ckpt")[0]
-    pretrained = PretrainingTask.load_from_checkpoint(checkpoint_path=file_path)
+
+    task_class: Type[PretrainingTask] = str_to_task(task)
+    pretrained = task_class.load_from_checkpoint(checkpoint_path=file_path)
 
     if del_folers:
         shutil.rmtree(output_dir)

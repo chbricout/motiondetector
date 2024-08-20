@@ -103,10 +103,12 @@ class SFCNClassifier(Classifier):
         Args:
             num_classes (int): Number of class / length of new output layer
         """
+        from src.network.utils import init_model
         self.num_classes = num_classes
         self.output_layer = SFCNHeadBlock(
             self.input_size, 64, self.num_classes, self.dropout_rate
         )
+        init_model(self.output_layer)
 
 
 class SFCNModel(Model):
@@ -124,3 +126,10 @@ class SFCNModel(Model):
         self.classifier = SFCNClassifier(
             self.encoder.latent_shape[1:], self.num_classes, self.dropout_rate
         )
+
+    def freeze_finetune(self):
+        """Freeze all encoder weights for finetuning"""
+        for param in self.encoder.convs[:5].parameters():
+            param.requires_grad = False
+
+      

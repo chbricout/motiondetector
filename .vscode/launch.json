@@ -15,7 +15,7 @@
                 "--batch_size",
                 "28",
                 "--model",
-                "SFCN",
+                "VIT",
                 "--learning_rate",
                 "2e-5",
                 "--dropout_rate",
@@ -26,6 +26,18 @@
                 "1",
                 "--run_num",
                 "30"
+            ]
+        },
+        {
+            "name": "Debug dataloading",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "generate-data",
+                "-d",
+                "MRIQC-test",
             ]
         }
     ]

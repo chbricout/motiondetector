@@ -27,6 +27,7 @@ from src.utils.task import EnsureOneProcess
 
 
 def launch_finetune(
+    pretrain_task: str,
     learning_rate: float,
     max_epochs: int,
     batch_size: int,
@@ -38,6 +39,7 @@ def launch_finetune(
     """Launch the finetuning process
 
     Args:
+        estimator (str) : pretraining estimator to finetune on
         learning_rate (float): training learning rate
         max_epochs (int): max number of epoch to train for
         batch_size (int): batch size (on one GPU)
@@ -75,7 +77,7 @@ def launch_finetune(
     comet_logger.experiment.log_code(file_name="src/commands/finetune.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    pretrained = get_pretrain_task(model, run_num, PROJECT_NAME)
+    pretrained = get_pretrain_task(model, pretrain_task, run_num, PROJECT_NAME)
     net = task(
         pretrained_model=pretrained.model,
         im_shape=IM_SHAPE,
@@ -88,13 +90,18 @@ def launch_finetune(
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=[0],
+        devices=[1],
         accelerator="gpu",
         precision="16-mixed",
         default_root_dir=run_dir,
         log_every_n_steps=10,
         callbacks=[
-            EarlyStopping(monitor="val_loss", mode="min", patience=100),
+            EarlyStopping(
+                monitor="val_loss",
+                mode="min",
+                patience=100,
+                verbose=True,
+            ),
             checkpoint,
         ],
     )
@@ -102,7 +109,7 @@ def launch_finetune(
     trainer.fit(net, datamodule=datamodule(batch_size))
 
     with EnsureOneProcess(trainer):
-        best_net = task.load_from_checkpoint(checkpoint.best_model_path)
+        best_net = task.load_from_checkpoint(checkpoint.best_model_path,  pretrained_model=pretrained.model)
 
         finetune_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
         logging.info("Removing Checkpoints")

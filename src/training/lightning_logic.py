@@ -204,16 +204,19 @@ class FinetuningTask(BaseFinalTrain):
         self.im_shape = im_shape
         self.lr = lr
         self.model = pretrained_model
-        self.model.freeze_encoder()
+        self.model.freeze_finetune()
         self.batch_size = batch_size
         self.setup_training()
-        self.save_hyperparameters()
-        self.model = torch.compile(self.model)
+        self.save_hyperparameters(ignore="pretrained_model")
 
     @abc.abstractmethod
     def setup_training(self):
         """This function need to define the label loss and the output pipeline
         for your specific finetuning task"""
+    
+    def configure_optimizers(self):
+        optim = torch.optim.SGD(self.parameters(), lr=self.lr)
+        return optim
 
 
 class MRArtScratchTask(TrainScratchTask):

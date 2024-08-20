@@ -337,14 +337,14 @@ class SyntheticPipeline(Transform):
             dict[str, int | float | str | bool]: dict containing
             the data to store as csv
         """
-        synth = self.synthetic_tsf(element)
+        synth = self.process(element)
         new_identifier = f"{element['identifier']}-{self.iteration}"
         path = os.path.join(self.base_path, new_identifier)
         self.save(synth["data"], filename=path)
 
         relative_path = os.path.relpath(path, os.path.dirname(self.dataset_dir))
         return {
-            "data": relative_path,
+            "data": relative_path+".nii.gz",
             "motion_mm": synth["motion_mm"],
             "ssim_loss": synth["ssim_loss"],
             "motion_binary": synth["motion_binary"],

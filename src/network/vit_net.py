@@ -15,11 +15,12 @@ class ViTEncoder(Encoder):
         self.vit = vit.ViT(
             1,
             (160, 192, 160),
-            patch_size=(14, 14, 14),
-            num_layers=12,
+            patch_size=(16, 16, 16),
+            num_layers=10,
             hidden_size=768,
             classification=True,
             num_classes=1,
+            dropout_rate=0.1
         )
         delattr(self.vit, "classification_head")
 
