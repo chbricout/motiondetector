@@ -3,11 +3,12 @@ Module to use the MR-ART dataset from python (require split csv files)
 """
 
 from typing import Callable
-from monai.data.dataset import Dataset, CacheDataset
+from monai.data.dataset import CacheDataset
 from monai.data.dataloader import DataLoader
 import pandas as pd
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
-from src.transforms.load import FinetuneTransform
+from src.network.archi import Model
+from src.transforms.load import FinetuneTransform, TransferTransform
 
 
 class BaseMrArt(CacheDataset, BaseDataset):
@@ -71,9 +72,14 @@ class MRArtDataModule(BaseDataModule):
     Lightning data module to use MR-ART data in lightning trainers (for finetune)
     """
 
-    def __init__(self, batch_size: int = 32):
+    def __init__(self, batch_size: int = 32, pretrained_model: Model | None = None):
         super().__init__(batch_size)
-        self.load_tsf: Callable = FinetuneTransform()
+
+        self.load_tsf: Callable = (
+            FinetuneTransform()
+            if pretrained_model is None
+            else TransferTransform(pretrained_model)
+        )
         self.val_ds_class = ValMrArt
         self.train_ds_class = TrainMrArt
 

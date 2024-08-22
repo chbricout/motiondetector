@@ -2,7 +2,6 @@
 Module to launch different standard command through slurm jobs
 """
 
-import logging
 import sys
 import re
 from collections.abc import Sequence
@@ -24,6 +23,12 @@ def setup_python(job: Slurm):
 
 
 def cpy_extract_tar(job: Slurm, tarballs_name: Sequence[str]):
+    """Copy and extract tarball files before job
+
+    Args:
+        job (Slurm): Job to modify
+        tarballs_name (Sequence[str]): name of the tarball faile to use
+    """
     job.add_cmd("mkdir -p $SLURM_TMPDIR/datasets")
     for ds in tarballs_name:
         job.add_cmd(
@@ -65,17 +70,17 @@ def get_full_cmd() -> str:
     return full_command
 
 
-def get_finetune_cmd_from_pretrain(cmd: str) -> str:
-    """Create the corresponding finetune command from a pretrain command
-    Used to queue finetune job after pretrain
+def get_transfer_cmd_from_pretrain(cmd: str) -> str:
+    """Create the corresponding transfer command from a pretrain command
+    Used to queue transfer job after pretrain
 
     Args:
         cmd (str): the pretrain command to modify
 
     Returns:
-        str: corresponding finetune command
+        str: corresponding transfer command
     """
-    full_command = cmd.replace("pretrain", "finetune")
+    full_command = cmd.replace("pretrain", "transfer")
     if full_command.find("--dropout"):
         full_command = re.sub(r"(--dropout)\s?[^\s-]*", "", full_command)
     return full_command
@@ -85,7 +90,7 @@ def get_output(prefix: str, model: str, array: Sequence[int] | int | None) -> st
     """Return the output log path for a job
 
     Args:
-        prefix (str): job prefix (ex.: "pretrain", "finetune",...)
+        prefix (str): job prefix (ex.: "pretrain", "transfer",...)
         model (str): the model used in the job
         array (Sequence[int] | int | None): raw array parameter given to the function
 
@@ -103,7 +108,7 @@ def get_name(prefix: str, model: str, array: Sequence[int] | int | None) -> str:
     """Return the name for a job
 
     Args:
-        prefix (str): job prefix (ex.: "pretrain", "finetune",...)
+        prefix (str): job prefix (ex.: "pretrain", "transfer",...)
         model (str): the model used in the job
         array (Sequence[int] | int | None): raw array parameter given to the function
 
@@ -125,7 +130,7 @@ def create_job(
     account=DEFAULT_SLURM_ACCOUNT,
     mem="300G",
     time="24:00:00",
-    nodes=1
+    nodes=1,
 ) -> Slurm:
     """Generate a basic job with requeu and python setup
 
@@ -167,7 +172,7 @@ def submit_pretrain(
     model: str,
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
-    send_finetune: bool = False,
+    send_transfer: bool = False,
 ):
     """Submit pretrain job on SLURM cluster
 
@@ -177,17 +182,17 @@ def submit_pretrain(
             Defaults to None.
         cmd (str | None, optional): command to run, if None, retrieve the parameters
             used from the CLI. Defaults to None.
-        send_finetune (bool, optional): flag to send finetune command. Defaults to False.
+        send_transfer (bool, optional): flag to send transfer command. Defaults to False.
     """
     job = create_job(
         get_name("pretrain", model, array),
         array,
         get_output("pretrain", model, array),
         n_cpus=10,
-        n_gpus=2,
+        n_gpus=4,
         mem="100G",
     )
-    cpy_extract_tar(job, ["generate_pretrain"])
+    cpy_extract_tar(job, ["generate_dataset"])
 
     if cmd is None:
         cmd = get_full_cmd()
@@ -198,18 +203,24 @@ def submit_pretrain(
     job_id = job.sbatch(f"srun python3 {cmd}")
     print(job)
 
-    if send_finetune:
-        finetune_cmd = get_finetune_cmd_from_pretrain(cmd)
+    if send_transfer:
+        transfer_cmd = get_transfer_cmd_from_pretrain(cmd)
         for dataset in ["MRART", "AMPSCZ"]:
-            submit_finetune(
+            submit_transfer(
                 model,
-                cmd=finetune_cmd + f" --dataset ${dataset}",
+                cmd=transfer_cmd + f" --dataset ${dataset}",
                 dependency=job_id,
                 dataset=dataset,
             )
 
 
-def cpy_finetune(job: Slurm, dataset: str):
+def cpy_transfer(job: Slurm, dataset: str):
+    """Decide on which tarball to copy for transfer learning
+
+    Args:
+        job (Slurm): Job to modify
+        dataset (str): dataset for transfer learning
+    """
     to_load = ["MRART-Prepoc", "AMPSCZ-Preproc"]
 
     if dataset == "MRART":
@@ -219,14 +230,14 @@ def cpy_finetune(job: Slurm, dataset: str):
     cpy_extract_tar(job, to_load)
 
 
-def submit_finetune(
+def submit_transfer(
     model: str,
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
     dependency: str | None = None,
     dataset: str = "",
 ):
-    """Submit finetune job on SLURM cluster
+    """Submit transfer job on SLURM cluster
 
     Args:
         model (str): Model to use
@@ -236,19 +247,19 @@ def submit_finetune(
             used from the CLI. Defaults to None.
         dependency (str | None, optional): optionnal job_id dependency to wait for.
             Defaults to None.
-        dataset (str, optional): dataset to run the finetune process on
+        dataset (str, optional): dataset to run the transfer process on
             (used for job name and output). Defaults to "".
     """
     job = create_job(
-        get_name("finetune", model, array),
+        get_name("transfer", model, array),
         array,
-        get_output("finetune", model, array) + f"_{dataset}",
+        get_output("transfer", model, array) + f"_{dataset}",
         n_cpus=20,
         n_gpus=1,
         mem="100G",
         time="5:00:00",
     )
-    cpy_finetune(job, dataset)
+    cpy_transfer(job, dataset)
 
     if dependency:
         job.set_dependency(f"afterok:${dependency}")
@@ -275,7 +286,7 @@ def submit_scratch(
             Defaults to None.
         cmd (str | None, optional): command to run, if None, retrieve the parameters
             used from the CLI. Defaults to None.
-        dataset (str, optional): dataset to run the finetune process on
+        dataset (str, optional): dataset to run the training process on
             (used for job name and output). Defaults to "".
     """
     job = create_job(
@@ -287,7 +298,7 @@ def submit_scratch(
         mem="100G",
         time="5:00:00",
     )
-    cpy_finetune(job, dataset)
+    cpy_transfer(job, dataset)
 
     if cmd is None:
         cmd = get_full_cmd()

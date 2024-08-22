@@ -3,15 +3,16 @@ from typing import Type
 from lightning import LightningModule
 import pytest
 import torch
-from src.training.lightning_logic import (
-    FinetuningTask,
+from src.training.pretrain_logic import (
+    BinaryPretrainingTask,
     MotionPretrainingTask,
     SSIMPretrainingTask,
-    BinaryPretrainingTask,
-    MRArtFinetuningTask,
-    MRArtScratchTask,
-    AMPSCZFinetuningTask,
-    AMPSCZScratchTask,
+)
+from src.training.scratch_logic import AMPSCZScratchTask, MRArtScratchTask
+from src.training.transfer_logic import (
+    TransferTask,
+    MrArtTransferTask,
+    AMPSCZTransferTask,
 )
 from src.utils.test import get_module_dl
 
@@ -24,9 +25,9 @@ from src.utils.test import get_module_dl
                 MotionPretrainingTask,
                 SSIMPretrainingTask,
                 BinaryPretrainingTask,
-                MRArtFinetuningTask,
+                MrArtTransferTask,
                 MRArtScratchTask,
-                AMPSCZFinetuningTask,
+                AMPSCZTransferTask,
                 AMPSCZScratchTask,
             ],
             ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"],
@@ -35,9 +36,9 @@ from src.utils.test import get_module_dl
 )
 class TestLightningModule:
     def test_train_step(
-        self, task_class: Type[FinetuningTask | LightningModule], model: str
+        self, task_class: Type[TransferTask | LightningModule], model: str
     ):
-        module, dl = get_module_dl(task_class, model, 3, 3)
+        module, dl = get_module_dl(task_class, model, 2, 2)
 
         train_loss = module.training_step(next(iter(dl)), 1)
         assert train_loss is not None
@@ -45,9 +46,9 @@ class TestLightningModule:
         assert type(train_loss.item()) is float
 
     def test_val_step(
-        self, task_class: Type[FinetuningTask | LightningModule], model: str
+        self, task_class: Type[TransferTask | LightningModule], model: str
     ):
-        module, dl = get_module_dl(task_class, model, 3, 3)
+        module, dl = get_module_dl(task_class, model, 2, 2)
 
         with torch.no_grad():
             val_loss = module.validation_step(next(iter(dl)), 1)
@@ -56,14 +57,14 @@ class TestLightningModule:
         assert type(val_loss.item()) is float
 
     def test_pred_step(
-        self, task_class: Type[FinetuningTask | LightningModule], model: str
+        self, task_class: Type[TransferTask | LightningModule], model: str
     ):
-        module, dl = get_module_dl(task_class, model, 3, 3)
+        module, dl = get_module_dl(task_class, model, 2, 2)
 
         with torch.no_grad():
             predict = module.predict_step(next(iter(dl)), 1)
         assert predict is not None
-        assert predict.numel() == 3
+        assert predict.numel() == 2
         if issubclass(task_class, (MotionPretrainingTask, SSIMPretrainingTask)):
             assert predict.is_floating_point()
         else:

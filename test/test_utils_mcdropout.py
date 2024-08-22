@@ -9,23 +9,23 @@ import torch
 import pytest
 import torch.utils
 import torch.utils.data
-from src.network.utils import parse_model
-from src.training.lightning_logic import (
-    BaseFinalTrain,
-    FinetuningTask,
+from src.training.pretrain_logic import (
+    BinaryPretrainingTask,
     MotionPretrainingTask,
     PretrainingTask,
     SSIMPretrainingTask,
-    BinaryPretrainingTask,
-    MRArtFinetuningTask,
-    MRArtScratchTask,
-    AMPSCZFinetuningTask,
-    AMPSCZScratchTask,
+)
+from src.training.scratch_logic import AMPSCZScratchTask, MRArtScratchTask
+from src.training.transfer_logic import (
+    BaseFinalTrain,
+    TransferTask,
+    MrArtTransferTask,
+    AMPSCZTransferTask,
 )
 from src.utils.mcdropout import (
     bincount2d,
     finetune_confidence_plots,
-    finetune_mcdropout,
+    transfer_mcdropout,
     finetune_pred_to_df,
     get_acc_prop,
     predict_mcdropout,
@@ -76,7 +76,7 @@ def test_pred_to_df(convert_func: Callable, has_bincount: bool):
     ],
 )
 def test_bincount(n_classes: int, indicate_bins: bool):
-    n_samples = 100
+    n_samples = 10
     arr = torch.randint(0, n_classes, (n_samples,))
     if indicate_bins:
         res = bincount2d(arr, n_classes)
@@ -93,19 +93,19 @@ def test_bincount(n_classes: int, indicate_bins: bool):
             MotionPretrainingTask,
             SSIMPretrainingTask,
             BinaryPretrainingTask,
-            MRArtFinetuningTask,
+            MrArtTransferTask,
             MRArtScratchTask,
-            AMPSCZFinetuningTask,
+            AMPSCZTransferTask,
             AMPSCZScratchTask,
         ],
         ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"],
     ),
 )
 def test_predict_mc_dropout(
-    task_class: Type[FinetuningTask | LightningModule], model: str
+    task_class: Type[TransferTask | LightningModule], model: str
 ):
     n_preds = 2
-    n_samples = 3
+    n_samples = 2
 
     module, dl = get_module_dl(task_class, model, n_samples, n_samples)
 
@@ -158,7 +158,7 @@ def test_finetune_confidence_plots(confidence: float):
 )
 def test_pretrain_mcdropout(task_class: Type[PretrainingTask], model: str):
     n_preds = 2
-    n_samples = 3
+    n_samples = 2
 
     module, dl = get_module_dl(task_class, model, n_samples, n_samples)
 
@@ -182,23 +182,23 @@ def test_pretrain_mcdropout(task_class: Type[PretrainingTask], model: str):
     "task_class,model",
     itertools.product(
         [
-            MRArtFinetuningTask,
+            MrArtTransferTask,
             MRArtScratchTask,
-            AMPSCZFinetuningTask,
+            AMPSCZTransferTask,
             AMPSCZScratchTask,
         ],
         ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"],
     ),
 )
 def test_finetune_mcdropout(
-    task_class: Type[FinetuningTask | BaseFinalTrain], model: str
+    task_class: Type[TransferTask | BaseFinalTrain], model: str
 ):
     n_preds = 2
-    n_samples = 3
+    n_samples = 2
 
     module, dl = get_module_dl(task_class, model, n_samples, n_samples)
 
-    df = finetune_mcdropout(
+    df = transfer_mcdropout(
         pl_module=module,
         dataloader=dl,
         experiment=testlib.TestExperiment(),

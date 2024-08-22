@@ -92,23 +92,9 @@ class SFCNClassifier(Classifier):
     def __init__(self, input_size: Sequence, num_classes: int, dropout_rate: float):
         super().__init__(input_size, num_classes, dropout_rate)
 
-        self.classifier = nn.Identity()
-        self.output_layer = SFCNHeadBlock(
+        self.classifier = SFCNHeadBlock(
             self.input_size, 64, self.num_classes, self.dropout_rate
         )
-
-    def change_output_num(self, num_classes: int):
-        """Change the size of output layer
-
-        Args:
-            num_classes (int): Number of class / length of new output layer
-        """
-        from src.network.utils import init_model
-        self.num_classes = num_classes
-        self.output_layer = SFCNHeadBlock(
-            self.input_size, 64, self.num_classes, self.dropout_rate
-        )
-        init_model(self.output_layer)
 
 
 class SFCNModel(Model):
@@ -126,10 +112,3 @@ class SFCNModel(Model):
         self.classifier = SFCNClassifier(
             self.encoder.latent_shape[1:], self.num_classes, self.dropout_rate
         )
-
-    def freeze_finetune(self):
-        """Freeze all encoder weights for finetuning"""
-        for param in self.encoder.convs[:5].parameters():
-            param.requires_grad = False
-
-      

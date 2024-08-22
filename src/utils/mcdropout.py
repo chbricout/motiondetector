@@ -99,7 +99,7 @@ def bincount2d(arr: np.ndarray | torch.Tensor, bins: int | None = None) -> np.nd
 
 
 def finetune_pred_to_df(
-    preds: torch.Tensor, labels: list[int], identifiers: list[str]
+    preds: torch.Tensor, labels: list[int|float], identifiers: list[str]
 ) -> pd.DataFrame:
     """Transform Tensor of prediction in Dataframe for later analysis.
     Perform mean, std and count/bins.
@@ -210,7 +210,7 @@ def finetune_confidence_plots(
     return confidence_fig, filtered_fig
 
 
-def finetune_mcdropout(
+def transfer_mcdropout(
     pl_module: LightningModule,
     dataloader: DataLoader,
     experiment: ExistingExperiment | APIExperiment | None = None,

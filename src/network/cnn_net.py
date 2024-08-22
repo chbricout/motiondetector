@@ -101,17 +101,8 @@ class CNNClassifier(Classifier):
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(self.dropout_rate),
+            nn.Linear(self.input_size, self.num_classes),
         )
-        self.output_layer = nn.Linear(self.input_size, self.num_classes)
-
-    def change_output_num(self, num_classes: int):
-        """Change the size of output layer
-
-        Args:
-            num_classes (int): Number of class / length of new output layer
-        """
-        self.num_classes = num_classes
-        self.output_layer = nn.Linear(self.input_size, self.num_classes)
 
 
 class CNNModel(Model):

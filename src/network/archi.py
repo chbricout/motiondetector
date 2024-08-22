@@ -63,7 +63,6 @@ class Classifier(abc.ABC, nn.Module):
     input_size: Sequence | int
     num_classes: int
     dropout_rate: float
-    output_layer: nn.Module
     classifier: nn.Module
 
     @abc.abstractmethod
@@ -80,17 +79,6 @@ class Classifier(abc.ABC, nn.Module):
         self.dropout_rate = dropout_rate
         self.num_classes = num_classes
 
-    def class_forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward everything through classifier main block (excluding output layer)
-
-        Args:
-            x (torch.Tensor): Input volumes encodings (2D)
-
-        Returns:
-            torch.Tensor: Output before last layer
-        """
-        return self.classifier(x)
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Default forward mechanism, ideally should not be override
 
@@ -100,16 +88,7 @@ class Classifier(abc.ABC, nn.Module):
         Returns:
             torch.Tensor: raw output
         """
-        x = self.class_forward(x)
-        return self.output_layer(x)
-
-    @abc.abstractmethod
-    def change_output_num(self, num_classes: int):
-        """Change the size of output layer
-
-        Args:
-            num_classes (int): Number of class / length of new output layer
-        """
+        return self.classifier(x)
 
 
 class Model(abc.ABC, nn.Module):
@@ -164,8 +143,3 @@ class Model(abc.ABC, nn.Module):
         for m in self.modules():
             if m.__class__.__name__.startswith("Dropout"):
                 m.train()
-
-    def freeze_finetune(self):
-        """Freeze all encoder weights for finetuning"""
-        for param in self.encoder.parameters():
-            param.requires_grad = False

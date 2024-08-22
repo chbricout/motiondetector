@@ -1,7 +1,6 @@
 """Module to store commands for plotting purpose"""
 
 import os
-import logging
 from io import BytesIO
 import requests
 import comet_ml
@@ -44,7 +43,7 @@ def pretrain_calibration_gif(
     task: str,
     run_num: int,
     project_name: str,
-    api_key: str = config.COMET_API_KEY,
+    api_key: str | None = config.COMET_API_KEY,
 ):
     """Create and store gif representing the evolution
       of the pretraining calibration plot
@@ -54,13 +53,12 @@ def pretrain_calibration_gif(
         task (str): task of the model to download
         run_num (int): specific run num to load
         project_name (str): name of the comet project
-        api_key (str, optional): comet api key. Defaults to COMET_API_KEY.
+        api_key (str | None, optional): comet api key. Defaults to COMET_API_KEY.
     """
     api = comet_ml.api.API(
         api_key=api_key,
     )
     comet_exp_name = f"pretraining-{task}-{model_name}-{run_num}"
-    logging.info(f"{comet_exp_name}, {project_name}")
     pretrain_exp: comet_ml.APIExperiment = api.get(
         "mrart", project_name, comet_exp_name
     )

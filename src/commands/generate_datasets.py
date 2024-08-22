@@ -10,7 +10,6 @@ from typing import Type
 
 from monai.data.dataloader import DataLoader
 from monai.data.dataset import Dataset
-from monai.transforms.compose import Compose
 from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 import pandas as pd
@@ -24,8 +23,6 @@ from src.dataset.base_dataset import BaseDataset
 from src.dataset.hcpep.hcpep_dataset import TrainHCPEP, ValHCPEP, TestHCPEP
 from src.transforms.generate import (
     Preprocess,
-    CreateSynthVolume,
-    FinalCrop,
     SyntheticPipeline,
 )
 from src import config
@@ -84,15 +81,17 @@ def generate_data(dataset: Dataset, dataset_dir: str, mode: str, num_iter: int):
     for i in tqdm(range(num_iter)):
         synth_pipeline.iteration = i
         for element in tqdm(dataloader):
-            lst_dict.append({
-            "data": element['data'][0],
-            "motion_mm": element["motion_mm"].item(),
-            "ssim_loss": element["ssim_loss"].item(),
-            "motion_binary": element["motion_binary"].item(),
-            "identifier": element['identifier'][0],
-            "group": element['group'][0],
-        })
-    
+            lst_dict.append(
+                {
+                    "data": element["data"][0],
+                    "motion_mm": element["motion_mm"].item(),
+                    "ssim_loss": element["ssim_loss"].item(),
+                    "motion_binary": element["motion_binary"].item(),
+                    "identifier": element["identifier"][0],
+                    "group": element["group"][0],
+                }
+            )
+
     pd.DataFrame.from_records(lst_dict).to_csv(f"{dataset_dir}/{mode}.csv")
     synth_pipeline.save_parameters()
 
@@ -106,11 +105,13 @@ def generated_to_tar(root_dir: str, new_dataset: str, to_archive: str):
         to_archive (str): path to generated dataset
     """
     filename = "generate_dataset.tar"
-    dataset_dir = os.path.join(root_dir, new_dataset + "_archive")
-    os.makedirs(dataset_dir, exist_ok=True)
+    archive_dir = new_dataset + "_archive"
+    os.chdir(root_dir)
+
+    os.makedirs(archive_dir, exist_ok=True)
 
     logging.info("Writing dataset to tar archive")
-    with tarfile.open(os.path.join(dataset_dir, filename), "w") as tar_obj:
+    with tarfile.open(os.path.join(archive_dir, filename), "w") as tar_obj:
         tar_obj.add(to_archive)
     logging.info("Dataset archived, remember to remove folder")
 

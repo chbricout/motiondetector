@@ -1,7 +1,9 @@
-from typing import Type
+"""Module to define any utility function to use tasks"""
 
+from typing import Type
+import sys
 from lightning import Trainer
-from src.training.lightning_logic import (
+from src.training.pretrain_logic import (
     BinaryPretrainingTask,
     MotionPretrainingTask,
     PretrainingTask,
@@ -18,7 +20,7 @@ class EnsureOneProcess:
     def __enter__(self):
         self.trainer.strategy.barrier()
         if not self.trainer.is_global_zero:
-            exit(0)
+            sys.exit(0)
 
     def __exit__(self, exc_type, exc_value, exc_tb):
         pass
@@ -57,6 +59,14 @@ def label_from_task_class(task_class: Type[PretrainingTask]) -> str:
 
 
 def str_to_task(task_str: str) -> Type[PretrainingTask]:
+    """Retrieve task class from string
+
+    Args:
+        task_str (str): Task as a string
+
+    Returns:
+        Type[PretrainingTask]: Class of task
+    """
     task_class: Type[PretrainingTask] = None
     if task_str == "MOTION":
         task_class = MotionPretrainingTask

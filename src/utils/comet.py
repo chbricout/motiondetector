@@ -12,7 +12,7 @@ import torch
 from src import config
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.network.utils import parse_model
-from src.training.lightning_logic import PretrainingTask
+from src.training.pretrain_logic import PretrainingTask
 from src.utils.task import str_to_task
 
 
@@ -83,10 +83,8 @@ def get_pretrain_task(
         api_key=api_key,
     )
     exp_name = f"pretraining-{task}-{model_name}-{run_num}"
-    pretrain_exp = api.get(
-        "mrart", project_name, exp_name
-    )
-    logging.error("Retrieving experiment %s from project %s",exp_name,project_name )
+    pretrain_exp = api.get("mrart", project_name, exp_name)
+    logging.error("Retrieving experiment %s from project %s", exp_name, project_name)
     model_class = parse_model(model_name)
 
     if config.IS_NARVAL:

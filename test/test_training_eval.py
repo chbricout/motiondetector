@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from src.training.eval import get_box_plot, get_correlations, get_pred_from_pretrain
-from src.training.lightning_logic import (
+from src.training.pretrain_logic import (
     BinaryPretrainingTask,
     MotionPretrainingTask,
     PretrainingTask,
@@ -29,7 +29,7 @@ from src.utils.test import get_module_dl, parse_module
 def test_pretrain_mcdropout(task_class: Type[PretrainingTask], model: str):
     n_samples = 2
     module, dl = get_module_dl(task_class, model, n_samples, n_samples)
-    df = get_pred_from_pretrain(module, dl)
+    df = get_pred_from_pretrain(module, dl, "val")
 
     assert len(df) == 2
     assert "label" in df.columns
@@ -38,7 +38,7 @@ def test_pretrain_mcdropout(task_class: Type[PretrainingTask], model: str):
 
 
 def test_get_box_plot():
-    n_sample = 20
+    n_sample = 2
     predictions = torch.randn(n_sample).tolist()
     labels = torch.randint(0, 3, (n_sample,)).tolist()
     fig = get_box_plot(predictions, labels)

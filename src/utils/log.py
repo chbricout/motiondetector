@@ -77,15 +77,15 @@ def rich_logger():
     )
 
 
-def log_figure(figure: Figure, dir: str, name: str, root_dir=config.PLOT_DIR):
+def log_figure(figure: Figure, exp_dir: str, name: str, root_dir=config.PLOT_DIR):
     """Log Figure to a local directory
 
     Args:
         figure (Figure): Figure to log
-        dir (str): directory corresponding to experiment
+        exp_dir (str): directory corresponding to experiment
         name (str): file name
         root_dir (_type_, optional): root directory for every figures. Defaults to config.PLOT_DIR.
     """
-    img_path = os.path.join(root_dir, dir, name)
+    img_path = os.path.join(root_dir, exp_dir, name)
     figure.savefig(img_path)
     logging.debug("logged figure to %s", img_path)

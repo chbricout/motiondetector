@@ -3,6 +3,7 @@ Module to store utils function and classes for network
 """
 
 import logging
+from typing import Type
 from torch import nn
 
 from src.network.archi import Model
@@ -33,7 +34,7 @@ def init_weights(model: nn.Module):
         model (nn.Module): Module to apply init strategy
     """
     if isinstance(model, (nn.Linear, nn.Conv3d, nn.ConvTranspose3d)):
-        nn.init.kaiming_uniform_(model.weight)
+        nn.init.kaiming_normal_(model.weight)
         nn.init.constant_(model.bias, 0)
     elif isinstance(model, nn.BatchNorm3d):
         nn.init.constant_(model.weight, 1)
@@ -44,7 +45,7 @@ def init_weights(model: nn.Module):
             model.running_var.fill_(1)
 
 
-def parse_model(model: str) -> Model:
+def parse_model(model: str) -> Type[Model]:
     """Return the class corresponding to a model string name
 
     Args:

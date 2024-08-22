@@ -5,9 +5,9 @@ from src.dataset.ampscz.ampscz_dataset import (
     PretrainTrainAMPSCZ,
     PretrainValAMPSCZ,
     PretrainTestAMPSCZ,
-    FinetuneTrainAMPSCZ,
-    FinetuneValAMPSCZ,
-    FinetuneTestAMPSCZ,
+    TransferTrainAMPSCZ,
+    TransferValAMPSCZ,
+    TransferTestAMPSCZ,
 )
 from src.dataset.hcpep.hcpep_dataset import TrainHCPEP, ValHCPEP, TestHCPEP
 from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt, TestMrArt
@@ -44,9 +44,9 @@ def test_no_label_datasets(dataset: BaseDataset, datapoints: int):
         (TrainMrArt, 258),
         (ValMrArt, 89),
         (TestMrArt, 89),
-        (FinetuneTrainAMPSCZ, 115),
-        (FinetuneValAMPSCZ, 39),
-        (FinetuneTestAMPSCZ, 42),
+        (TransferTrainAMPSCZ, 115),
+        (TransferValAMPSCZ, 39),
+        (TransferTestAMPSCZ, 42),
     ],
 )
 def test_labelled_datasets(dataset: BaseDataset, datapoints: int):

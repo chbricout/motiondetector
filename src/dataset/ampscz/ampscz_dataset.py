@@ -3,7 +3,7 @@ Module to use the AMPSCZ dataset from python (require split csv files)
 """
 
 from typing import Callable
-from monai.data.dataset import Dataset, CacheDataset
+from monai.data.dataset import CacheDataset
 from monai.data.dataloader import DataLoader
 import pandas as pd
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
@@ -70,7 +70,7 @@ class PretrainTestAMPSCZ(BaseAMPSCZ):
     labelled: bool = False
 
 
-class FinetuneTrainAMPSCZ(BaseAMPSCZ):
+class TransferTrainAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the train split of the finetune dedicated part of AMPSCZ
     It relies on the "finetune.csv" file
@@ -81,7 +81,7 @@ class FinetuneTrainAMPSCZ(BaseAMPSCZ):
     labelled: bool = True
 
 
-class FinetuneValAMPSCZ(BaseAMPSCZ):
+class TransferValAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the validation split of the finetune dedicated part of AMPSCZ
     It relies on the "finetune.csv" file
@@ -92,7 +92,7 @@ class FinetuneValAMPSCZ(BaseAMPSCZ):
     labelled: bool = True
 
 
-class FinetuneTestAMPSCZ(BaseAMPSCZ):
+class TransferTestAMPSCZ(BaseAMPSCZ):
     """
     Pytorch Dataset to use the test split of the finetune dedicated part of AMPSCZ
     It relies on the "finetune.csv" file
@@ -111,8 +111,8 @@ class AMPSCZDataModule(BaseDataModule):
     def __init__(self, batch_size: int = 32):
         super().__init__(batch_size)
         self.load_tsf: Callable = FinetuneTransform()
-        self.val_ds_class = FinetuneValAMPSCZ
-        self.train_ds_class = FinetuneTrainAMPSCZ
+        self.val_ds_class = TransferValAMPSCZ
+        self.train_ds_class = TransferTrainAMPSCZ
 
     def train_dataloader(self):
         return DataLoader(

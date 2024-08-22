@@ -2,10 +2,10 @@ import warnings
 import click
 
 from src.commands.base_trainer import launch_train_from_scratch
-from src.commands.finetune import launch_finetune
+from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
 from src.commands.launch_slurm import (
-    submit_finetune,
+    submit_transfer,
     submit_generate_ds,
     submit_pretrain,
     submit_scratch,
@@ -159,17 +159,17 @@ def pretrain(
 @run_num
 @seed
 @slurm
-def finetune(
+def transfer(
     task, max_epochs, learning_rate, dataset, batch_size, model, run_num, seed, slurm
 ):
     if slurm:
-        submit_finetune(
+        submit_transfer(
             model=model,
             array=run_num,
         )
     else:
         lightning_logger()
-        launch_finetune(
+        launch_transfer(
             pretrain_task=task,
             max_epochs=max_epochs,
             learning_rate=learning_rate,
@@ -266,7 +266,7 @@ def launch_exp():
 
 
 run_confs = [
-    {"name": "VIT", "batch_size": 12},
+    {"name": "VIT", "batch_size": 20},
     {"name": "SFCN", "batch_size": 30},
     {"name": "CNN", "batch_size": 30},
     {"name": "CONV5_FC3", "batch_size": 30},
@@ -292,7 +292,7 @@ def pretrainer(cutout: bool, test: bool, task: str):
                 --batch_size {model['batch_size']}\
                 --model {model['name']}\
                 --learning_rate 2e-5\
-                --dropout_rate 0.75\
+                --dropout_rate 0.6\
                 --task {task}"
         if cutout:
             cmd += " --cutout"
@@ -308,7 +308,7 @@ def pretrainer(cutout: bool, test: bool, task: str):
         )
 
 
-finetune_confs = [
+transfer_confs = [
     {"name": "VIT", "batch_size": 12},
     {"name": "SFCN", "batch_size": 28},
     {"name": "CNN", "batch_size": 28},
@@ -317,13 +317,13 @@ finetune_confs = [
 
 
 @launch_exp.command()
-def finetune():
-    for model in finetune_confs:
+def transfer():
+    for model in transfer_confs:
         for dataset in ["MRART", "AMPSCZ"]:
-            submit_finetune(
+            submit_transfer(
                 model["name"],
                 range(1, 6),
-                f"cli.py finetune   \
+                f"cli.py transfer   \
                     --batch_size {model['batch_size']}\
                     --model {model['name']}\
                     --learning_rate 1e-5\

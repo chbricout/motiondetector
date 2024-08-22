@@ -7,6 +7,7 @@ import logging
 import shutil
 import tempfile
 import random
+from typing import Type
 import lightning
 import lightning.pytorch.loggers
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
@@ -14,12 +15,12 @@ from src.dataset.mrart.mrart_dataset import MRArtDataModule
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
 from src.config import IM_SHAPE
 from src.training.eval import SaveBestCheckpoint
-from src.training.lightning_logic import (
+from src.training.scratch_logic import (
     AMPSCZScratchTask,
     MRArtScratchTask,
     TrainScratchTask,
 )
-from src.utils.mcdropout import finetune_mcdropout
+from src.utils.mcdropout import transfer_mcdropout
 from src.utils.task import EnsureOneProcess
 
 
@@ -47,8 +48,8 @@ def launch_train_from_scratch(
     """
     assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
 
-    task: TrainScratchTask = None
-    datamodule: lightning.LightningDataModule = None
+    task: Type[TrainScratchTask] = None
+    datamodule: Type[lightning.LightningDataModule] = None
     if dataset == "MRART":
         datamodule = MRArtDataModule
         task = MRArtScratchTask
@@ -94,8 +95,8 @@ def launch_train_from_scratch(
     trainer.fit(net, datamodule=datamodule(batch_size))
 
     with EnsureOneProcess(trainer):
-        best_net = task.load_from_checkpoint(checkpoint.best_model_path)
+        best_net = task.load_from_checkpoint(checkpoint_path=checkpoint.best_model_path)
 
-        finetune_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
+        transfer_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
         logging.info("Removing Checkpoints")
         shutil.rmtree(trainer.default_root_dir)

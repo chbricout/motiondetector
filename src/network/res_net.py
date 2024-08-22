@@ -97,18 +97,8 @@ class ResClassifier(Classifier):
             nn.Flatten(),
             nn.Linear(self.input_size, 256),
             nn.ReLU(),
+            nn.Linear(256, self.num_classes),
         )
-
-        self.output_layer = nn.Linear(256, self.num_classes)
-
-    def change_output_num(self, num_classes: int):
-        """Change the size of output layer
-
-        Args:
-            num_classes (int): Number of class / length of new output layer
-        """
-        self.num_classes = num_classes
-        self.output_layer = nn.Linear(256, self.num_classes)
 
 
 class ResModel(Model):

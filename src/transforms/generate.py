@@ -96,8 +96,10 @@ class CustomMotion(tio.transforms.RandomMotion, RandomizableTransform):
             tolerance (float, optional): acceptable tolerance. Defaults to 0.02.
         """
         self.transform_degrees = self.R.uniform(0, np.min((goal_motion / 3, 1)))
-        self.goal_motion = max(goal_motion + self.R.uniform(-0.2, 0.2),0.1)
-        self.num_transforms = self.R.randint(low=num_transforms_range[0], high=num_transforms_range[1])
+        self.goal_motion = max(goal_motion + self.R.uniform(-0.2, 0.2), 0.1)
+        self.num_transforms = self.R.randint(
+            low=num_transforms_range[0], high=num_transforms_range[1]
+        )
         self.tolerance = tolerance
 
         super().__init__(
@@ -344,7 +346,7 @@ class SyntheticPipeline(Transform):
 
         relative_path = os.path.relpath(path, os.path.dirname(self.dataset_dir))
         return {
-            "data": relative_path+".nii.gz",
+            "data": relative_path + ".nii.gz",
             "motion_mm": synth["motion_mm"],
             "ssim_loss": synth["ssim_loss"],
             "motion_binary": synth["motion_binary"],

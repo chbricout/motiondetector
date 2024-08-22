@@ -1,7 +1,15 @@
+from comet_ml import Model
 import numpy as np
 import pytest
 import torch
-from src.transforms.load import ToSoftLabel
+from src import config
+from src.network.cnn_net import CNNModel
+from src.network.conv5_fc3_net import Conv5FC3Model
+from src.network.res_net import ResModel
+from src.network.seres_net import SEResModel
+from src.network.sfcn_net import SFCNModel
+from src.network.vit_net import ViTModel
+from src.transforms.load import PretrainerTransform, ToSoftLabel
 from src.config import (
     SSIM_BIN_RANGE,
     SSIM_BIN_STEP,
@@ -10,6 +18,7 @@ from src.config import (
     MOTION_BIN_STEP,
     MOTION_N_BINS,
 )
+from monai.data import Dataset
 
 
 @pytest.mark.parametrize(
@@ -60,3 +69,21 @@ def test_soft_label_scalar(val: float):
 
     assert (x - hard_x).abs().sum() < 1e-5
     assert soft_x.shape == (n_bins,)
+
+
+@pytest.mark.parametrize(
+    "model_to_test",
+    [CNNModel, ResModel, Conv5FC3Model, SEResModel, SFCNModel, ViTModel],
+)
+def test_pretrain_transform(model_to_test: Model):
+    net = model_to_test(config.IM_SHAPE, 10, 0.5)
+    transf = PretrainerTransform("data", net.encoder)
+    ds = Dataset(
+        [
+            {
+                "data": torch.randn(config.IM_SHAPE),
+            }
+        ],
+        transform=transf,
+    )
+    dl = torch.utils.data.DataLoader(ds, batch_size=1)

@@ -16,11 +16,11 @@ class ViTEncoder(Encoder):
             1,
             (160, 192, 160),
             patch_size=(16, 16, 16),
-            num_layers=10,
+            num_layers=12,
             hidden_size=768,
             classification=True,
             num_classes=1,
-            dropout_rate=0.1
+            dropout_rate=0.1,
         )
         delattr(self.vit, "classification_head")
 
@@ -48,17 +48,8 @@ class ViTClassifier(Classifier):
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(self.dropout_rate),
+            nn.Linear(self.input_size, self.num_classes),
         )
-        self.output_layer = nn.Linear(self.input_size, self.num_classes)
-
-    def change_output_num(self, num_classes: int):
-        """Change the size of output layer
-
-        Args:
-            num_classes (int): Number of class / length of new output layer
-        """
-        self.num_classes = num_classes
-        self.output_layer = nn.Linear(self.input_size, self.num_classes)
 
 
 class ViTModel(Model):

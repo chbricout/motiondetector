@@ -65,17 +65,8 @@ class Conv5FC3Classifier(Classifier):
             nn.Dropout(self.dropout_rate),
             nn.Linear(self.input_size, 1300),
             nn.Linear(1300, 50),
+            nn.Linear(50, self.num_classes),
         )
-        self.output_layer = nn.Linear(50, self.num_classes)
-
-    def change_output_num(self, num_classes: int):
-        """Change the size of output layer
-
-        Args:
-            num_classes (int): Number of class / length of new output layer
-        """
-        self.num_classes = num_classes
-        self.output_layer = nn.Linear(50, self.num_classes)
 
 
 class Conv5FC3Model(Model):

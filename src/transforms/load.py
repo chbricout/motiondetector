@@ -1,6 +1,6 @@
 """Module to load data during training"""
-
-from typing import Dict, Hashable, Mapping, Self, Union
+from __future__ import annotations
+from typing import Callable, Dict, Hashable, Mapping, Self, Union
 from monai.transforms import (
     Compose,
     LoadImaged,
@@ -10,11 +10,14 @@ from monai.transforms import (
     MapTransform,
     ToTensord,
 )
+from monai.config import KeysCollection
 from scipy.stats import norm
 import numpy as np
 import torch
+from torch import nn
 
 from src import config
+from src.network.archi import Model
 
 
 class ToSoftLabel(MapTransform):
@@ -130,9 +133,7 @@ class ToSoftLabel(MapTransform):
                 for i in range(self.bin_number):
                     x1 = self.bin_centers[i] - float(self.bin_step) / 2
                     x2 = self.bin_centers[i] + float(self.bin_step) / 2
-                    cdfs = norm.cdf(
-                        [x1, x2], loc=x, scale=self.bin_length * 0.03
-                    )  # TODO: test effects of sigma
+                    cdfs = norm.cdf([x1, x2], loc=x, scale=self.bin_length * 0.03)
                     v[i] = cdfs[1] - cdfs[0]
             else:
                 v = np.zeros((len(x), self.bin_number))
@@ -191,7 +192,7 @@ class ToSoftLabel(MapTransform):
         return mean, np.sqrt(var)
 
     @staticmethod
-    def motion_config() -> Self:
+    def motion_config() -> ToSoftLabel:
         """Create an instance with basic configuration (see config.py)
 
         Returns:
@@ -205,7 +206,7 @@ class ToSoftLabel(MapTransform):
         )
 
     @staticmethod
-    def ssim_config() -> Self:
+    def ssim_config() -> ToSoftLabel:
         """Create an instance with basic configuration (see config.py)
 
         Returns:
@@ -222,7 +223,7 @@ class ToSoftLabel(MapTransform):
 class LoadSynth(Compose):
     """Transform to load synthetic motion data and create soft labels"""
 
-    def __init__(self, soft_label: ToSoftLabel):
+    def __init__(self, soft_label: Callable):
         self.soft_label = soft_label
         self.tsf = [
             LoadImaged(keys="data", ensure_channel_first=True, image_only=True),
@@ -233,7 +234,7 @@ class LoadSynth(Compose):
         super().__init__(self.tsf)
 
     @staticmethod
-    def from_task(task: str) -> Self:
+    def from_task(task: str) -> LoadSynth:
         """Load synthetic data depending on task
 
         Args:
@@ -263,3 +264,27 @@ class FinetuneTransform(Compose):
                 ToTensord(keys="data", track_meta=False),
             ]
         )
+
+
+class PretrainerTransform(MapTransform):
+    """Define a transform to use a pretrained module
+    as a static encoder"""
+
+    def __init__(self, keys: KeysCollection, model: nn.Module):
+        self.model = model
+        model.eval()
+        super().__init__(keys)
+
+    def __call__(self, x):
+        with torch.no_grad():
+            for key in self.key_iterator(x):
+
+                x[key] = self.model(x["key"])
+        return x
+
+
+class TransferTransform(Compose):
+    """Transform to load data in finetune process"""
+
+    def __init__(self, model: Model):
+        super().__init__([FinetuneTransform(), PretrainerTransform("data", model)])

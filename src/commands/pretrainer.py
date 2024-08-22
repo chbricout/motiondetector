@@ -6,7 +6,6 @@ import logging
 import random
 import shutil
 from typing import Type
-import comet_ml
 import torch
 import lightning
 import lightning.pytorch.loggers
@@ -18,7 +17,7 @@ from lightning.pytorch.callbacks import (
 from src.utils.comet import get_experiment_key
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
 from src.training.eval import SaveBestCheckpoint, get_correlations
-from src.training.lightning_logic import PretrainingTask
+from src.training.pretrain_logic import PretrainingTask
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.utils.log import get_run_dir
 from src.utils.mcdropout import pretrain_mcdropout
@@ -115,7 +114,9 @@ def launch_pretrain(
     trainer.fit(net, datamodule=PretrainingDataModule(batch_size, task))
 
     with EnsureOneProcess(trainer):
-        best_net = task_class.load_from_checkpoint(checkpoint.best_model_path)
+        best_net = task_class.load_from_checkpoint(
+            checkpoint_path=checkpoint.best_model_path
+        )
         logging.info("Running correlation on pretrain")
         get_correlations(best_net, comet_logger.experiment)
 

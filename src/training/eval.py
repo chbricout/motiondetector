@@ -12,9 +12,9 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 import pandas as pd
 import seaborn as sb
 import torch
-from src.dataset.ampscz.ampscz_dataset import FinetuneValAMPSCZ, FinetuneTrainAMPSCZ
+from src.dataset.ampscz.ampscz_dataset import TransferValAMPSCZ, TransferTrainAMPSCZ
 from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
-from src.training.lightning_logic import PretrainingTask
+from src.training.pretrain_logic import PretrainingTask
 from src.utils.comet import log_figure_comet
 from src.transforms.load import FinetuneTransform
 from src.utils.metrics import separation_capacity
@@ -30,7 +30,7 @@ def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
     load_tsf = FinetuneTransform()
     task_conf = {
         "MRART": {"train": TrainMrArt, "val": ValMrArt},
-        "AMPSCZ": {"train": FinetuneTrainAMPSCZ, "val": FinetuneValAMPSCZ},
+        "AMPSCZ": {"train": TransferTrainAMPSCZ, "val": TransferValAMPSCZ},
     }
     for data_name, datasets_mode in task_conf.items():
         all_mode_df = []

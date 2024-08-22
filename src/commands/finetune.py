@@ -5,6 +5,7 @@ Module to launch finetuning job on pretrained model.
 import logging
 import random
 import shutil
+from typing import Type
 
 import torch
 import lightning
@@ -14,15 +15,16 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from src.dataset.mrart.mrart_dataset import MRArtDataModule
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
 from src.config import IM_SHAPE, PROJECT_NAME
+from src.network.archi import Encoder
 from src.training.eval import SaveBestCheckpoint
-from src.training.lightning_logic import (
-    MRArtFinetuningTask,
-    AMPSCZFinetuningTask,
-    TrainScratchTask,
+from src.training.scratch_logic import TrainScratchTask
+from src.training.transfer_logic import (
+    MrArtTransferTask,
+    AMPSCZTransferTask,
 )
 from src.utils.comet import get_pretrain_task
 from src.utils.log import get_run_dir
-from src.utils.mcdropout import finetune_mcdropout
+from src.utils.mcdropout import transfer_mcdropout
 from src.utils.task import EnsureOneProcess
 
 
@@ -53,14 +55,14 @@ def launch_finetune(
     run_name = f"finetune-{dataset}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
 
-    task: TrainScratchTask = None
-    datamodule: lightning.LightningDataModule = None
+    task: Type[TrainScratchTask] = None
+    datamodule: Type[lightning.LightningDataModule] = None
     if dataset == "MRART":
         datamodule = MRArtDataModule
-        task = MRArtFinetuningTask
+        task = MrArtTransferTask
     elif dataset == "AMPSCZ":
         datamodule = AMPSCZDataModule
-        task = AMPSCZFinetuningTask
+        task = AMPSCZTransferTask
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
@@ -78,8 +80,10 @@ def launch_finetune(
     logging.info("Run dir path is : %s", run_dir)
 
     pretrained = get_pretrain_task(model, pretrain_task, run_num, PROJECT_NAME)
+    encoding_model: Encoder = pretrained.model.encoder
+
     net = task(
-        pretrained_model=pretrained.model,
+        input_size=encoding_model.latent_size,
         im_shape=IM_SHAPE,
         lr=learning_rate,
         batch_size=batch_size,
@@ -106,11 +110,11 @@ def launch_finetune(
         ],
     )
 
-    trainer.fit(net, datamodule=datamodule(batch_size))
+    trainer.fit(net, datamodule=datamodule(batch_size, encoding_model))
 
     with EnsureOneProcess(trainer):
-        best_net = task.load_from_checkpoint(checkpoint.best_model_path,  pretrained_model=pretrained.model)
+        best_net = task.load_from_checkpoint(checkpoint_path=checkpoint.best_model_path)
 
-        finetune_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
+        transfer_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
         logging.info("Removing Checkpoints")
         shutil.rmtree(trainer.default_root_dir)
