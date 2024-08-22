@@ -193,7 +193,7 @@ def submit_pretrain(
         mem="100G",
         time="48:00:00"
     )
-    cpy_extract_tar(job, ["generate_dataset"])
+    # cpy_extract_tar(job, ["generate_dataset"])
 
     if cmd is None:
         cmd = get_full_cmd()
