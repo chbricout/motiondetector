@@ -13,9 +13,11 @@ IS_NARVAL = os.getenv("IS_NARVAL", "False").lower() in ("true", "1", "t")
 ## SLURM
 DEFAULT_SLURM_ACCOUNT = "ctb-sbouix"
 
+
+
 ## TRAINING
 IM_SHAPE = (1, 160, 192, 160)
-PROJECT_NAME = "estimate-motion-mm"
+PROJECT_NAME = "estimate-motion-pretrain"
 
 ## MOTION MM PARAMETERS
 MOTION_N_BINS = 50

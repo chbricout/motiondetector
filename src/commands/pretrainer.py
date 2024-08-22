@@ -92,7 +92,7 @@ def launch_pretrain(
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=2,
+        devices=4,
         strategy="ddp",
         accelerator="gpu",
         precision="16-mixed",
@@ -102,7 +102,7 @@ def launch_pretrain(
             EarlyStopping(
                 monitor="val_loss",
                 mode="min",
-                patience=30,
+                patience=15,
                 check_on_train_epoch_end=False,
                 verbose=True,
             ),

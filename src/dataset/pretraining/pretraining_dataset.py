@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 from monai.data.dataloader import DataLoader
 
+from src import config
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import LoadSynth
 from src.utils.task import label_from_task
@@ -17,9 +18,12 @@ class BasePretrain(Dataset, BaseDataset):
     Base dataset for common logic in AMPSCZ Data
     """
 
-    csv_path: str
+    huge_path: str
+    veryhuge_path: str
+
 
     def __init__(self, transform: Callable | None = None, prefix: str = ""):
+        self.csv_path = self.veryhuge_path if config.IS_NARVAL else self.huge_path
         self.file = pd.read_csv(self.csv_path, index_col=0)
 
         self.file["identifier"] = self.file["identifier"]
@@ -53,7 +57,8 @@ class PretrainTrain(BasePretrain):
     It relies on the "train.csv" file
     """
 
-    csv_path: str = "src/dataset/pretraining/train.csv"
+    huge_path: str = "src/dataset/pretraining/huge-train.csv"
+    veryhuge_path: str = "src/dataset/pretraining/veryhuge-train.csv"
 
 
 class PretrainVal(BasePretrain):
@@ -62,7 +67,8 @@ class PretrainVal(BasePretrain):
     It relies on the "val.csv" file
     """
 
-    csv_path: str = "src/dataset/pretraining/val.csv"
+    huge_path: str = "src/dataset/pretraining/huge-val.csv"
+    veryhuge_path: str = "src/dataset/pretraining/veryhuge-val.csv"
 
 
 class PretrainingDataModule(BaseDataModule):

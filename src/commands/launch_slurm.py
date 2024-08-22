@@ -191,6 +191,7 @@ def submit_pretrain(
         n_cpus=10,
         n_gpus=4,
         mem="100G",
+        time="48:00:00"
     )
     cpy_extract_tar(job, ["generate_dataset"])
 
