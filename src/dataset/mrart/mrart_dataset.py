@@ -2,10 +2,13 @@
 Module to use the MR-ART dataset from python (require split csv files)
 """
 
+import logging
 from typing import Callable
 from monai.data.dataset import CacheDataset
 from monai.data.dataloader import DataLoader
 import pandas as pd
+import torch
+import tqdm
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.network.archi import Model
 from src.transforms.load import FinetuneTransform, TransferTransform
@@ -75,13 +78,12 @@ class MRArtDataModule(BaseDataModule):
     def __init__(self, batch_size: int = 32, pretrained_model: Model | None = None):
         super().__init__(batch_size)
 
-        self.load_tsf: Callable = (
-            FinetuneTransform()
-            if pretrained_model is None
-            else TransferTransform(pretrained_model)
-        )
+        self.load_tsf: Callable =         FinetuneTransform()
         self.val_ds_class = ValMrArt
         self.train_ds_class = TrainMrArt
+        self.pretrained_model=pretrained_model
+
+    
 
     def train_dataloader(self):
         return DataLoader(
@@ -102,3 +104,27 @@ class MRArtDataModule(BaseDataModule):
             pin_memory=True,
             persistent_workers=True,
         )
+
+    def setup(self, stage: str):
+        self.val_ds = self.get_embeddings(self.val_ds_class.from_env(self.load_tsf))
+        self.train_ds = self.get_embeddings(self.train_ds_class.from_env(self.load_tsf))
+        logging.info(
+            "Train dataset contains %d datas  \nVal dataset contains %d",
+            len(self.train_ds),
+            len(self.val_ds),
+        )
+
+    def get_embeddings(self,dataset:CacheDataset):
+        cache_ds = []
+        self.pretrained_model.cuda()
+        with torch.no_grad():
+            for  batch in tqdm.tqdm(dataset):
+                with torch.autocast(device_type="cuda"):
+                    if isinstance(batch["data"], torch.IntTensor):
+                        batch["data"] = batch["data"].as_tensor()
+                    batch["data"] = batch["data"].unsqueeze(0).cuda()
+
+                    batch["data"] = self.pretrained_model(batch["data"]).cpu().squeeze(0)
+                    cache_ds.append(batch)
+        logging.error(f"Output shape {cache_ds[0]['data'].shape}")
+        return cache_ds

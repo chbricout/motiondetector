@@ -17,11 +17,11 @@ class TransferTask(BaseFinalTrain):
     batch_size: int
     output_size: int
 
-    def __init__(self, input_size: int, lr=1e-5, batch_size=14):
+    def __init__(self, input_size: int, lr=1e-5, batch_size=14, pool=False):
         super().__init__()
         self.lr = lr
         self.input_size = input_size
-        self.model = TransferMLP(self.input_size, self.output_size)
+        self.model = TransferMLP(self.input_size, self.output_size, pool=pool)
         self.batch_size = batch_size
         self.save_hyperparameters()
 
