@@ -30,7 +30,6 @@ def separation_capacity(df: pd.DataFrame) -> tuple[float, Figure, list[float]]:
     x_val = val["pred"].to_numpy().reshape(-1, 1)
     y_val = val["label"].to_numpy()
     n_clusters = max(int(max(y_train) + 1), 2)
-    print(n_clusters)
 
     model = DecisionTreeClassifier(
         max_leaf_nodes=n_clusters, max_depth=int(np.ceil(n_clusters / 2))
@@ -38,11 +37,12 @@ def separation_capacity(df: pd.DataFrame) -> tuple[float, Figure, list[float]]:
     model.fit(x_train, y_train)
     accuracy = balanced_accuracy_score(y_val, model.predict(x_val))
 
-    thresholds = list(sorted(model.tree_.threshold[: n_clusters - 1]))
+    thresholds = list(sorted(filter(lambda x: x>-2.0, model.tree_.threshold), reverse=True))
+    
     fig = plt.figure(figsize=(6, 5))
     ax = fig.add_subplot(1, 1, 1)
 
-    sb.swarmplot(x=val["pred"], hue=val["label"], ax=ax)
+    sb.stripplot(x=val["pred"], hue=val["label"], ax=ax)
     for thresh in thresholds:
         ax.axvline(x=thresh, color="r")
     ax.set_xlabel("Prediction metric")
