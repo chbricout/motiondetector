@@ -32,7 +32,7 @@ def separation_capacity(df: pd.DataFrame) -> tuple[float, Figure, list[float]]:
     n_clusters = max(int(max(y_train) + 1), 2)
 
     model = DecisionTreeClassifier(
-        max_leaf_nodes=n_clusters, max_depth=int(np.ceil(n_clusters / 2))
+        max_leaf_nodes=n_clusters, max_depth=int(np.ceil(n_clusters / 2)), class_weight="balanced"
     )
     model.fit(x_train, y_train)
     accuracy = balanced_accuracy_score(y_val, model.predict(x_val))
