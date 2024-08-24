@@ -94,7 +94,7 @@ def get_pretrain_task(
     output_dir += f"{project_name}-{run_num}/"
     output_path = output_dir + f"{model_class.__name__}"
     pretrain_exp.download_model(
-        model_class.__name__,
+        'OptimizedModule',
         output_path=output_path,
     )
     file_path = glob.glob(f"{output_path}/*.ckpt")[0]

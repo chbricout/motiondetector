@@ -11,10 +11,12 @@ import lightning
 import lightning.pytorch.loggers
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
+from src import config
 from src.dataset.mrart.mrart_dataset import MRArtDataModule
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
 from src.config import IM_SHAPE, PROJECT_NAME
 from src.network.archi import Encoder
+from src.network.sfcn_net import SFCNModel
 from src.training.eval import SaveBestCheckpoint
 from src.training.scratch_logic import TrainScratchTask
 from src.training.transfer_logic import (
@@ -64,7 +66,7 @@ def launch_transfer(
         task = AMPSCZTransferTask
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
-        api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
+        api_key=config.COMET_API_KEY,
         project_name=PROJECT_NAME,
         experiment_name=run_name,
     )
@@ -80,12 +82,11 @@ def launch_transfer(
 
     pretrained = get_pretrain_task(model, pretrain_task, run_num, PROJECT_NAME)
     encoding_model: Encoder = pretrained.model.encoder
-
     net = task(
-        input_size=encoding_model.latent_size,
-        im_shape=IM_SHAPE,
+        input_size=encoding_model.latent_shape,
         lr=learning_rate,
         batch_size=batch_size,
+        pool= pretrained.model_class == SFCNModel
     )
 
     checkpoint = SaveBestCheckpoint(monitor="val_balanced_accuracy", mode="max")

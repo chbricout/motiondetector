@@ -271,15 +271,14 @@ class PretrainerTransform(MapTransform):
     as a static encoder"""
 
     def __init__(self, keys: KeysCollection, model: nn.Module):
-        self.model = model
+        self.model = model.cpu()
         model.eval()
         super().__init__(keys)
 
     def __call__(self, x):
         with torch.no_grad():
             for key in self.key_iterator(x):
-
-                x[key] = self.model(x["key"])
+                x[key] = self.model(x[key].unsqueeze(0))
         return x
 
 
