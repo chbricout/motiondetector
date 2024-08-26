@@ -223,10 +223,10 @@ def cpy_transfer(job: Slurm, dataset: str=""):
         job (Slurm): Job to modify
         dataset (str): dataset for transfer learning
     """
-    to_load = ["MRART-Prepoc", "AMPSCZ-Preproc"]
+    to_load = ["MRART-Preproc", "AMPSCZ-Preproc"]
 
     if dataset == "MRART":
-        to_load = ["MRART-Prepoc"]
+        to_load = ["MRART-Preproc"]
     elif dataset == "AMPSCZ":
         to_load = ["AMPSCZ-Prepoc"]
     cpy_extract_tar(job, to_load)
