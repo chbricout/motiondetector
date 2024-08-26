@@ -190,10 +190,11 @@ def submit_pretrain(
         get_output("pretrain", model, array),
         n_cpus=10,
         n_gpus=4,
-        mem="300G",
+        mem="400G",
         time="48:00:00"
     )
     # cpy_extract_tar(job, ["generate_dataset"])
+    cpy_transfer(job)
 
     if cmd is None:
         cmd = get_full_cmd()
@@ -215,7 +216,7 @@ def submit_pretrain(
             )
 
 
-def cpy_transfer(job: Slurm, dataset: str):
+def cpy_transfer(job: Slurm, dataset: str=""):
     """Decide on which tarball to copy for transfer learning
 
     Args:
