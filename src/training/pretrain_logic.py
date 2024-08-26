@@ -94,7 +94,7 @@ class PretrainingTask(EncodeClassifyTask):
     def configure_optimizers(self):
         optim = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.05)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optim, mode="min", factor=0.75, patience=5
+            optim, mode="min", factor=0.6, patience=5
         )
         return [optim], [
             {

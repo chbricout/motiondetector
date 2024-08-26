@@ -18,7 +18,7 @@ def setup_python(job: Slurm):
         job (Slurm): slurm job to modify
     """
     job.add_cmd("module load python cuda httpproxy")
-    job.add_cmd("source ~/bowl/bin/activate")
+    job.add_cmd("source ~/fix_bowl/bin/activate")
     job.add_cmd('echo "python is setup"')
 
 
@@ -190,7 +190,7 @@ def submit_pretrain(
         get_output("pretrain", model, array),
         n_cpus=10,
         n_gpus=4,
-        mem="100G",
+        mem="300G",
         time="48:00:00"
     )
     # cpy_extract_tar(job, ["generate_dataset"])
