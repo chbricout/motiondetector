@@ -267,7 +267,7 @@ def launch_exp():
 
 run_confs = [
     {"name": "VIT", "batch_size": 18},
-    {"name": "SFCN", "batch_size": 28},
+    {"name": "SFCN", "batch_size": 24},
     {"name": "CONV5_FC3", "batch_size": 60},
     {"name": "RES", "batch_size": 45},
     {"name": "SERES", "batch_size": 35},
@@ -308,10 +308,11 @@ def pretrainer(cutout: bool, test: bool, task: str):
 
 
 transfer_confs = [
-    {"name": "VIT", "batch_size": 12},
-    {"name": "SFCN", "batch_size": 28},
-    {"name": "CNN", "batch_size": 28},
-    {"name": "CONV5_FC3", "batch_size": 28},
+    {"name": "VIT", "batch_size": 16},
+    {"name": "SFCN", "batch_size": 16},
+    {"name": "CONV5_FC3", "batch_size": 16},
+    {"name": "RES", "batch_size": 16},
+    {"name": "SERES", "batch_size": 16},
 ]
 
 
@@ -321,8 +322,20 @@ def transfer():
         for dataset in ["MRART", "AMPSCZ"]:
             submit_transfer(
                 model["name"],
-                range(1, 6),
+                1,
                 f"cli.py transfer   \
+                    --task MOTION \
+                    --batch_size {model['batch_size']}\
+                    --model {model['name']}\
+                    --learning_rate 1e-5\
+                    --dataset {dataset} ",
+                dataset=dataset,
+            )
+            submit_transfer(
+                model["name"],
+                1,
+                f"cli.py transfer   \
+                    --task SSIM \
                     --batch_size {model['batch_size']}\
                     --model {model['name']}\
                     --learning_rate 1e-5\

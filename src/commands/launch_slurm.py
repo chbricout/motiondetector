@@ -17,6 +17,10 @@ def setup_python(job: Slurm):
     Args:
         job (Slurm): slurm job to modify
     """
+    job.add_cmd("mkdir -p $SLURM_TMPDIR/.triton/cache")
+    job.add_cmd("export TRITON_CACHE_DIR=$SLURM_TMPDIR/.triton/cache")
+    job.add_cmd('echo "Triton is setup"')
+
     job.add_cmd("module load python cuda httpproxy")
     job.add_cmd("source ~/fix_bowl/bin/activate")
     job.add_cmd('echo "python is setup"')
@@ -193,7 +197,7 @@ def submit_pretrain(
         mem="400G",
         time="48:00:00"
     )
-    # cpy_extract_tar(job, ["generate_dataset"])
+    cpy_extract_tar(job, ["generate_dataset"])
     cpy_transfer(job)
 
     if cmd is None:
@@ -223,10 +227,10 @@ def cpy_transfer(job: Slurm, dataset: str=""):
         job (Slurm): Job to modify
         dataset (str): dataset for transfer learning
     """
-    to_load = ["MRART-Prepoc", "AMPSCZ-Preproc"]
+    to_load = ["MRART-Preproc", "AMPSCZ-Preproc"]
 
     if dataset == "MRART":
-        to_load = ["MRART-Prepoc"]
+        to_load = ["MRART-Preproc"]
     elif dataset == "AMPSCZ":
         to_load = ["AMPSCZ-Prepoc"]
     cpy_extract_tar(job, to_load)
@@ -259,7 +263,7 @@ def submit_transfer(
         n_cpus=20,
         n_gpus=1,
         mem="100G",
-        time="5:00:00",
+        time="1:00:00",
     )
     cpy_transfer(job, dataset)
 

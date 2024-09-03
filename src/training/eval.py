@@ -115,7 +115,7 @@ class SaveBestCheckpoint(ModelCheckpoint):
             pl_module (LightningModule): Trained Lightning module
             task (str): Pretraining task
         """
-        logging.info("Logging pretrain model")
+        logging.warn("Logging pretrain model")
         comet_logger = pl_module.logger
         comet_logger.experiment.log_model(
             name=pl_module.model.__class__.__name__, file_or_folder=self.best_model_path

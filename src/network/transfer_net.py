@@ -59,13 +59,10 @@ class MLPClassifier(Classifier):
         )
         self.classifier = nn.Sequential(
             nn.Dropout(self.dropout_rate),
-            nn.Linear(self.input_size, 512),
-            nn.BatchNorm1d(512),
+            nn.Linear(self.input_size, 64),
+            nn.BatchNorm1d(64),
             nn.ReLU(),
-            nn.Linear(512, 128),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Linear(128, self.num_classes),
+            nn.Linear(64, self.num_classes),
         )
 
 
@@ -75,7 +72,7 @@ class TransferMLP(Model):
     Inherits from model to be compatible with every interfaces used
     """
 
-    def __init__(self, input_size: int, output_size: int, dropout_rate: float = 0.1, pool=False):
+    def __init__(self, input_size: int, output_size: int, dropout_rate: float = 0.85, pool=False):
         super().__init__(
             im_shape=input_size, num_classes=output_size, dropout_rate=dropout_rate
         )
