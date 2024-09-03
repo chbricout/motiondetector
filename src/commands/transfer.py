@@ -53,7 +53,7 @@ def launch_transfer(
     """
     assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
 
-    run_name = f"transfer-{dataset}-{model}-{run_num}"
+    run_name = f"transfer-{dataset}-{model}-{pretrain_task}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
 
     task: TrainScratchTask = None
@@ -86,7 +86,7 @@ def launch_transfer(
         input_size=encoding_model.latent_shape,
         lr=learning_rate,
         batch_size=batch_size,
-        pool= pretrained.model_class == SFCNModel
+        # pool= pretrained.model_class == SFCNModel
     )
 
     checkpoint = SaveBestCheckpoint(monitor="val_balanced_accuracy", mode="max")
@@ -94,7 +94,7 @@ def launch_transfer(
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=[1],
+        devices=1,
         accelerator="gpu",
         precision="16-mixed",
         default_root_dir=run_dir,
