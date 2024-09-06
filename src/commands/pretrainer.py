@@ -97,7 +97,7 @@ def launch_pretrain(
         accelerator="gpu",
         precision="16-mixed",
         default_root_dir=run_dir,
-        log_every_n_steps=10,
+        log_every_n_steps=100,
         callbacks=[
             EarlyStopping(
                 monitor="val_loss",
