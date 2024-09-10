@@ -3,7 +3,7 @@
 import torch.optim
 from torch import nn
 from monai.transforms import CutOut
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_squared_error
 import matplotlib.pyplot as plt
 from src import config
 from src.training.common_logic import EncodeClassifyTask, get_calibration_curve
@@ -43,7 +43,7 @@ class PretrainingTask(EncodeClassifyTask):
             self.im_shape, self.num_classes, self.dropout_rate
         )
         init_model(self.model)
-        # self.model = torch.compile(self.model)
+        self.model = torch.compile(self.model)
 
         self.use_cutout = use_cutout
         if self.use_cutout:
@@ -72,6 +72,13 @@ class PretrainingTask(EncodeClassifyTask):
         self.log(
             "r2_score",
             r2_score(self.label, self.prediction),
+            sync_dist=True,
+            batch_size=self.batch_size,
+        )
+
+        self.log(
+            "rmse",
+            mean_squared_error(self.label, self.prediction, squared=False),
             sync_dist=True,
             batch_size=self.batch_size,
         )

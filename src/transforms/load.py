@@ -1,4 +1,5 @@
 """Module to load data during training"""
+
 from __future__ import annotations
 from typing import Callable, Dict, Hashable, Mapping, Self, Union
 from monai.transforms import (

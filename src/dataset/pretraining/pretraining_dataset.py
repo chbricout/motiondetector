@@ -22,7 +22,6 @@ class BasePretrain(Dataset, BaseDataset):
     huge_path: str
     veryhuge_path: str
 
-
     def __init__(self, transform: Callable | None = None, prefix: str = ""):
         self.csv_path = self.veryhuge_path if config.IS_NARVAL else self.huge_path
         self.file = pd.read_csv(self.csv_path, index_col=0)
@@ -50,7 +49,7 @@ class BasePretrain(Dataset, BaseDataset):
             task (str, optional): pretraining task. Defaults to "MOTION".
         """
         self.file["label"] = self.file[label_from_task(task)]
-    
+
     @classmethod
     def narval(cls, transform: Callable | None = None) -> Self:
         """Create a dataset with Neuro-iX laboratory computer settings
@@ -62,9 +61,7 @@ class BasePretrain(Dataset, BaseDataset):
         Returns:
             Self: Dataset on narval cluster
         """
-        return cls(
-            transform, os.path.join("/home", "cbricout", "scratch") + "/"
-        )
+        return cls(transform, os.path.join("/home", "cbricout", "scratch") + "/")
 
 
 class PretrainTrain(BasePretrain):

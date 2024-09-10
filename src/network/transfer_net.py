@@ -14,7 +14,7 @@ class PoolEncoder(Encoder):
 
     def __init__(self, im_shape: Sequence, dropout_rate: float):
         super().__init__(im_shape=im_shape, dropout_rate=dropout_rate)
-        self.pool=nn.AvgPool3d(im_shape[1:])
+        self.pool = nn.AvgPool3d(im_shape[1:])
 
     def forward(self, x):
         """Identity forward function
@@ -25,9 +25,10 @@ class PoolEncoder(Encoder):
         Returns:
             torch.Tensor: exact input data
         """
-        res= self.pool(x).flatten(start_dim = 1)
+        res = self.pool(x).flatten(start_dim=1)
         return res
-    
+
+
 class FlattenEncoder(Encoder):
     """Encoder used as a placeholder to have
     our TransferMLP compatible with Model interfaces"""
@@ -41,7 +42,7 @@ class FlattenEncoder(Encoder):
         Returns:
             torch.Tensor: exact input data
         """
-        res= x.flatten(start_dim = 1)
+        res = x.flatten(start_dim=1)
         return res
 
 
@@ -72,15 +73,17 @@ class TransferMLP(Model):
     Inherits from model to be compatible with every interfaces used
     """
 
-    def __init__(self, input_size: int, output_size: int, dropout_rate: float = 0.85, pool=False):
+    def __init__(
+        self, input_size: int, output_size: int, dropout_rate: float = 0.85, pool=False
+    ):
         super().__init__(
             im_shape=input_size, num_classes=output_size, dropout_rate=dropout_rate
         )
-        self.encoder = FlattenEncoder(
-            im_shape=self.im_shape, dropout_rate=self.dropout_rate
-        ) if not pool else PoolEncoder(
-            im_shape=self.im_shape, dropout_rate=self.dropout_rate
-        ) 
+        self.encoder = (
+            FlattenEncoder(im_shape=self.im_shape, dropout_rate=self.dropout_rate)
+            if not pool
+            else PoolEncoder(im_shape=self.im_shape, dropout_rate=self.dropout_rate)
+        )
         self.classifier = MLPClassifier(
-           self.encoder.latent_size, self.num_classes, self.dropout_rate
+            self.encoder.latent_size, self.num_classes, self.dropout_rate
         )

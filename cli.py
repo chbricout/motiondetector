@@ -268,9 +268,9 @@ def launch_exp():
 run_confs = [
     {"name": "VIT", "batch_size": 18},
     {"name": "SFCN", "batch_size": 24},
-    {"name": "CONV5_FC3", "batch_size": 60},
-    {"name": "RES", "batch_size": 45},
-    {"name": "SERES", "batch_size": 35},
+    {"name": "CONV5_FC3", "batch_size": 24},
+    {"name": "RES", "batch_size": 24},
+    {"name": "SERES", "batch_size": 24},
 ]
 
 

@@ -157,6 +157,7 @@ def create_job(
         nodes=nodes,
         cpus_per_task=n_cpus,
         ntasks_per_node=max(n_gpus, 1),
+        ntasks=max(n_gpus, 1),
         mem=mem,
         time=time,
         account=account,
@@ -195,7 +196,7 @@ def submit_pretrain(
         n_cpus=10,
         n_gpus=4,
         mem="400G",
-        time="48:00:00"
+        time="48:00:00",
     )
     cpy_extract_tar(job, ["generate_dataset"])
     cpy_transfer(job)
@@ -220,7 +221,7 @@ def submit_pretrain(
             )
 
 
-def cpy_transfer(job: Slurm, dataset: str=""):
+def cpy_transfer(job: Slurm, dataset: str = ""):
     """Decide on which tarball to copy for transfer learning
 
     Args:

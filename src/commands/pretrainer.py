@@ -59,7 +59,11 @@ def launch_pretrain(
         project_name=PROJECT_NAME,
         experiment_name=run_name,
         experiment_key=get_experiment_key("mrart", PROJECT_NAME, run_name),
+        # offline=True,
+        # save_dir=run_dir,
     )
+
+    logging.error("Api key : %s", COMET_API_KEY)
 
     if seed is None:
         seed = random.randint(1, 10000)
@@ -97,7 +101,7 @@ def launch_pretrain(
         accelerator="gpu",
         precision="16-mixed",
         default_root_dir=run_dir,
-        log_every_n_steps=100,
+        log_every_n_steps=200,
         callbacks=[
             EarlyStopping(
                 monitor="val_loss",
