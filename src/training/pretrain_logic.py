@@ -1,9 +1,11 @@
 """Module to define logic for pretraining"""
 
+from collections import Counter
+import logging
 import torch.optim
 from torch import nn
 from monai.transforms import CutOut
-from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.metrics import r2_score, mean_squared_error, balanced_accuracy_score
 import matplotlib.pyplot as plt
 from src import config
 from src.training.common_logic import EncodeClassifyTask, get_calibration_curve
@@ -184,9 +186,9 @@ class BinaryPretrainingTask(PretrainingTask):
     """
 
     hard_label_tag = "motion_binary"
-    output_pipeline = nn.Sequential(nn.Sigmoid(), nn.Flatten(start_dim=0))
-    label_loss = nn.BCELoss()
-
+    output_pipeline = nn.Sequential( nn.Flatten(start_dim=0))
+    label_loss = nn.BCEWithLogitsLoss(pos_weight=torch.as_tensor(1))
+    
     def __init__(
         self,
         model_class: str,
@@ -205,6 +207,35 @@ class BinaryPretrainingTask(PretrainingTask):
             use_cutout=use_cutout,
             num_classes=1,
         )
+        
+    def setup(self, stage):
+        labels = self.trainer.datamodule.train_dataloader().dataset.file['label']
+        class_counts = Counter(labels)
+        total_count = len(labels)
+        class_weights = {int(cls):1-(count/total_count) for cls, count in class_counts.items()}
+        logging.warn(class_weights)
+        self.label_loss = nn.BCEWithLogitsLoss(pos_weight=torch.as_tensor(class_weights[1]))
 
     def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
-        return pred.round().int().flatten()
+        return pred.sigmoid().round().int().flatten()
+    
+    def on_validation_epoch_end(self) -> None:
+        self.log(
+            "balanced_accuracy",
+            balanced_accuracy_score(self.label, self.prediction),
+            sync_dist=True,
+            batch_size=self.batch_size,
+        )
+
+        self.log(
+            "rmse",
+            mean_squared_error(self.label, self.prediction, squared=False),
+            sync_dist=True,
+            batch_size=self.batch_size,
+        )
+        self.logger.experiment.log_confusion_matrix(
+            self.label, self.prediction, epoch=self.current_epoch
+        )
+        self.label = []
+        self.prediction = []
+ 

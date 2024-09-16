@@ -91,12 +91,15 @@ def launch_pretrain(
         use_cutout=use_cutout,
     )
 
-    checkpoint = SaveBestCheckpoint(monitor="r2_score", mode="max")
+    monitor_metrics = "r2_score"
+    if task == "BINARY":
+        monitor_metrics="balanced_accuracy"
+    checkpoint = SaveBestCheckpoint(monitor=monitor_metrics, mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=4,
+        devices=2,
         strategy="ddp",
         accelerator="gpu",
         precision="16-mixed",
