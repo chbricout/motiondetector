@@ -2,10 +2,13 @@
 Module to launch pretraining job on synthetic motion dataset.
 """
 
+import os
 import logging
 import random
 import shutil
 from typing import Type
+
+import comet_ml
 import torch
 import lightning
 import lightning.pytorch.loggers
@@ -13,10 +16,11 @@ from lightning.pytorch.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
 )
+from lightning.pytorch.callbacks import ModelCheckpoint
 
 from src.utils.comet import get_experiment_key
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
-from src.training.eval import SaveBestCheckpoint, get_correlations
+from src.training.eval import get_correlations
 from src.training.pretrain_logic import PretrainingTask
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.utils.log import get_run_dir
@@ -53,7 +57,9 @@ def launch_pretrain(
 
     run_name = f"pretraining-{task}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
-
+    os.makedirs("/home/cbricout/model_report", exist_ok=True)
+    save_model_path = os.path.join("/home/cbricout/model_report", run_name)
+    os.makedirs(save_model_path, exist_ok=True)
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=COMET_API_KEY,
         project_name=PROJECT_NAME,
@@ -94,7 +100,7 @@ def launch_pretrain(
     monitor_metrics = "r2_score"
     if task == "BINARY":
         monitor_metrics="balanced_accuracy"
-    checkpoint = SaveBestCheckpoint(monitor=monitor_metrics, mode="max")
+    checkpoint = ModelCheckpoint(monitor=monitor_metrics, mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
@@ -121,6 +127,15 @@ def launch_pretrain(
     trainer.fit(net, datamodule=PretrainingDataModule(batch_size, task))
 
     with EnsureOneProcess(trainer):
+
+        logging.warning("Logging pretrain model")
+        comet_logger.experiment.log_model(
+            name=net.model.__class__.__name__,
+            file_or_folder=checkpoint.best_model_path,
+        )
+        shutil.copy(checkpoint.best_model_path, save_model_path)
+        logging.warning("Pretrained model uploaded, saved at : %s", save_model_path)
+
         best_net = task_class.load_from_checkpoint(
             checkpoint_path=checkpoint.best_model_path
         )

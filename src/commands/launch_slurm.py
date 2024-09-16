@@ -19,6 +19,7 @@ def setup_python(job: Slurm):
     """
     job.add_cmd("mkdir -p $SLURM_TMPDIR/.triton/cache")
     job.add_cmd("export TRITON_CACHE_DIR=$SLURM_TMPDIR/.triton/cache")
+    # job.add_cmd("export TRITON_CACHE_MANAGER=triton_utils.cache_manager:ModifiedCacheManager")
     job.add_cmd('echo "Triton is setup"')
 
     job.add_cmd("module load python cuda httpproxy")
