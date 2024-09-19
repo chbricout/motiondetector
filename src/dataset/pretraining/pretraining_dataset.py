@@ -50,19 +50,6 @@ class BasePretrain(Dataset, BaseDataset):
         """
         self.file["label"] = self.file[label_from_task(task)].astype(float)
 
-    # @classmethod
-    # def narval(cls, transform: Callable | None = None) -> Self:
-    #     """Create a dataset with Neuro-iX laboratory computer settings
-
-    #     Args:
-    #         transform (Callable | None, optional):
-    #             Transform to use on the dataset. Defaults to None.
-
-    #     Returns:
-    #         Self: Dataset on narval cluster
-    #     """
-    #     return cls(transform, os.path.join("/home", "cbricout", "scratch") + "/")
-
 
 class PretrainTrain(BasePretrain):
     """

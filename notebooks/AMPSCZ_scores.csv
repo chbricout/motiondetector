@@ -1,0 +1,1130 @@
+sub_id_gs,ses_id_gs,timepoint_gs,scores,comment
+BI02450,202306231,month_2_arm_1,2,"severe ringing, ghosting at eyes, motion"
+BI02450,202304111,baseline_arm_1,3,ringing throughout
+BI04369,202312081,,,
+BI05529,202306051,baseline_arm_2,4,no notable issues
+BI05529,202312011,,,
+BI05652,202304171,baseline_arm_1,3,some ringing/motion in temporal poles
+BI05652,202310131,month_2_arm_1,,
+BI05874,202305181,baseline_arm_1,3,Some ringing
+BI05874,202310301,month_2_arm_1,,
+BI07622,202310251,baseline_arm_2,,
+BI07844,202305241,baseline_arm_1,4,No notable issues
+BI08676,202306141,baseline_arm_1,4,Negligible ringing
+BI11459,202307271,baseline_arm_1,3,mild ringing
+BI11621,202308231,baseline_arm_1,3,Noticable motion and ringing
+BI13174,202311031,baseline_arm_1,,
+BM06276,202310131,baseline_arm_2,,
+BM10164,202310131,baseline_arm_2,,
+BM13061,202310101,baseline_arm_1,,
+BM13122,202308041,baseline_arm_1,4,"a bit grainy, otherwise fine"
+BM39055,202311081,baseline_arm_2,,
+BM44608,202305111,baseline_arm_1,3,minor ghosting and ringing
+BM44608,202307181,month_2_arm_1,4,
+BM60731,202303081,month_2_arm_2,3,notable ringing
+BM60731,202211171,baseline_arm_2,4,No notable issues
+BM73097,202303031,baseline_arm_1,3,some ringing 
+BM73097,202305172,month_2_arm_1,3,moderate ringing and ghosting of eyes
+BM73314,202308311,baseline_arm_1,3,ringing
+BM79057,202311161,baseline_arm_2,,
+BM83373,202310191,baseline_arm_1,,
+BM84422,202311061,nan,,
+BM84422,202311131,baseline_arm_1,,
+BM89694,202304261,baseline_arm_1,4,"slight vertical ghosting of eyes, doesn't affect brain"
+BM89694,202307061,month_2_arm_1,4,no notable issues
+BM90491,202301301,baseline_arm_2,3,slight ringing
+BM90491,202304171,month_2_arm_2,3,Minor ringing
+BM97411,202308081,baseline_arm_1,3,moderate ringing
+BM97411,202309151,month_2_arm_1,,
+BM97794,202305241,baseline_arm_1,4,no notable issues
+BM97794,202308011,month_2_arm_1,4,minor ringing in superficial slices
+BM99192,202301311,baseline_arm_2,3,Minor ringing
+BM99192,202304191,month_2_arm_2,4,
+CA00152,202301041,baseline_arm_2,3,"persistent ringing, weird unfilled space in cerebellar region"
+CA00152,202303091,month_2_arm_2,3,ringing
+CA00229,202302102,month_2_arm_1,3,moderate ringing
+CA00229,202212121,baseline_arm_1,-,missing rec-norm scan 
+CA01089,202303311,month_2_arm_1,3,ghosting at eyes that clips brain a bit
+CA01089,202301271,baseline_arm_1,4,
+CA03409,202302031,baseline_arm_1,3,"motion/blurriness, not super great resolution"
+CA04081,202304131,baseline_arm_1,3,minor rining through back of the head
+CA04081,202308151,month_2_arm_1,3,significant ringing and motion
+CA04203,202304191,baseline_arm_2,4,no notable issues
+CA04203,202306151,month_2_arm_2,4,nothing to note
+CA05435,202306161,baseline_arm_2,4,"negligible ringing: top of brain, saggital view"
+CA06223,202302171,baseline_arm_1,3,some ringing
+CA06223,202305051,month_2_arm_1,,no anat data
+CA06239,202306281,baseline_arm_2,3,Some ringing and blurriness
+CA06239,202308251,month_2_arm_2,,
+CA07055,202303171,baseline_arm_1,3,slight ringing
+CA07055,202306141,month_2_arm_1,,
+CA09370,202303271,baseline_arm_1,3,mild ringing
+CA09370,202305261,month_2_arm_1,3,a bit of cerebral atrophy
+CA10161,202304141,baseline_arm_1,4,no notable issues
+CA10361,202305161,baseline_arm_1,4,temporal pole cyst
+CA10361,202308251,month_2_arm_1,,
+CA12220,202308181,month_2_arm_1,3,ringing and motion
+CA12220,202306091,baseline_arm_1,4,nothing to note
+CA13246,202306291,baseline_arm_1,4,no notable issues
+CA13246,202308231,month_2_arm_1,,
+CA13329,202307061,baseline_arm_1,4,no notable issues
+CA13329,202309221,month_2_arm_1,,
+CA14206,202307251,baseline_arm_1,3,"a bit grainy, slight ringing"
+CA14206,202309291,nan,,
+CA14206,202309261,,,
+CA16121,202307271,baseline_arm_1,3,ringing
+CA16121,202309281,month_2_arm_1,,
+CA16765,202308281,baseline_arm_1,,
+CA17086,202310041,baseline_arm_1,,
+CA17436,202311141,baseline_arm_1,,
+CA22695,202311031,baseline_arm_1,,
+CM01633,202301272,baseline_arm_2,3,"potential incidental finding in back of brain not seen in T2w plus small hole in the cerebellum, some ringing"
+CM01633,202301271,baseline_arm_2,,
+CM02398,202303031,baseline_arm_1,3,Notable ringing
+CM02398,202306201,month_2_arm_1,3,"moderate ringing, ghosting of eyes clips brain negligibly "
+CM02493,202304131,baseline_arm_1,4,No notable issues
+CM02821,202301263,baseline_arm_2,4,No notable issues
+CM02821,202301261,baseline_arm_2,,
+CM02821,202301262,baseline_arm_2,,
+CM04396,202304191,baseline_arm_1,3,ringing
+CM04902,202305041,baseline_arm_1,4,negligible ringing
+CM04902,202310041,month_2_arm_1,,
+CM05540,202305031,baseline_arm_1,4,negligable ringing
+CM05540,202307111,month_2_arm_1,4,ghosting of eyes negligibly clips brain
+CM06299,202305181,baseline_arm_1,4,No notable issues
+CM06299,202307191,month_2_arm_1,4,no notable issues
+CM06538,202305251,baseline_arm_1,3,Minor ringing
+CM06538,202309011,month_2_arm_1,,
+CM06683,202306231,baseline_arm_1,4,no notable issues
+CM06683,202309261,month_2_arm_1,,
+CM06861,202308291,baseline_arm_1,,
+CM08970,202308221,baseline_arm_1,3,ringing and motion
+CM08970,202310311,month_2_arm_1,,
+CM10026,202309191,baseline_arm_1,,
+CM11781,202310101,baseline_arm_1,,
+CM14305,202311021,baseline_arm_1,,
+CM18717,202311221,nan,,
+CP00102,202311161,baseline_arm_2,,
+CP01128,202302231,baseline_arm_1,3,quite a bit of motion
+CP01128,202305251,month_2_arm_1,3,moderate ringing
+CP01689,202310271,baseline_arm_2,,
+CP04364,202311171,baseline_arm_1,,
+CP04453,202310051,baseline_arm_1,,
+CP08754,202306291,baseline_arm_1,3,moderate ringing
+CP08754,202308311,month_2_arm_1,,
+CP28172,202309151,baseline_arm_2,,
+CP28249,202309211,baseline_arm_1,,
+CP36238,202304131,baseline_arm_1,4,
+CP36238,202306151,month_2_arm_1,4,no notable issues
+CP46031,202311091,baseline_arm_1,,
+CP47813,202307131,baseline_arm_1,3,grainy
+CP50391,202310201,baseline_arm_2,,
+CP50391,202312071,,,
+CP52688,202310121,baseline_arm_2,,
+CP60655,202308171,baseline_arm_2,,
+CP67520,202309201,baseline_arm_2,,
+CP72684,202306221,baseline_arm_1,,
+CP72684,202309071,month_2_arm_1,,
+CP76052,202308101,baseline_arm_1,,
+CP76052,202310131,month_2_arm_1,,
+CP79248,202309291,baseline_arm_2,,
+CP82421,202308031,baseline_arm_1,4,no notable issues
+CP82421,202310191,month_2_arm_1,,
+CP85940,202311301,,,
+CP88631,202303231,baseline_arm_1,4,no non-norm/auxillary file 
+CP88631,202306011,month_2_arm_1,4,no notable issues
+CP90121,202308111,baseline_arm_2,,
+GA00423,202302211,baseline_arm_2,3,A bit blurrier than normal
+GA00423,202305031,month_2_arm_2,4,no notable issues
+GA00639,202302231,baseline_arm_1,4,negligible ringing and minor ghosting of eyes that may slightly clip brain
+GA00756,202302271,baseline_arm_2,4,
+GA00756,202305081,month_2_arm_2,4,no notable issues
+GA00940,202307121,month_2_arm_1,3,a bit grainy
+GA00940,202305121,baseline_arm_1,4,
+GA02815,202305091,baseline_arm_1,2,Serious motion and ringing at bottom of axial
+GA02815,202308221,month_2_arm_1,3,"grainy, ringing"
+GA03708,202310041,nan,,
+GA03708,202310031,,,
+GA04102,202302241,baseline_arm_1,4,
+GA04102,202305051,month_2_arm_1,4,no notable issues
+GA06611,202304201,baseline_arm_1,3,mild ghosting of eyes with very mild impact on brain
+GA06611,202306201,month_2_arm_1,3,minor ringing and ghosting
+GA06750,202304111,baseline_arm_1,4,no notable issues
+GA06750,202306151,month_2_arm_1,4,no notable issues
+GA11092,202308041,month_2_arm_1,3,"grainy, mild ringing"
+GA11092,202306021,baseline_arm_1,4,no notable issues
+GA11719,202305181,baseline_arm_1,4,no notable issues
+GA11719,202309011,month_2_arm_1,,
+GA11836,202307311,month_2_arm_1,3,moderately grainy
+GA11836,202306091,baseline_arm_1,4,some cerebral atrophy 
+GA13501,202306131,baseline_arm_1,3,slight ringing
+GA13567,202306061,baseline_arm_1,4,no notable issues
+GA15210,202306141,baseline_arm_1,4,
+GA19927,202308151,baseline_arm_1,3,Minor ringing and some graininess
+GA20207,202307251,nan,,
+GA20207,202307241,baseline_arm_1,,
+GA20207,202309291,month_2_arm_1,,
+GA21312,202308251,baseline_arm_1,,
+GA24425,202310121,baseline_arm_1,,
+GW05566,202306301,baseline_arm_2,4,"minor ringing, nothing else to note"
+GW09340,202308041,baseline_arm_1,4,no notable issues
+GW16929,202304281,baseline_arm_1,3,ringing
+GW16929,202308111,month_2_arm_1,4,no notable issues
+GW25873,202305191,baseline_arm_1,4,no notable issues
+GW25873,202308251,month_2_arm_1,4,
+GW48948,202309151,baseline_arm_2,,
+GW52575,202309081,baseline_arm_2,4,no issues
+GW56387,202310061,baseline_arm_2,,
+GW57903,202305261,baseline_arm_1,3,mild ringing
+GW57903,202307211,month_2_arm_1,4,No notable issues
+GW67756,202310131,baseline_arm_1,,
+GW69471,202311241,baseline_arm_1,,
+GW76288,202307281,baseline_arm_1,3,minor ringing
+GW76288,202309011,month_2_arm_1,4,no notable issues
+GW76444,202304211,baseline_arm_2,4,No notable issues
+GW92127,202310191,baseline_arm_1,,
+GW96256,202309221,baseline_arm_2,,
+HA03737,202301111,baseline_arm_1,4,
+HA03737,202303151,month_2_arm_1,4,
+HA03882,202302051,baseline_arm_1,4,"some bluriness around temporal poles, not significant"
+HA04408,202211131,baseline_arm_2,4,
+HA04486,202307061,baseline_arm_2,4,no notable issues
+HA07244,202302211,baseline_arm_1,4,
+HA07888,202302191,baseline_arm_1,4,potential incidental finding in front and back of brain not seen in T2w 
+HA07888,202304161,month_2_arm_1,4,
+HA10677,202308181,month_2_arm_1,2,severe ringing/motion
+HA10677,202305161,baseline_arm_1,3,"ringing, ghosting of eyes that slightly affects brain"
+HA11998,202305151,baseline_arm_1,4,no notable issues
+HA12047,202308221,nan,,
+HA12047,202308231,baseline_arm_1,,
+HA14401,202308211,nan,,
+HA14401,202308221,baseline_arm_1,,
+HA16548,202309201,baseline_arm_1,,
+HK14940,202309181,baseline_arm_1,,
+HK16126,202305021,baseline_arm_2,4,no notable issues
+HK20103,202310271,baseline_arm_1,,
+HK23127,202311171,baseline_arm_1,,
+HK23905,202306231,baseline_arm_1,4,nothing to note
+HK23905,202311251,month_2_arm_1,,
+HK36427,202305101,baseline_arm_2,3,Minor ringing
+HK41458,202312011,,,
+HK60983,202305111,baseline_arm_2,4,
+HK67064,202306011,baseline_arm_1,4,no notable issues
+HK71168,202308171,baseline_arm_1,4,
+HK89674,202309131,baseline_arm_1,,
+HK89674,202311291,month_2_arm_1,,
+HK94772,202309211,baseline_arm_1,,
+IR00124,202210141,baseline_arm_1,3,"moderate motion at bottom of brain, ringing from frontal lobe into center of brain"
+IR00124,202212211,month_2_arm_1,3,ringing throughout (especially axial view)
+IR00491,202210171,baseline_arm_1,4,very faint ringing in nonnorm
+IR00491,202212191,month_2_arm_1,4,
+IR01451,202210281,baseline_arm_1,3,some ringing in frontal lobe but not significant
+IR01451,202301041,month_2_arm_1,4,faint ringing but not significant
+IR01762,202212131,baseline_arm_1,4,
+IR01762,202302131,month_2_arm_1,4,no notable issues 
+IR02516,202301131,baseline_arm_2,4,
+IR02677,202303221,baseline_arm_2,2,"QC'd run 2, a lot of motion and ringing throughout"
+IR05485,202302151,baseline_arm_1,4,very minor ringing 
+IR05485,202304261,month_2_arm_1,4,No notable issues
+IR08198,202305121,month_2_arm_1,3,Some motion and ringing
+IR08198,202302161,baseline_arm_1,4,minor ringing 
+IR08259,202306051,month_2_arm_1,3,ringing
+IR08259,202303131,baseline_arm_1,4,No notable issues
+IR08615,202303091,baseline_arm_1,3,Ringing
+IR08615,202305181,month_2_arm_1,3,ringing
+IR09281,202304071,baseline_arm_1,3,mild ringing throughout
+IR09281,202306211,month_2_arm_1,3,ghosting of eyes clips brain a bit
+IR10222,202306291,baseline_arm_1,4,no notable issues
+IR11959,202305301,baseline_arm_1,3,some ringing
+IR11959,202308071,month_2_arm_1,3,mild ringing
+IR13141,202308251,month_2_arm_1,3,Minor ringing
+IR13141,202306221,baseline_arm_1,4,negligible ringing
+IR14628,202306301,baseline_arm_1,4,no notable issues
+IR14628,202309051,month_2_arm_1,4,
+IR15177,202308171,baseline_arm_1,4,No notable issues
+IR19434,202308091,baseline_arm_1,4,no notable issues
+IR19434,202310051,month_2_arm_1,,
+IR19595,202308301,baseline_arm_1,4,Negligible ringing
+IR19595,202311171,month_2_arm_1,,
+IR22540,202310011,baseline_arm_1,,
+IR24637,202310201,baseline_arm_1,,
+IR24693,202310141,baseline_arm_1,,
+IR26152,202310241,nan,,
+IR29037,202312021,,,
+IR29643,202311211,baseline_arm_1,,
+IR29643,202311021,nan,,
+IR31999,202311281,,,
+JE26896,202308291,baseline_arm_1,4,
+JE26896,202311071,month_2_arm_1,,
+JE27456,202308071,baseline_arm_2,,
+JE35473,202309211,baseline_arm_1,,
+JE42307,202309211,baseline_arm_1,,
+JE42307,202312051,,,
+KC01497,202303291,baseline_arm_1,4,no notable issues
+KC01497,202305311,month_2_arm_1,,
+KC01497,202305312,month_2_arm_1,,
+KC01558,202304031,baseline_arm_1,4,no notable issues
+KC01558,202306051,month_2_arm_1,4,no notable issues
+KC02324,202304171,baseline_arm_1,3,"moderate ringing, a bit grainy, slighlty skewed orientstion"
+KC02324,202306211,month_2_arm_1,3,grainy
+KC03534,202304121,baseline_arm_1,3,Some graininess and notable ringing
+KC03734,202304191,baseline_arm_1,4,no notable issues
+KC03734,202306271,month_2_arm_1,4,no notable issues
+KC04005,202306221,baseline_arm_1,3,Some bluriness
+KC04005,202308221,month_2_arm_1,3,"Some graininess, ringing, and minor artifacts seemingly from wet hair"
+KC05926,202305261,baseline_arm_1,4,no notable issues
+KC05926,202308021,month_2_arm_1,4,a bit grainy
+KC06453,202303221,baseline_arm_2,4,no notable issues
+KC07974,202305101,baseline_arm_2,4,
+KC07974,202307131,month_2_arm_2,4,
+KC12416,202306211,baseline_arm_1,3,a bit grainy
+KC12416,202308231,month_2_arm_1,,
+KC15274,202308171,baseline_arm_1,4,no notable issues
+KC15274,202310301,month_2_arm_1,,
+KC17200,202306291,baseline_arm_1,3,a bit grainy
+KC17200,202309071,month_2_arm_1,,
+KC17250,202307121,baseline_arm_1,4,no notable issues
+KC17250,202309131,month_2_arm_1,,
+KC17444,202307031,baseline_arm_1,3,grainy
+KC17444,202309111,month_2_arm_1,,
+KC18232,202307171,baseline_arm_1,3,grainy as you near bottom of axial view
+KC18232,202309181,month_2_arm_1,,
+KC18393,202308071,baseline_arm_1,4,
+KC18393,202310091,month_2_arm_1,,
+KC23641,202308311,baseline_arm_1,,
+KC23641,202310311,month_2_arm_1,,
+KC24790,202311061,baseline_arm_1,,
+KC26265,202311171,baseline_arm_1,,
+LA00145,202211231,baseline_arm_1,4,
+LA00145,202301271,month_2_arm_1,4,faint ringing
+LA00834,202210101,baseline_arm_1,4,
+LA00834,202212051,month_2_arm_1,4,
+LA03036,202211201,month_2_arm_1,3,"potential incidental finding near pituitary? ringing, some mo"
+LA03036,202209221,baseline_arm_1,4,
+LA04513,202208311,baseline_arm_1,3,faint ringing in coronal view
+LA04513,202210281,month_2_arm_1,3,"structural abnormality in posterior left hemisphere on T1 that is not showing on T2, some faint ringing "
+LA05539,202212081,month_2_arm_1,3,Notable ringing in all views
+LA05539,202210131,baseline_arm_1,4,"Not perfectly aligned along longitudinal fissure (off by a few degrees), some weird wrap around toward anterior brain, but images look good"
+LA07315,202212161,baseline_arm_2,4,faint ringing but not significant
+LA07315,202302131,month_2_arm_2,4,
+LA08975,202212191,baseline_arm_2,4,faint ringing but not significant
+LA09541,202307171,month_2_arm_2,3,"ringing, slight motion causing blurriness, bright spots surrounding skull due to residual EEG gel but does not impede on brain matter"
+LA09541,202305101,baseline_arm_2,4,no notable issues
+LA10209,202306231,baseline_arm_2,3,ghosting of eyes that clips brain a little bit
+LA10209,202310111,month_2_arm_2,,
+LA10304,202304051,month_2_arm_1,2,Severe motion and ringing
+LA10304,202301241,baseline_arm_1,4,minor ringing
+LA12291,202212131,baseline_arm_1,4,slight ringing
+LA12291,202303061,month_2_arm_1,4,faint ringing in temporal poles
+LA13106,202310121,baseline_arm_2,,
+LA14055,202301181,baseline_arm_1,4,very faint ringing 
+LA14055,202303171,month_2_arm_1,4,
+LA14300,202304111,baseline_arm_1,3,ringing
+LA15443,202304031,baseline_arm_1,3,slight ringing
+LA15443,202306131,month_2_arm_1,3,ringing and significant motion (worse at superior and lateral sections of the brain)
+LA15554,202307071,month_2_arm_1,3,"mild ringing, a bit grainy"
+LA21640,202305261,baseline_arm_1,3,slight ringing
+LA21640,202308021,month_2_arm_1,4,no notable issues
+LA24553,202308081,baseline_arm_1,3,mild ringing
+LA24553,202310101,month_2_arm_1,,
+LA26501,202309101,baseline_arm_1,,
+LA26945,202308211,baseline_arm_1,4,Negligible ringing
+LA26945,202310271,month_2_arm_1,,
+LA31582,202310171,baseline_arm_1,,
+LA35483,202310031,baseline_arm_1,,
+LS03187,202308181,baseline_arm_1,4,
+LS09836,202307141,nan,3,Minor ringing
+LS09836,202311012,month_2_arm_1,,
+LS12475,202311061,baseline_arm_2,,
+LS13685,202307171,baseline_arm_1,4,No notable issues
+LS13685,202310062,nan,,
+LS26846,202306121,baseline_arm_1,,
+LS26846,202311082,nan,,
+LS40571,202303201,baseline_arm_1,4,
+LS44022,202310101,baseline_arm_1,,
+LS50574,202310101,baseline_arm_2,,
+LS53532,202309111,baseline_arm_2,4,no notable issues
+LS56289,202309061,baseline_arm_1,4,moderate ringing
+LS69701,202308181,baseline_arm_2,4,no notable issues
+LS69878,202309071,baseline_arm_2,4,negligible ringing
+LS82943,202308181,baseline_arm_1,4,incidental finding
+LS84507,202309251,baseline_arm_1,,
+MA00635,202305121,baseline_arm_2,4,no notable issues
+MA00635,202307121,month_2_arm_2,4,negligible ringing
+MA02166,202304041,baseline_arm_1,4,no notable issues
+MA02166,202306091,month_2_arm_1,4,no notable issues
+MA03726,202308011,baseline_arm_2,3,Minor ringing
+MA03726,202310021,month_2_arm_2,,
+MA05213,202305221,month_2_arm_1,4,no notable issues
+MA05213,202303241,baseline_arm_1,,missing
+MA06340,202304181,baseline_arm_1,4,
+MA06340,202306271,month_2_arm_1,4,
+MA06451,202304251,baseline_arm_1,3,some ringing
+MA08615,202307101,month_2_arm_1,3,Minor ringing and ghosting at eyes
+MA08615,202305091,baseline_arm_1,4,
+MA12153,202305161,baseline_arm_1,4,no notable issues
+MA12153,202307211,month_2_arm_1,4,no notable issues
+MA13824,202307071,baseline_arm_1,4,No notable issues
+MA13824,202309291,month_2_arm_1,,
+MA14195,202309191,baseline_arm_2,,
+MA14240,202308041,baseline_arm_1,4,no notable issues
+MA14240,202310061,month_2_arm_1,,
+MA14967,202307181,baseline_arm_1,2,moderate to severe ringing
+MA14967,202311231,month_2_arm_1,,
+MA15250,202308011,baseline_arm_1,4,no notable issues
+MA15250,202309291,month_2_arm_1,,
+MA15305,202308081,baseline_arm_1,3,moderate ringing
+MA15305,202310171,month_2_arm_1,,
+MA15888,202308291,baseline_arm_1,4,no issues
+MA15888,202310311,month_2_arm_1,,
+MA17670,202309151,baseline_arm_1,,
+MA17670,202311141,month_2_arm_1,,
+MA18579,202310041,baseline_arm_1,,
+MA19723,202311301,,,
+MA19973,202309291,baseline_arm_1,,
+MA19973,202312011,,,
+MA21213,202310191,baseline_arm_1,,
+MA21996,202311201,baseline_arm_1,,
+MA22089,202312051,,,
+ME00772,202210281,baseline_arm_2,4,minor motion
+ME00772,202301311,month_2_arm_2,4,
+ME01398,202310271,baseline_arm_1,,
+ME01659,202310241,baseline_arm_1,,
+ME02742,202309191,baseline_arm_2,,
+ME02964,202308291,baseline_arm_1,3,ringing and ghosting
+ME02964,202312071,,,
+ME03013,202211251,baseline_arm_1,4,
+ME03013,202302101,month_2_arm_1,4,
+ME03435,202305261,baseline_arm_1,4,no notable issues
+ME03435,202308251,month_2_arm_1,4,
+ME04106,202209091,baseline_arm_1,4,
+ME04106,202211181,month_2_arm_1,4,
+ME04934,202212021,baseline_arm_1,4,
+ME04934,202303311,month_2_arm_1,4,
+ME04962,202304061,baseline_arm_1,3,Very minor ringing
+ME05411,202303281,baseline_arm_1,4,No notable issues
+ME06126,202304211,baseline_arm_2,3,mild ringing
+ME06154,202311241,baseline_arm_1,,
+ME07003,202309081,month_2_arm_1,3,ghosting of eyes clips temporal poles
+ME07003,202306301,baseline_arm_1,4,no notable issues
+ME07469,202303091,baseline_arm_1,4,
+ME07469,202307281,month_2_arm_1,4,no notable issues
+ME08063,202311301,baseline_arm_1,,
+ME10086,202301061,baseline_arm_2,4,
+ME10092,202309011,month_2_arm_1,3,moderate ringing
+ME10092,202306271,baseline_arm_1,4,minor motion only at top of brain
+ME10464,202305191,baseline_arm_2,4,nothing to note
+ME11046,202303241,baseline_arm_1,3,some ringing
+ME11046,202306231,month_2_arm_1,4,negligible ringing
+ME11363,202302031,baseline_arm_2,4,potential incidental finding - outgrowth of cerebellum not seen in T2 
+ME11779,202312051,,,
+ME12189,202302101,baseline_arm_1,3,slight ringing
+ME12189,202309081,month_2_arm_1,4,
+ME12967,202304211,baseline_arm_1,4,no notable issues
+ME14432,202305191,nan,2,"named as run 2, orientation of brain is skewed, ringing "
+ME14432,202303031,baseline_arm_1,3,significant ringing
+ME14432,202306091,month_2_arm_1,3,Some ringing
+ME14898,202302171,baseline_arm_2,4,very faint ringing 
+ME14898,202305121,month_2_arm_2,4,no notable issues
+ME15264,202309221,baseline_arm_1,,
+ME15264,202311211,month_2_arm_1,,
+ME15969,202311241,baseline_arm_1,,
+ME19232,202311211,baseline_arm_1,,
+ME19787,202212061,baseline_arm_2,4,No notable issues
+ME19787,202302241,month_2_arm_2,4,very faint ringing
+ME20134,202304141,baseline_arm_1,4,
+ME20134,202309011,month_2_arm_1,4,no notable issues
+ME20328,202304141,baseline_arm_1,4,
+ME20845,202301271,baseline_arm_1,4,faint ringing
+ME20845,202211231,nan,4,no notable issues
+ME20845,202303171,month_2_arm_1,4,
+ME21588,202302221,baseline_arm_1,4,no notable issues 
+ME21588,202306161,month_2_arm_1,4,negligible ringing
+ME21922,202209021,baseline_arm_1,4,slight motion of temporal lobes
+ME21922,202211111,month_2_arm_1,4,nothing to note
+ME22209,202303171,baseline_arm_2,4,no notable issues 
+ME23108,202308041,baseline_arm_1,3,"ringing, bright artifact around head but does not impede on brain matter"
+ME23108,202311091,month_2_arm_1,,
+ME23847,202304141,baseline_arm_1,4,no notable issues
+ME23992,202312051,,,
+ME24063,202310311,baseline_arm_1,,
+ME25045,202306301,baseline_arm_1,2,severe ringing and ghosting of eyes
+ME25689,202210071,baseline_arm_1,4,"mild motion of temporal poles and cerebellum, minor ringing at top of brain"
+ME25689,202301131,month_2_arm_1,4,
+ME25712,202303031,baseline_arm_1,4,"very faint ringing, insignificant"
+ME25906,202303311,baseline_arm_1,4,nothing to note
+ME26033,202311231,baseline_arm_1,,
+ME26061,202306021,baseline_arm_1,3,Minor ringing
+ME26061,202308011,month_2_arm_1,,
+ME27132,202211111,baseline_arm_1,3,mild ringing
+ME27132,202302141,month_2_arm_1,4,
+ME27643,202308111,baseline_arm_1,4,
+ME27643,202311281,nan,,
+ME29980,202307251,baseline_arm_1,3,mild/moderate ringing
+ME29980,202310171,month_2_arm_1,,
+ME30537,202312081,,,
+ME31169,202303171,baseline_arm_2,4,"gyri/sulci look somewhat strange, looks to be a lot of space superior to brain between skull"
+ME31331,202302031,baseline_arm_1,4,
+ME31725,202311301,nan,,
+ME31947,202308221,baseline_arm_1,4,no notable issues
+ME31947,202310241,month_2_arm_1,,
+ME33612,202311141,baseline_arm_1,,
+ME33634,202211181,baseline_arm_1,4,slight ringing but not significant
+ME33634,202302031,month_2_arm_1,4,
+ME33745,202307111,baseline_arm_1,3,moderate ringing
+ME33745,202309121,month_2_arm_1,4,no notable issues
+ME33795,202302031,baseline_arm_1,3,slight ringing but not significant
+ME34377,202311241,baseline_arm_1,,
+ME34961,202308251,baseline_arm_1,4,
+ME35604,202311271,baseline_arm_1,,
+ME35971,202304211,baseline_arm_1,3,Minor ringing
+ME35971,202307071,month_2_arm_1,4,ghosting of eyes clips brain very slightly
+ME36303,202306161,baseline_arm_1,3,ringing
+ME36303,202310061,month_2_arm_1,,
+ME36620,202309151,baseline_arm_1,4,no issues
+ME37363,202311301,,,
+ME37430,202309221,baseline_arm_1,,
+ME37529,202311141,baseline_arm_1,,
+ME39294,202306231,baseline_arm_1,3,ghosting at eyes clips brain a bit
+ME39294,202309261,month_2_arm_1,,
+ME39933,202311031,baseline_arm_1,,
+ME40180,202311211,nan,,
+ME40663,202209301,baseline_arm_2,3,"some ringing persisting of temporal lobes, frontal lobe, and eyes"
+ME40952,202311211,nan,,
+ME41045,202308222,baseline_arm_1,,
+ME41045,202311031,month_2_arm_1,,
+ME41251,202307071,baseline_arm_1,4,no notable issues
+ME42411,202312071,,,
+ME42766,202310031,baseline_arm_1,,
+ME42766,202310051,nan,,
+ME42794,202308181,baseline_arm_1,3,ringing
+ME43021,202311241,baseline_arm_1,,
+ME44964,202309191,baseline_arm_1,,
+ME45130,202309151,baseline_arm_1,4,no notable issues
+ME45130,202311161,month_2_arm_1,,
+ME45207,202310311,baseline_arm_1,,
+ME45368,202311301,baseline_arm_1,,
+ME45530,202308081,baseline_arm_1,4,no notable issues
+ME45530,202310131,month_2_arm_1,,
+ME45780,202311031,baseline_arm_1,,
+ME46095,202306091,baseline_arm_1,3,"moderate ringing, ghosting at eyes"
+ME46095,202308151,month_2_arm_1,4,No notable issues
+ME46106,202311281,baseline_arm_1,,
+ME46506,202307281,baseline_arm_1,3,"mild ringing, ghosting at eyes"
+ME46506,202310131,month_2_arm_1,,
+ME46984,202307211,baseline_arm_1,3,ringing 
+ME46984,202310061,month_2_arm_1,,
+ME47194,202311231,baseline_arm_1,,
+ME48643,202211251,baseline_arm_1,3,"ringing, blurry"
+ME48643,202301271,month_2_arm_1,3,some ringing and motion
+ME50511,202304061,baseline_arm_1,3,some ringing 
+ME50511,202306301,month_2_arm_1,3,moderate ringing
+ME50599,202212201,nan,3,mild peristent ringing
+ME50599,202302241,month_2_arm_1,3,potential incidental finding - small hole/fluid near anterior to cerebellum
+ME50599,202212161,baseline_arm_1,3,fairly significant ringing throughout
+ME51559,202309011,baseline_arm_2,,
+ME51971,202308041,baseline_arm_1,2,"severe ghosting of eyes that distorts brain. no other issues, but scoring 2 to be safe"
+ME53757,202310241,baseline_arm_1,,
+ME53985,202301311,baseline_arm_1,4,
+ME53985,202304141,month_2_arm_1,4,no notable issues
+ME54339,202311161,baseline_arm_1,,
+ME54434,202301061,month_2_arm_1,3,ringing throughout but not major 
+ME54434,202211041,baseline_arm_1,4,No notable isssues
+ME54606,202308111,baseline_arm_1,4,no notable issues
+ME54606,202310171,month_2_arm_1,,
+ME54628,202303211,baseline_arm_1,2,Severe ghosting/motion of eyes that obstructs brain (especially axial); minor ringing
+ME54628,202305261,month_2_arm_1,4,negligible ringing and minor ghosting of eyes that may slightly clip brain
+ME55038,202306231,baseline_arm_1,3,"minor ringing, ghosting"
+ME55038,202309121,month_2_arm_1,4,no notable issues
+ME56454,202209201,baseline_arm_1,3,"minor ringing of temporal poles, part of frontal lobe, and back of brain. some motion throughout temporal poles"
+ME56587,202306161,baseline_arm_1,3,moderate ringing
+ME57119,202305121,baseline_arm_1,3,slight ringing and vertical ghosting of the eys
+ME57119,202310061,month_2_arm_1,,
+ME57820,202306161,baseline_arm_1,4,nothing to note
+ME57820,202309221,month_2_arm_1,,
+ME58135,202307071,month_2_arm_1,3,"grainy, very slight ringing"
+ME58135,202302171,baseline_arm_1,4,no notable issues 
+ME59406,202306271,baseline_arm_1,4,no notable issues
+ME59951,202308181,baseline_arm_1,3,ringing throughout
+ME59951,202310271,month_2_arm_1,,
+ME60881,202306021,baseline_arm_1,3,slight ringing
+ME60881,202308251,month_2_arm_1,4,No notable issues
+ME61146,202305121,baseline_arm_1,4,
+ME61146,202311231,month_2_arm_1,,
+ME62239,202311281,baseline_arm_1,,
+ME62639,202309051,baseline_arm_1,4,
+ME62639,202311141,month_2_arm_1,,
+ME63588,202311161,baseline_arm_1,,
+ME64687,202311231,baseline_arm_1,,
+ME65714,202309011,baseline_arm_2,4,no notable issues
+ME65908,202311271,baseline_arm_1,,
+ME66368,202307181,baseline_arm_1,3,signifiant ringing in all views
+ME66368,202310171,month_2_arm_1,,
+ME67495,202302241,baseline_arm_1,3,slight ringing throughout
+ME67495,202305261,month_2_arm_1,4,negligible ringing
+ME67984,202309151,baseline_arm_2,,
+ME67990,202301131,nan,4,
+ME67990,202210141,baseline_arm_1,4,No notable isssues
+ME67990,202303241,month_2_arm_1,4,no notable issues 
+ME70006,202312051,,,
+ME70062,202305181,baseline_arm_1,4,"cerebellar atrophy and around the sinuses, but scan is good"
+ME70062,202309151,month_2_arm_1,,
+ME70567,202309081,baseline_arm_2,4,no notable issues
+ME71933,202307281,baseline_arm_1,2,substantial ghosting in bottom of axial view
+ME73331,202311281,baseline_arm_2,,
+ME73814,202211041,baseline_arm_1,4,No notable isssues
+ME73814,202301311,month_2_arm_1,4,
+ME73814,202301131,nan,,only has T1w_auxillary files
+ME74779,202303241,baseline_arm_1,3,Slight motion
+ME75717,202310271,baseline_arm_1,,
+ME76000,202304211,baseline_arm_1,3,ghosting of eyes that slightly affects brain
+ME76000,202308181,month_2_arm_1,3,Ghosting of eyes interferes with brain
+ME76444,202311091,baseline_arm_1,,
+ME76444,202311092,baseline_arm_1,,
+ME77060,202310171,baseline_arm_1,,
+ME77121,202310131,baseline_arm_2,,
+ME77143,202308251,baseline_arm_2,3,Minor ringing
+ME77159,202209301,baseline_arm_1,3,persistant ringing throughout frontal lobe
+ME77159,202211251,month_2_arm_1,3,persistent mild ringing throughout
+ME77848,202309011,baseline_arm_1,4,very minor ringing
+ME78575,202311241,baseline_arm_1,,
+ME78581,202210071,baseline_arm_2,4,mild ringing of top of brain
+ME78658,202309221,baseline_arm_1,,
+ME79624,202308291,baseline_arm_1,3,slight ringing
+ME79913,202212201,nan,3,persistent mild ringing 
+ME79913,202212161,baseline_arm_1,3,slight ringing throughout
+ME79913,202302101,month_2_arm_1,4,
+ME81520,202210281,baseline_arm_1,4,minor motion and slight ringing at front of brian
+ME81520,202302171,month_2_arm_1,4,no notable issues 
+ME82580,202307141,baseline_arm_1,4,no notable issues
+ME83306,202310271,baseline_arm_1,,
+ME83439,202306301,baseline_arm_1,4,nothing to note 
+ME83439,202309081,month_2_arm_1,4,
+ME84344,202303031,month_2_arm_1,4,No notable issues
+ME84388,202305261,baseline_arm_1,3,Some ringing
+ME85893,202310131,baseline_arm_1,,
+ME86586,202309081,baseline_arm_1,4,no notable issues
+ME86586,202312081,,,
+ME89055,202210211,baseline_arm_2,4,a bit grainy but nothing to note
+ME90713,202311301,baseline_arm_1,,
+ME90802,202310131,baseline_arm_1,,
+ME91012,202301271,baseline_arm_1,3,"some ringing, sagittal orientation slightly skewed "
+ME91012,202303311,month_2_arm_1,3,Minor ringing
+ME91028,202304141,baseline_arm_2,4,no notable issues
+ME92705,202306161,baseline_arm_1,4,small bump between dura and skull
+ME93565,202301061,baseline_arm_1,3,mild ringing throughout
+ME93565,202303241,month_2_arm_1,3,notable ringing
+ME95674,202304281,baseline_arm_1,4,no notable issues
+ME95674,202308251,month_2_arm_1,4,Negligible ringing
+ME95941,202311101,baseline_arm_1,,
+ME97666,202210141,baseline_arm_1,4,"i feel like this one was weird, ventricles look abnormally large, could be some signal drop in cerebellum area, might need to have someone check this one"
+ME97666,202212161,nan,4,
+ME97666,202302011,month_2_arm_1,4,potential incidental finding - outgrowth of cerebellum not seen in T2 
+ME98026,202310061,baseline_arm_1,,
+ME98165,202303031,baseline_arm_1,3,significant ringing
+ME98165,202304281,month_2_arm_1,3,ringing
+ME99125,202305261,baseline_arm_1,3,minor ringing
+ME99125,202309261,month_2_arm_1,,
+MT00499,202211081,baseline_arm_1,3,some ringing throughout
+MT00499,202301192,month_2_arm_1,3,ringing throughout
+MT01504,202301181,baseline_arm_2,4,
+MT03607,202212291,baseline_arm_2,4,
+MT03607,202303022,month_2_arm_2,4,
+MT03607,202303021,month_2_arm_2,4,
+MT05499,202212101,baseline_arm_1,4,
+MT05499,202303062,month_2_arm_1,4,minor ringing at the top of the brain
+MT05499,202303061,month_2_arm_1,4,No notable issues
+MT07364,202212211,baseline_arm_1,4,
+MT07364,202303271,month_2_arm_1,4,no notable issues
+MT08124,202301201,baseline_arm_1,3,motion
+MT08124,202304131,month_2_arm_1,4,No notable issues
+MT09245,202302021,baseline_arm_1,3,faint ringing but not significant 
+MT12595,202303071,baseline_arm_1,4,
+MT12595,202305311,month_2_arm_1,4,no notable issues
+MT13133,202303081,baseline_arm_1,3,some ringing
+MT13133,202305041,nan,4,
+MT15919,202304031,baseline_arm_1,4,
+MT16018,202303271,baseline_arm_1,4,incidental finding - large cyst in right temporal pole 
+MT16018,202305251,month_2_arm_1,4,no notable issues
+MT16074,202304051,baseline_arm_1,3,ringing 
+MT18250,202308101,baseline_arm_1,4,no notable issues
+MT18272,202307021,baseline_arm_1,3,mild to moderate ringing
+MT18272,202309051,month_2_arm_1,4,no notable issues
+MT18844,202308091,baseline_arm_1,3,ghosting at eyes clips temporal poles
+MT18844,202311221,nan,,
+MT20156,202307101,baseline_arm_1,3,ghosting of eyes slightly clips brain
+MT20156,202311091,month_2_arm_1,,
+MT21233,202306221,baseline_arm_1,4,somewhat enlarged ventricles
+MT22493,202307211,baseline_arm_1,4,no notable issues
+MT22493,202311241,month_2_arm_1,,
+MT23247,202308171,baseline_arm_1,3,ringing
+MT24007,202311171,baseline_arm_1,,
+MT25112,202311281,baseline_arm_1,,
+MU00229,202304241,baseline_arm_2,3,moderate ringing
+MU03287,202305221,baseline_arm_1,3,ringing
+MU03287,202307311,month_2_arm_1,3,mild ringing
+MU03332,202306261,baseline_arm_1,3,Noticable ringing
+MU03865,202306191,baseline_arm_1,3,some ringing
+MU03865,202309011,month_2_arm_1,,
+MU03948,202307031,baseline_arm_1,3,Ringing
+MU03948,202309261,month_2_arm_1,,
+MU07033,202308181,baseline_arm_1,4,no notable issues
+MU07138,202309111,baseline_arm_1,,
+MU07483,202310161,baseline_arm_1,,
+MU07483,202312111,,,
+MU07550,202310301,baseline_arm_1,,
+MU08582,202310231,baseline_arm_1,,
+MU09536,202311131,baseline_arm_1,,
+MU10561,202311131,baseline_arm_1,,
+NC00191,202209301,baseline_arm_2,4,coronal slice orientation looks slightly skewed 
+NC00474,202210171,baseline_arm_2,1,bizzare artifact at front of brain
+NC02111,202209061,baseline_arm_1,3,
+NC02111,202211082,month_2_arm_1,3,mild ringing throughout
+NC02111,202211081,month_2_arm_1,,
+NC03026,202209161,baseline_arm_1,3,Some ringing in all views
+NC03026,202211162,month_2_arm_1,3,"grainy, mild ringing throughout"
+NC03026,202211161,month_2_arm_1,,
+NC03204,202210141,baseline_arm_1,4,
+NC03204,202212131,month_2_arm_1,4,No notable issues
+NC04870,202210201,baseline_arm_1,4,minor motion at temporal lobes
+NC04870,202212081,month_2_arm_1,4,
+NC10194,202302171,month_2_arm_1,3,faint ringing throughout
+NC10194,202211101,baseline_arm_1,4,mild ringing
+NC11776,202211151,baseline_arm_1,4,
+NC11776,202301241,month_2_arm_1,4,minor ringing 
+NC12958,202210271,baseline_arm_1,4,
+NC12958,202302071,nan,4,nothing to note
+NC12958,202302061,month_2_arm_1,4,
+NC13774,202302271,baseline_arm_1,4,
+NC13774,202307101,month_2_arm_1,4,
+NC15499,202303091,baseline_arm_1,3,slight ringing
+NC15499,202308241,nan,4,no notable issues
+NC17136,202302201,baseline_arm_1,4,
+NC17619,202302161,baseline_arm_1,4,seems to have thick dura especially in occipital
+NC17619,202307121,month_2_arm_1,4,No notable issues
+NC18063,202308151,month_2_arm_1,3,slight ringing
+NC18063,202307111,baseline_arm_1,4,no notable issues
+NC19645,202308251,nan,,
+NC19645,202311151,nan,,
+NC21296,202309191,baseline_arm_1,,
+NC21913,202309221,baseline_arm_1,,
+NC21913,202312011,,,
+NC22878,202309121,baseline_arm_1,,
+NC22878,202311271,nan,,
+NC23705,202309151,baseline_arm_1,,
+NC23983,202309181,baseline_arm_1,,
+NC27167,202311081,baseline_arm_1,,
+NC27917,202311201,baseline_arm_1,,
+NC28488,202311011,baseline_arm_1,,
+NC30190,202311221,nan,,
+NL00222,202210031,baseline_arm_1,4,nothing to note
+NL00222,202212131,month_2_arm_1,4,
+NL00927,202210051,baseline_arm_2,3,"persistent ringing from frontal lobe toward center of brain in axial view, "
+NL01115,202209271,baseline_arm_1,4,faint ringing but not major
+NL01115,202212071,month_2_arm_1,4,very slight ringing
+NL01387,202302211,baseline_arm_1,4,slight ringing 
+NL01387,202304101,month_2_arm_1,4,No notable issues
+NL03179,202306151,baseline_arm_2,4,negligible ringing
+NL03179,202308241,month_2_arm_2,,
+NL06371,202301301,baseline_arm_1,4,
+NL06371,202303281,month_2_arm_1,4,No notable issues
+NL06632,202302071,baseline_arm_1,3,moderate ringing 
+NL09062,202303101,baseline_arm_1,4,
+NL09062,202305231,month_2_arm_1,4,no notable issues
+NL09167,202303231,baseline_arm_1,3,fairly significant ringing throughout
+NL09167,202305221,month_2_arm_1,3,"slight ghosting of eyes that clips brain, nelgigible ringing"
+NL10958,202304201,baseline_arm_1,4,No notable issues
+NL10958,202306131,month_2_arm_1,4,no notable issues
+NL13938,202304111,baseline_arm_1,3,slight ringing
+NL13938,202307111,month_2_arm_1,3,ringing
+NL14271,202309201,baseline_arm_1,,
+NL18322,202306201,baseline_arm_1,3,mild ringing
+NL18544,202311091,baseline_arm_1,,
+NL20212,202311171,,,
+NN01303,202302161,baseline_arm_2,4,vertical ghosting of eyes may negligibly affect brain in a few horizontal slices
+NN01442,202210241,baseline_arm_1,4,
+NN01442,202211281,month_2_arm_1,4,mild ringing and ghosting
+NN01864,202210271,baseline_arm_1,3,"persistent ringing in frontal region, minor motion, little wraparound"
+NN01864,202211291,month_2_arm_1,4,mild ringing
+NN02913,202305111,baseline_arm_2,4,no notable issues
+NN02913,202307071,month_2_arm_2,4,no notable issues
+NN03939,202309061,baseline_arm_2,4,
+NN03939,202311161,month_2_arm_2,,
+NN04333,202210131,baseline_arm_1,4,"Not perfectly aligned along longitudinal fissure (off by a few degrees), but images look good"
+NN04333,202212011,month_2_arm_1,4,
+NN04555,202304211,month_2_arm_1,3,slight ringing throughout
+NN04555,202302101,baseline_arm_1,4,minor ringing 
+NN05521,202303091,baseline_arm_1,3,some ringing throughout
+NN05521,202305161,month_2_arm_1,3,"moderate ringing, vertical ghosting of eyes slightly clips brain"
+NN12594,202309181,baseline_arm_1,,
+NN12594,202311161,month_2_arm_1,,
+NN12788,202307071,baseline_arm_1,3,light ringing visible in coronal view
+NN12788,202309051,month_2_arm_1,3,relatively significant motion
+NN13110,202307311,baseline_arm_1,3,mild ringing
+NN13110,202309291,month_2_arm_1,,
+NN13415,202308211,baseline_arm_1,3,vertical ghosting of eyes in ventral portion of horizontal section - does not impede significantly on brain matter
+NN13415,202311151,month_2_arm_1,,
+NN14164,202310181,baseline_arm_1,,
+NN17900,202311211,baseline_arm_1,,
+OR00697,202208151,baseline_arm_2,4,
+OR01380,202209281,baseline_arm_1,4,
+OR01380,202211291,month_2_arm_1,4,mild ringing
+OR02023,202210071,baseline_arm_1,3,"some ringing throughout frontal lobe, minimal motion"
+OR02023,202212131,month_2_arm_1,4,No notable issues
+OR02889,202304201,baseline_arm_2,3,ringing
+OR02889,202306301,month_2_arm_2,4,anatomical artifact? right cerebellum seems much smaller? unclear? image otherwise looks good
+OR03049,202307281,baseline_arm_2,4,negligible ringing
+OR03049,202311201,month_2_arm_2,,
+OR03988,202301271,baseline_arm_1,4,
+OR03988,202303301,month_2_arm_1,4,
+OR05031,202302141,baseline_arm_1,4,minor ringing 
+OR06829,202303231,baseline_arm_1,3,noise
+OR10406,202306271,month_2_arm_1,3,ringing
+OR10406,202304051,baseline_arm_1,4,Almost unnoticable ringing
+OR10684,202305081,baseline_arm_1,2,severe ringing
+OR10684,202308071,month_2_arm_1,2,severe ringing/motion
+OR10890,202305221,baseline_arm_1,3,moderate ringing
+OR10890,202308141,month_2_arm_1,,
+OR10973,202308101,month_2_arm_1,3,"minor motion, ringing, ghosting"
+OR10973,202306061,baseline_arm_1,4,
+OR11644,202306221,baseline_arm_1,4,no notable issues
+OR11644,202308241,month_2_arm_1,4,no notable issues
+OR16333,202310241,baseline_arm_1,,
+OR17709,202310131,baseline_arm_1,,
+OR17832,202311021,baseline_arm_1,,
+OR19379,202311221,nan,,
+PA00272,202209021,baseline_arm_2,4,
+PA00650,202209061,baseline_arm_1,2,"decent amount of motion, blurriness"
+PA00650,202304041,month_2_arm_1,3,slight ringing
+PA00705,202209201,baseline_arm_1,4,"not perfectly aligned, coronal out of plane"
+PA00705,202211231,month_2_arm_1,4,No notable issues
+PA01260,202210201,baseline_arm_1,3,
+PA01260,202301181,month_2_arm_1,4,
+PA01787,202211281,baseline_arm_1,3,persistent ringing throughout
+PA01787,202303201,month_2_arm_1,,
+PA01909,202211211,baseline_arm_1,3,"mild persistent ringing throughout, sagittal section badly aligned in plane but corresponds with horizontal position-wise (frontal lobe comes in before cerebellum)"
+PA01909,202302231,month_2_arm_1,3,some tissue atrophy at the top of the brain 
+PA01921,202303081,baseline_arm_2,4,No notable issues
+PA01921,202305111,month_2_arm_2,4,negligible ringing
+PA02303,202301231,baseline_arm_1,4,
+PA02303,202307271,month_2_arm_1,4,no notable issues
+PA03218,202305091,month_2_arm_1,3,moderate ringing and mild ghosting of eyes that clips brain
+PA03218,202301271,baseline_arm_1,4,
+PA03224,202304261,month_2_arm_1,3,some ringing
+PA03224,202302041,baseline_arm_1,4,
+PA06165,202304291,month_2_arm_1,3,vertical ghosting of eyes with minor impact to brain
+PA06165,202302151,baseline_arm_1,4,
+PA06921,202308171,month_2_arm_1,3,mild ringing
+PA06921,202305051,baseline_arm_1,4,
+PA07319,202303011,baseline_arm_1,3,fairly significant ringing throughout
+PA07319,202305151,month_2_arm_1,3,moderate ringing
+PA08402,202304061,baseline_arm_1,3,ringing and ghosting of eyes that slightly affects brain
+PA08402,202306271,month_2_arm_1,3,Minor ringing
+PA08957,202304241,baseline_arm_1,4,No notable issues
+PA08957,202309191,month_2_arm_1,,
+PA14126,202306131,baseline_arm_1,4,wraparound at most inferior level of axial view but doesn't impact brain in any way
+PA14126,202308301,month_2_arm_1,,
+PA14348,202306051,baseline_arm_1,4,no notable issues
+PA14348,202309061,month_2_arm_1,,
+PA15669,202306141,baseline_arm_1,4,some graininess but otherwise good
+PA16491,202307071,baseline_arm_1,4,no notable issues
+PA16491,202310301,,,
+PA17984,202308291,baseline_arm_1,,
+PA18500,202309071,baseline_arm_1,,
+PA18811,202308231,baseline_arm_1,4,no notable issues
+PA20173,202309281,baseline_arm_1,,
+PA21400,202309251,baseline_arm_1,,
+PA21438,202311011,,,
+PA25440,202311171,,,
+PI01155,202208311,baseline_arm_1,4,
+PI01355,202209101,baseline_arm_2,4,
+PI02832,202209241,baseline_arm_1,3,persistent mild motion and ringing in all views
+PI02832,202211221,month_2_arm_1,4,mild ringing (mainly sagittal)
+PI03042,202209071,baseline_arm_1,4,
+PI06549,202305111,baseline_arm_2,4,negligible ringing
+PI06549,202307201,month_2_arm_2,4,No notable issues
+PI07604,202306051,baseline_arm_2,4,negligible ringing
+PI08131,202209221,baseline_arm_1,4,"Not perfectly aligned along longitudinal fissure (off by a few degrees), but images look good"
+PI08131,202211171,month_2_arm_1,4,
+PI08258,202311031,baseline_arm_2,,
+PI08769,202303021,baseline_arm_1,3,"ringing, artificat outside of the head but does not affect brain"
+PI08769,202305241,month_2_arm_1,4,nothing to note
+PI08781,202301281,baseline_arm_1,4,
+PI08781,202304011,month_2_arm_1,4,No notable issues
+PI08981,202301101,baseline_arm_1,3,"blurry, some ringing "
+PI08981,202304101,month_2_arm_1,3,"slight ringing, ghosting at eyes"
+PI10215,202304101,nan,3,slight ringing
+PI10215,202305191,month_2_arm_1,3,"some motino throughout, looks a bit grainy/blurry overall"
+PI10215,202303161,baseline_arm_1,4,"a little bit of tissue atrophy at the top of the brain, but not significant"
+PI10704,202303201,baseline_arm_1,4,
+PI11625,202309011,month_2_arm_1,3,ringing
+PI11625,202303171,baseline_arm_1,4,
+PI13295,202304151,baseline_arm_1,3,some ringing / ghosting 
+PI13295,202306261,month_2_arm_1,3,fairly significant ringing
+PI16053,202305121,baseline_arm_1,3,moderate ringing
+PI16053,202307071,month_2_arm_1,3,ringing
+PI17229,202307291,baseline_arm_1,4,no notable issues
+PI17229,202310071,month_2_arm_1,,
+PI19738,202307081,baseline_arm_1,4,no notable issues
+PI19738,202310181,month_2_arm_1,,
+PI21034,202309061,baseline_arm_1,3,very minor ringing
+PI21406,202309211,baseline_arm_1,,
+PV00535,202303151,baseline_arm_1,4,No notable issues
+PV00880,202302081,baseline_arm_2,4,no notable issues 
+PV00929,202303301,baseline_arm_1,,
+PV01062,202307241,baseline_arm_2,4,"a bit grainy, otherwise fine"
+PV01062,202309251,month_2_arm_2,,
+PV01606,202304051,baseline_arm_1,4,No notable issues
+PV01606,202305311,month_2_arm_1,4,no notable issues
+PV01701,202306211,month_2_arm_1,4,
+PV01701,202304191,baseline_arm_1,-,"missing norm T1w image, has auxiliary"
+PV01828,202305031,baseline_arm_1,4,
+PV01828,202307051,month_2_arm_1,4,No notable issues
+PV02361,202304261,baseline_arm_1,4,no notable issues
+PV02361,202306261,month_2_arm_1,4,no notable issues
+PV04769,202305171,baseline_arm_1,3,mild ghosting of eyes that slightly interferes with brain
+PV04769,202307241,month_2_arm_1,3,Some motion and ringing
+PV06062,202305241,baseline_arm_1,4,4
+PV06517,202308281,baseline_arm_1,4,
+PV08171,202306071,baseline_arm_1,4,negligible ringing and ghosting of eyes
+PV08171,202307311,month_2_arm_1,4,negligible ghosting at eyes
+PV08193,202307171,baseline_arm_1,4,
+PV08193,202309261,month_2_arm_1,,
+PV09525,202306261,baseline_arm_1,3,"ghosting at eyes clips brain, mild ringing (moderate at midline)"
+PV09525,202308281,month_2_arm_1,4,
+PV11376,202307031,baseline_arm_1,3,minor ringing
+PV11376,202309041,month_2_arm_1,3,ringing
+PV15122,202309111,baseline_arm_1,3,mild ringing
+PV16104,202310161,baseline_arm_1,,
+SD03495,202302091,month_2_arm_1,3,"slight ringing, some atrophy in the frontal lobe tissue but not concerning (Marek looked over it) "
+SD03495,202212021,baseline_arm_1,4,
+SD03790,202301231,baseline_arm_2,4,very minor ringing 
+SD04033,202305261,month_2_arm_2,3,ringing
+SD04033,202303171,baseline_arm_2,4,No notable issues
+SD04350,202304061,baseline_arm_1,4,no notable issues
+SD04350,202306131,month_2_arm_1,4,
+SD05687,202312061,,,
+SD05710,202305181,month_2_arm_1,3,moderate ringing
+SD05710,202303161,baseline_arm_1,4,
+SD06869,202304071,baseline_arm_1,4,
+SD06897,202304241,baseline_arm_1,3,slight ringing
+SD06897,202306141,month_2_arm_1,3,minor ringing
+SD07279,202307121,month_2_arm_1,3,minor ringing
+SD07279,202305191,baseline_arm_1,4,minor ringing through front and top of brain
+SD09461,202307201,baseline_arm_1,3,Minor ringing
+SD09461,202309271,month_2_arm_1,,
+SD10646,202308211,baseline_arm_1,3,ghosting at eyes clips temporal poles
+SD10646,202310271,month_2_arm_1,,
+SD10985,202309201,baseline_arm_1,,
+SD10985,202311151,month_2_arm_1,,
+SF01552,202304111,nan,3,"incidental finding on skull, some motion"
+SF01552,202304201,baseline_arm_2,4,no notable issues
+SF01552,202306061,month_2_arm_2,4,no notable issues
+SF02156,202306041,baseline_arm_2,2,severe ringing
+SF02156,202308101,month_2_arm_2,2,Very noticable ringing artifact
+SF03788,202212141,baseline_arm_1,4,No notable issues
+SF05231,202301181,baseline_arm_1,3,faint ringing 
+SF05231,202304111,month_2_arm_1,3,ringing
+SF10428,202301181,baseline_arm_1,4,no notable issues
+SF10428,202304081,month_2_arm_1,4,No issues to note
+SF10462,202301131,baseline_arm_1,4,
+SF10462,202304061,month_2_arm_1,4,
+SF10545,202302121,baseline_arm_1,2,significant ringing
+SF10545,202305051,month_2_arm_1,4,No notable issues
+SF12054,202302281,baseline_arm_1,4,
+SF12054,202305181,month_2_arm_1,4,
+SF13975,202304281,baseline_arm_1,4,no notable issues
+SF13975,202307181,month_2_arm_1,4,no notable issues
+SF14052,202304101,baseline_arm_1,3,significant ringing 
+SF14052,202304102,baseline_arm_1,3,^
+SF14052,202308041,month_2_arm_1,3,"a bit grainy, mild ringing"
+SF14963,202306281,baseline_arm_1,3,moderate motion and ringing
+SF14963,202309111,month_2_arm_1,3,ringing
+SF19868,202307121,baseline_arm_1,1,severe braces artifact in frontal lobe
+SF21019,202309271,baseline_arm_1,,
+SF29950,202308301,baseline_arm_1,3,ringing
+SG05700,202310271,baseline_arm_1,,
+SG10636,202302211,baseline_arm_2,3,ringing throughout (for run1)
+SG18044,202301251,baseline_arm_2,4,No notable issues
+SG18044,202306091,month_2_arm_2,4,no notable issues
+SG21188,202310061,baseline_arm_1,,
+SG25112,202303271,baseline_arm_2,4,No notable issues (person's head is quite round)
+SG25112,202305191,month_2_arm_2,4,no notable issues
+SG26099,202308041,baseline_arm_1,4,no notable issues
+SG26099,202309151,month_2_arm_1,,
+SG36292,202308251,baseline_arm_1,4,
+SG36292,202310201,month_2_arm_1,,
+SG60081,202302241,baseline_arm_2,4,"extra scan, QC'd run 2"
+SG60081,202304211,month_2_arm_2,4,no notable issues
+SG77082,202311241,baseline_arm_1,,
+SG77682,202302231,baseline_arm_2,4,
+SG97600,202302201,baseline_arm_2,4,
+SI00132,202308111,month_2_arm_1,2,"severe ringing, motion, ghosting at eyes clips temporal poles"
+SI00132,202301271,baseline_arm_1,3,re-scanned- QC'd run 2. some bluriness and ringing to back of brain/ at top of brain
+SI00726,202304141,month_2_arm_1,3,Ringing and minor ghosting
+SI00726,202212281,baseline_arm_1,4,
+SI03540,202212211,baseline_arm_1,4,
+SI03540,202303081,month_2_arm_1,4,
+SI04099,202301181,baseline_arm_1,4,
+SI05265,202302011,baseline_arm_1,4,faint ringing 
+SI05265,202305121,month_2_arm_1,4,no notable issues
+SI06792,202305261,baseline_arm_2,,
+SI07530,202304071,baseline_arm_1,3,Noticable ringing
+SI07530,202307241,month_2_arm_1,3,ringing
+SI07691,202309151,baseline_arm_2,,
+SI07691,202311151,month_2_arm_2,,
+SI08940,202307101,month_2_arm_1,3,ringing
+SI08940,202304211,baseline_arm_1,4,no notable issues
+SI14814,202308211,baseline_arm_1,4,No notable issues
+SI16173,202309011,nan,4,No notable issues
+SI16173,202312041,,,
+SI18937,202308071,baseline_arm_1,4,Negligible ringing
+SI20411,202308301,baseline_arm_1,3,Minor ringing
+SI21243,202311221,nan,,
+SI21776,202309181,baseline_arm_1,,
+SI21776,202312061,,,
+SI24578,202310271,baseline_arm_1,,
+SI26382,202312011,,,
+SL00100,202303221,baseline_arm_2,4,No notable issues
+SL00677,202304281,baseline_arm_1,4,no notable issues
+SL00677,202306281,month_2_arm_1,,
+SL01710,202304281,baseline_arm_1,4,
+SL02920,202309221,baseline_arm_2,,
+SL02920,202311241,,,
+SL03607,202307131,baseline_arm_1,4,no notable issues
+SL03607,202309201,month_2_arm_1,,
+SL04334,202308111,baseline_arm_1,4,skull cut off but brain isn't
+SL05011,202308111,baseline_arm_1,4,no issues
+SL06021,202309201,baseline_arm_1,,
+SL06021,202311241,,,
+SL06259,202311101,,,
+SL06687,202309201,baseline_arm_1,,
+SL06687,202311241,,,
+SL08524,202311101,,,
+ST03069,202310121,baseline_arm_2,,
+ST32008,202312061,,,
+ST43655,202311081,nan,,
+ST77933,202309121,baseline_arm_1,,
+ST77933,202311082,nan,,
+ST91452,202309121,baseline_arm_2,,
+ST91452,202311152,,,
+TE00307,202210201,baseline_arm_1,4,A little blurry
+TE00307,202212151,month_2_arm_1,4,
+TE00646,202303231,baseline_arm_2,4,No notable issues
+TE04070,202212081,baseline_arm_1,4,No notable issues
+TE04070,202303231,month_2_arm_1,4,
+TE04070,202212011,nan,-,
+TE05018,202303201,baseline_arm_1,3,slight ringing
+TE05018,202306061,month_2_arm_1,4,
+TE05957,202307311,month_2_arm_2,3,"mild ringing, grainy"
+TE05957,202305121,baseline_arm_2,4,no notable issues
+TE06062,202309071,baseline_arm_2,4,no issues
+TE06290,202212051,baseline_arm_1,4,No notable issues
+TE06290,202303161,month_2_arm_1,4,
+TE06973,202303311,baseline_arm_1,4,No notable issues
+TE06973,202306091,month_2_arm_1,4,no notable issues
+TE07527,202306071,month_2_arm_1,3,Slight ringing
+TE07527,202303171,baseline_arm_1,4,
+TE08898,202303281,baseline_arm_1,3,slight ringing
+TE08898,202305301,month_2_arm_1,3,ringing
+TE13580,202305231,month_2_arm_1,3,moderate ringing
+TE13580,202303271,baseline_arm_1,4,
+TE14534,202303151,baseline_arm_1,4,
+TE14534,202305221,month_2_arm_1,4,no notable issues
+TE15405,202305181,baseline_arm_1,4,"slight vertical ghosting of eyes, doesn't affect brain"
+TE15405,202307141,month_2_arm_1,4,no notable issues
+TE15483,202305091,baseline_arm_1,3,faint ringing 
+TE15483,202307201,month_2_arm_1,4,no notable issues
+TE16009,202305311,baseline_arm_1,4,No notable issues
+TE16009,202307261,month_2_arm_1,4,no notable issues
+TE16560,202306231,baseline_arm_1,4,nothing to note
+TE16560,202309081,month_2_arm_1,4,no issues
+TE17053,202306221,baseline_arm_1,4,
+TE17053,202308311,month_2_arm_1,5,no notable issues
+TE18596,202307251,baseline_arm_1,4,
+TE18596,202310031,month_2_arm_1,,
+TE21002,202309131,baseline_arm_1,,
+TE21002,202311071,month_2_arm_1,,
+TE22317,202309291,nan,,
+TE22317,202309281,baseline_arm_1,,
+TE22317,202311291,month_2_arm_1,,
+TE22456,202310311,baseline_arm_1,,
+TE23038,202310111,baseline_arm_1,,
+TE26896,202311081,baseline_arm_1,,
+WU01590,202212011,month_2_arm_1,3,moderate ringing 
+WU01590,202209201,baseline_arm_1,4,
+WU04342,202212191,month_2_arm_2,3,motion throughout
+WU04342,202210101,baseline_arm_2,4,No notable isssues
+WU04908,202209271,baseline_arm_1,4,
+WU05029,202311141,,,
+WU06851,202210181,baseline_arm_1,4,"not perfectly aligned, image quality great"
+WU06851,202212191,month_2_arm_1,4,slight ringing but not significant
+WU08865,202212201,month_2_arm_1,3,ringing throughout but not major (run-2_T1w)
+WU08865,202210271,baseline_arm_1,4,
+WU09114,202301101,baseline_arm_1,4,
+WU09114,202306161,month_2_arm_1,4,"lots of artifacts outside of the skull, odd but doesn't affect brain"
+WU09592,202212131,baseline_arm_1,4,No notable issues
+WU09592,202303301,month_2_arm_1,4,
+WU10549,202304051,baseline_arm_1,4,
+WU11737,202306291,baseline_arm_1,4,no notable issues
+WU11737,202310171,month_2_arm_1,,
+WU12525,202309141,baseline_arm_1,,
+WU13363,202310031,baseline_arm_1,,
+WU14773,202308241,baseline_arm_1,4,No issues 
+WU14773,202311011,month_2_arm_1,,
+WU16193,202311151,baseline_arm_1,,
+WU20875,202310311,baseline_arm_1,,
+YA00926,202211031,baseline_arm_2,4,
+YA00926,202301241,month_2_arm_2,4,
+YA01508,202206231,baseline_arm_1,4,
+YA01508,202208261,month_2_arm_1,4,
+YA03473,202209011,baseline_arm_1,3,ringing of frontal lobe towards temporal lobe on left hemi
+YA03473,202211281,month_2_arm_1,3,ringing in frontal lobe
+YA04611,202209291,baseline_arm_1,4,No notable issues
+YA04611,202211211,month_2_arm_1,4,
+YA05293,202212051,month_2_arm_1,3,Notable ringing in all views
+YA05293,202209261,baseline_arm_1,4,
+YA06869,202211111,baseline_arm_2,4,
+YA06869,202301261,month_2_arm_2,4,
+YA08106,202307261,month_2_arm_2,3,"grainy, minor ringing"
+YA08106,202305171,baseline_arm_2,4,No notable issues
+YA08128,202309151,baseline_arm_2,,
+YA08362,202210131,baseline_arm_1,3,"ringing, skull slightly misshapen"
+YA09994,202301191,baseline_arm_1,4,no notable issues 
+YA11278,202301261,baseline_arm_1,4,
+YA11278,202303301,month_2_arm_1,4,
+YA13632,202304051,month_2_arm_1,3,mild to moderate ringing
+YA13632,202302071,baseline_arm_1,4,
+YA15624,202305191,month_2_arm_1,3,mild ringing
+YA15624,202302161,baseline_arm_1,4,
+YA16301,202302091,baseline_arm_1,4,no notable issues 
+YA16301,202304111,month_2_arm_1,4,no notable issues
+YA16301,202304121,nan,,
+YA16606,202303281,baseline_arm_1,4,no notable issues 
+YA16945,202303151,baseline_arm_1,3,slight ringing
+YA16945,202305241,month_2_arm_1,3,"scan is good, cyst in cerebellum may disrupt volume measurements"
+YA17472,202303311,baseline_arm_1,3,ringing throughout
+YA17816,202305041,baseline_arm_1,3,moderate ringing
+YA17816,202307121,month_2_arm_1,3,Minor ringing
+YA18404,202308241,baseline_arm_1,4,minor ghosting that doesn't affect brain (axial view)
+YA20433,202307181,baseline_arm_1,4,no notable issues
+YA20433,202309201,month_2_arm_1,,
+YA20449,202307051,baseline_arm_1,4,negligible ghosting at eyes
+YA20449,202309221,month_2_arm_1,,
+YA20449,202310231,nan,,
+YA20849,202308041,baseline_arm_1,3,ringing
+YA20849,202310231,month_2_arm_1,,
+YA23168,202308211,baseline_arm_1,4,
+YA23168,202310261,month_2_arm_1,,
+YA23568,202308311,baseline_arm_1,3,Minor ringing
+YA23568,202310311,month_2_arm_1,,
+YA24934,202308281,baseline_arm_1,4,
+YA25683,202308291,baseline_arm_1,4,No notable issues
+YA25683,202311091,month_2_arm_1,,
+YA27764,202310201,baseline_arm_1,,
+YA27831,202310271,baseline_arm_1,,
+YA29906,202310251,baseline_arm_1,,
+YA32806,202310201,baseline_arm_1,,
+YA33149,202311221,baseline_arm_1,,
+YA33555,202311011,baseline_arm_1,,
+YA33733,202311151,baseline_arm_1,,
