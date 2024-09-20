@@ -57,8 +57,8 @@ def launch_pretrain(
 
     run_name = f"pretraining-{task}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
-    os.makedirs("/home/cbricout/model_report", exist_ok=True)
-    save_model_path = os.path.join("/home/cbricout/model_report", run_name)
+    os.makedirs("/home/at70870/model_report", exist_ok=True)
+    save_model_path = os.path.join("/home/at70870/model_report", run_name)
     os.makedirs(save_model_path, exist_ok=True)
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=COMET_API_KEY,
@@ -105,7 +105,7 @@ def launch_pretrain(
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=4,
+        devices=2,
         strategy="ddp",
         accelerator="gpu",
         precision="16-mixed",
