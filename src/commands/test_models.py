@@ -1,5 +1,6 @@
 import glob
 from os import path
+import os
 
 
 from matplotlib import pyplot as plt
@@ -36,9 +37,11 @@ def load_from_ckpt(ckpt_path: str):
     return task_class.load_from_checkpoint(checkpoint_path=ckpt_path), task
 
 
-def test_pretrain_model(module: PretrainingTask, task: str):
+def test_pretrain_model(ckpt_path:str):
+    module,task = load_from_ckpt(ckpt_path=ckpt_path)
     print("Start Evaluation")
-
+    exp = path.basename(ckpt_path).split('.')[0]
+    os.makedirs(f"report/{exp}")
     base_metrics=[]
     for dataset, mode in [
         (PretrainTest, "test"),
@@ -81,8 +84,9 @@ def test_pretrain_model(module: PretrainingTask, task: str):
 
         fig, ax = plt.subplots()
         ax2 = ax.twinx()
-        sb.lineplot(conf_df, x="threshold_std", y="rmse", ax=ax)
-        sb.lineplot(conf_df, x="threshold_std", y="kept_proportion", ax=ax2)
+
+        ax.plot(conf_df["threshold_std"], conf_df["rmse"], 'r', label="rmse")
+        ax2.plot(conf_df["threshold_std"], conf_df["kept_proportion"], 'b', label="Kept proportion")
 
         plt.xlabel("Confidence threshold (Standard Deviation)")
         ax2.legend(
@@ -90,7 +94,7 @@ def test_pretrain_model(module: PretrainingTask, task: str):
             labels=["Root Mean Squared Error", "Kept Proportion (%)"],
         )
         plt.tight_layout()
-        plt.savefig("plots/test")
-        return
+        plt.savefig(f"report/{exp}/{mode}")
 
     base_metrics_df = pd.DataFrame(base_metrics, columns=["mode", "source", "r2", "rmse"])
+    base_metrics_df.to_csv(f"report/{exp}/results.csv")
