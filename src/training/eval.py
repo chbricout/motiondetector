@@ -12,6 +12,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 import pandas as pd
 import seaborn as sb
 import torch
+import tqdm
 from src.dataset.ampscz.ampscz_dataset import TransferValAMPSCZ, TransferTrainAMPSCZ
 from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
 from src.training.pretrain_logic import PretrainingTask
@@ -49,7 +50,7 @@ def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
 
 
 def get_pred_from_pretrain(
-    model: PretrainingTask, dataloader: DataLoader, mode: str
+    model: PretrainingTask, dataloader: DataLoader, mode: str, label:str="label"
 ) -> pd.DataFrame:
     """Compute prediction of a model on a dataloader
 
@@ -66,13 +67,13 @@ def get_pred_from_pretrain(
     labels = []
     ids = []
     with torch.no_grad():
-        for idx, batch in enumerate(dataloader):
+        for idx, batch in enumerate(tqdm.tqdm(dataloader)):
             batch["data"] = batch["data"].cuda()
             prediction = model.predict_step(batch, idx)
             prediction = prediction.cpu()
 
             preds += prediction.tolist()
-            labels += batch["label"].tolist()
+            labels += batch[label].tolist()
             ids += batch["identifier"]
             torch.cuda.empty_cache()
 

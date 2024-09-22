@@ -369,6 +369,18 @@ def calibration(model: str, run_num: int, project: str, task: str):
         model_name=model, task=task, run_num=run_num, project_name=project
     )
 
+@cli.group()
+def test():
+    pass
+
+@test.command("pretrain")
+@click.option(  "-f",
+    "--folder",
+    help="Folder containing models",
+    type=str,)
+def pretrain_test(folder:str):
+    
+
 
 if __name__ == "__main__":
     cli()

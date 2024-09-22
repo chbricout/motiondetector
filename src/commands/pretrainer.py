@@ -3,6 +3,7 @@ Module to launch pretraining job on synthetic motion dataset.
 """
 
 import os
+from os import environ,path
 import logging
 import random
 import shutil
@@ -17,7 +18,9 @@ from lightning.pytorch.callbacks import (
     LearningRateMonitor,
 )
 from lightning.pytorch.callbacks import ModelCheckpoint
+import torch.distributed
 
+from src import config
 from src.utils.comet import get_experiment_key
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
 from src.training.eval import get_correlations
@@ -54,6 +57,12 @@ def launch_pretrain(
         use_cutout(bool): flag to use cutout in model training
         task(str): Pretraining task to use
     """
+
+    if config.IS_NARVAL:
+        cache_dir=path.join(environ.get("SLURM_TMPDIR"), '.triton', f'cache_{torch.distributed.get_rank()}')
+        os.makedirs(cache_dir)
+        environ["TRITON_CACHE_DIR"]=cache_dir
+        logging.warning("Creating cache dir : %s", cache_dir)
 
     run_name = f"pretraining-{task}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)

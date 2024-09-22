@@ -71,6 +71,16 @@ class PretrainVal(BasePretrain):
     veryhuge_path: str = "src/dataset/pretraining/veryhuge-val.csv"
 
 
+class PretrainTest(BasePretrain):
+    """
+    Pytorch Dataset to use the validation split of synthetic motion dataset (in pretrain).
+    It relies on the "val.csv" file
+    """
+
+    huge_path: str = "src/dataset/pretraining/veryhuge-test.csv"
+    veryhuge_path: str = "src/dataset/pretraining/veryhuge-test.csv"
+
+
 class PretrainingDataModule(BaseDataModule):
     """
     Lightning data module to use synthetic motion pretraining data in lightning trainers
