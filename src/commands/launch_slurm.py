@@ -7,6 +7,7 @@ import re
 from collections.abc import Sequence
 from simple_slurm import Slurm
 
+from src import config
 from src.config import DEFAULT_SLURM_ACCOUNT
 
 
@@ -19,7 +20,6 @@ def setup_python(job: Slurm):
     """
     job.add_cmd("mkdir -p $SLURM_TMPDIR/.triton/cache")
     job.add_cmd("export TRITON_CACHE_DIR=$SLURM_TMPDIR/.triton/cache")
-    # job.add_cmd("export TRITON_CACHE_MANAGER=triton_utils.cache_manager:ModifiedCacheManager")
     job.add_cmd('echo "Triton is setup"')
 
     job.add_cmd("module load python cuda httpproxy")
@@ -42,6 +42,20 @@ def cpy_extract_tar(job: Slurm, tarballs_name: Sequence[str]):
         job.add_cmd(f'echo "{ds} copied"')
 
 
+def cpy_extract_pretrain(job: Slurm):
+    """Copy and extract tarball files before job
+
+    Args:
+        job (Slurm): Job to modify
+        tarballs_name (Sequence[str]): name of the tarball faile to use
+    """
+    job.add_cmd("mkdir -p $SLURM_TMPDIR/datasets")
+    job.add_cmd(
+        "tar --skip-old-file  -xf ~/scratch/generate_dataset.tar -C $SLURM_TMPDIR/datasets"
+    )
+    job.add_cmd('echo "Pretrained dataset copied"')
+
+
 def copy_data_tmp_generate(job: Slurm):
     """Extract data from scratch to $SLURM_TMPDIR for pretraining dataset
 
@@ -52,7 +66,7 @@ def copy_data_tmp_generate(job: Slurm):
     job.add_cmd("mkdir -p $SLURM_TMPDIR/datasets")
     for ds in to_cpy:
         job.add_cmd(
-            f"tar --skip-old-file -xf ~/scratch/{ds}.tar -C $SLURM_TMPDIR/datasets"
+            f"tar --skip-old-file -xf ~/scratch/{ds}.tar home/cbricout/scratch -C $SLURM_TMPDIR/datasets --strip-components 3"
         )
         job.add_cmd(f'echo "{ds} copied"')
 
@@ -179,6 +193,7 @@ def submit_pretrain(
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
     send_transfer: bool = False,
+    account: str = config.DEFAULT_SLURM_ACCOUNT,
 ):
     """Submit pretrain job on SLURM cluster
 
@@ -196,10 +211,11 @@ def submit_pretrain(
         get_output("pretrain", model, array),
         n_cpus=10,
         n_gpus=4,
-        mem="400G",
+        mem="300G",
         time="48:00:00",
+        account=account,
     )
-    cpy_extract_tar(job, ["generate_dataset"])
+    cpy_extract_pretrain(job)
     cpy_transfer(job)
 
     if cmd is None:

@@ -186,9 +186,9 @@ class BinaryPretrainingTask(PretrainingTask):
     """
 
     hard_label_tag = "motion_binary"
-    output_pipeline = nn.Sequential( nn.Flatten(start_dim=0))
+    output_pipeline = nn.Sequential(nn.Flatten(start_dim=0))
     label_loss = nn.BCEWithLogitsLoss(pos_weight=torch.as_tensor(1))
-    
+
     def __init__(
         self,
         model_class: str,
@@ -207,18 +207,22 @@ class BinaryPretrainingTask(PretrainingTask):
             use_cutout=use_cutout,
             num_classes=1,
         )
-        
+
     def setup(self, stage):
-        labels = self.trainer.datamodule.train_dataloader().dataset.file['label']
+        labels = self.trainer.datamodule.train_dataloader().dataset.file["label"]
         class_counts = Counter(labels)
         total_count = len(labels)
-        class_weights = {int(cls):1-(count/total_count) for cls, count in class_counts.items()}
+        class_weights = {
+            int(cls): 1 - (count / total_count) for cls, count in class_counts.items()
+        }
         logging.warn(class_weights)
-        self.label_loss = nn.BCEWithLogitsLoss(pos_weight=torch.as_tensor(class_weights[1]))
+        self.label_loss = nn.BCEWithLogitsLoss(
+            pos_weight=torch.as_tensor(class_weights[1])
+        )
 
     def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
         return pred.sigmoid().round().int().flatten()
-    
+
     def on_validation_epoch_end(self) -> None:
         self.log(
             "balanced_accuracy",
@@ -238,4 +242,3 @@ class BinaryPretrainingTask(PretrainingTask):
         )
         self.label = []
         self.prediction = []
- 

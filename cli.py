@@ -99,6 +99,16 @@ task = click.option(
     default="MOTION",
     type=click.Choice(["MOTION", "SSIM", "BINARY"], case_sensitive=True),
 )
+account = click.option(
+    "-A",
+    "--account",
+    help="Slurm accoun",
+    default=config.DEFAULT_SLURM_ACCOUNT,
+    type=click.Choice(
+        ["ctb-sbouix", "def-sbouix", "rrg-ebrahimi", "def-ebrahimi"],
+        case_sensitive=True,
+    ),
+)
 
 
 @click.group()
@@ -117,6 +127,7 @@ def cli():
 @slurm
 @cutout
 @task
+@account
 def pretrain(
     max_epochs,
     learning_rate,
@@ -128,12 +139,10 @@ def pretrain(
     slurm,
     cutout,
     task: str,
+    account,
 ):
     if slurm:
-        submit_pretrain(
-            model=model,
-            array=run_num,
-        )
+        submit_pretrain(model=model, array=run_num, account=account)
     else:
         lightning_logger()
         launch_pretrain(
@@ -266,7 +275,7 @@ def launch_exp():
 
 
 run_confs = [
-    {"name": "VIT", "batch_size": 18},
+    # {"name": "VIT", "batch_size": 18},
     {"name": "SFCN", "batch_size": 24},
     {"name": "CONV5_FC3", "batch_size": 24},
     {"name": "RES", "batch_size": 24},

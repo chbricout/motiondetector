@@ -57,19 +57,15 @@ def launch_pretrain(
 
     run_name = f"pretraining-{task}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
-    os.makedirs("/home/at70870/model_report", exist_ok=True)
-    save_model_path = os.path.join("/home/at70870/model_report", run_name)
+    os.makedirs("model_report", exist_ok=True)
+    save_model_path = os.path.join("model_report", run_name)
     os.makedirs(save_model_path, exist_ok=True)
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=COMET_API_KEY,
         project_name=PROJECT_NAME,
         experiment_name=run_name,
         experiment_key=get_experiment_key("mrart", PROJECT_NAME, run_name),
-        # offline=True,
-        # save_dir=run_dir,
     )
-
-    logging.error("Api key : %s", COMET_API_KEY)
 
     if seed is None:
         seed = random.randint(1, 10000)
@@ -99,13 +95,13 @@ def launch_pretrain(
 
     monitor_metrics = "r2_score"
     if task == "BINARY":
-        monitor_metrics="balanced_accuracy"
+        monitor_metrics = "balanced_accuracy"
     checkpoint = ModelCheckpoint(monitor=monitor_metrics, mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=2,
+        devices=4,
         strategy="ddp",
         accelerator="gpu",
         precision="16-mixed",
