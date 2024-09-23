@@ -353,7 +353,7 @@ def submit_test_pretrain(folder:str):
         "test-pretrain",
         None,
         f"./logs/test_pretrain.%j.out",
-        n_cpus=20,
+        n_cpus=30,
         n_gpus=1,
         mem="400G",
         time="24:00:00",
