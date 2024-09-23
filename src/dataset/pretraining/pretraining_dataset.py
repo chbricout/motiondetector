@@ -67,7 +67,7 @@ class PretrainVal(BasePretrain):
     It relies on the "val.csv" file
     """
 
-    huge_path: str = "src/dataset/pretraining/huge-val.csv"
+    huge_path: str = "src/dataset/pretraining/veryhuge-val.csv"
     veryhuge_path: str = "src/dataset/pretraining/veryhuge-val.csv"
 
 

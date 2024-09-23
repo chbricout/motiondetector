@@ -39,7 +39,7 @@ def load_from_ckpt(ckpt_path: str):
 
 def test_pretrain_model(ckpt_path: str):
     module, task = load_from_ckpt(ckpt_path=ckpt_path)
-    print("Start Evaluation")
+    print(f"Start Evaluation for {ckpt_path}")
 
     exp = path.basename(ckpt_path).split(".")[0]
     report_dir = path.join("test_report", exp)
@@ -50,7 +50,7 @@ def test_pretrain_model(ckpt_path: str):
     base_metrics = []
     for dataset, mode in [
         (PretrainTest, "test"),
-        (PretrainVal, "val"),
+        # (PretrainVal, "val"),
     ]:
         print(f"Eval dataset : {mode}")
         ds = dataset.from_env(LoadSynth.from_task(task))
