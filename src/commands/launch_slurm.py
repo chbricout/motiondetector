@@ -217,6 +217,7 @@ def submit_pretrain(
     )
     if model=="SFCN":
         job.add_cmd("export TRITON_DISABLE_CACHE=1")
+        job.add_cmd("export TORCHINDUCTOR_FORCE_DISABLE_CACHES=1")
 
     cpy_extract_pretrain(job)
     cpy_transfer(job)
