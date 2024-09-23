@@ -23,19 +23,17 @@ def compute_prop_metrics(
 
 
 def confidence_pretrain(df: pd.DataFrame) -> pd.DataFrame:
-    res=[]
-    min_std = df['std'].min()
-    max_std = df['std'].max()
-    for thresh in np.arange(min_std, max_std, (max_std-min_std)/100):
+    res = []
+    min_std = df["std"].min()
+    max_std = df["std"].max()
+    for thresh in np.arange(min_std, max_std, (max_std - min_std) / 100):
         prop, rmse = compute_prop_metrics(
             df,
             thresh,
             threshold_label="std",
-            metric_f=lambda x: mean_squared_error(
-                x["mean"], x["label"], squared=False
-            ),
+            metric_f=lambda x: mean_squared_error(x["mean"], x["label"], squared=False),
         )
         res.append((thresh, prop, rmse))
-    
+
     return_df = pd.DataFrame(res, columns=["threshold_std", "kept_proportion", "rmse"])
     return return_df

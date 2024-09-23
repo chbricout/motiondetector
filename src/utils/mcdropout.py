@@ -147,9 +147,9 @@ def pretrain_pred_to_df(
     np_concat = np.array([identifiers, mean.tolist(), std.tolist(), labels])
     df = pd.DataFrame(np_concat.T, columns=["identifier", "mean", "std", "label"])
     df["predictions"] = preds.tolist()
-    df["mean"] = df['mean'].astype(float)
-    df["std"] = df['std'].astype(float)
-    df["label"] = df['label'].astype(float)
+    df["mean"] = df["mean"].astype(float)
+    df["std"] = df["std"].astype(float)
+    df["label"] = df["label"].astype(float)
 
     return df
 

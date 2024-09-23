@@ -2,6 +2,7 @@ import warnings
 import click
 
 from src.commands.base_trainer import launch_train_from_scratch
+from src.commands.test_models import test_pretrain_in_folder
 from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
 from src.commands.launch_slurm import (
@@ -369,17 +370,21 @@ def calibration(model: str, run_num: int, project: str, task: str):
         model_name=model, task=task, run_num=run_num, project_name=project
     )
 
+
 @cli.group()
 def test():
     pass
 
+
 @test.command("pretrain")
-@click.option(  "-f",
+@click.option(
+    "-f",
     "--folder",
     help="Folder containing models",
-    type=str,)
-def pretrain_test(folder:str):
-    
+    type=str,
+)
+def pretrain_test(folder: str):
+    test_pretrain_in_folder(folder)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import glob
 from os import path
 import os
-
+import shutil
 
 from matplotlib import pyplot as plt
 import pandas as pd
@@ -27,7 +27,7 @@ def test_pretrain_in_folder(folder: str):
     models_ckpt = glob.glob(path.join(folder, "*.ckpt"))
 
     for ckpt in models_ckpt:
-        module, task = load_from_ckpt(ckpt)
+        test_pretrain_model(ckpt_path=ckpt)
 
 
 def load_from_ckpt(ckpt_path: str):
@@ -37,12 +37,17 @@ def load_from_ckpt(ckpt_path: str):
     return task_class.load_from_checkpoint(checkpoint_path=ckpt_path), task
 
 
-def test_pretrain_model(ckpt_path:str):
-    module,task = load_from_ckpt(ckpt_path=ckpt_path)
+def test_pretrain_model(ckpt_path: str):
+    module, task = load_from_ckpt(ckpt_path=ckpt_path)
     print("Start Evaluation")
-    exp = path.basename(ckpt_path).split('.')[0]
-    os.makedirs(f"report/{exp}")
-    base_metrics=[]
+
+    exp = path.basename(ckpt_path).split(".")[0]
+    report_dir = path.join("test_report", exp)
+    if path.exists(report_dir):
+        shutil.rmtree(report_dir)
+    os.makedirs(report_dir)
+
+    base_metrics = []
     for dataset, mode in [
         (PretrainTest, "test"),
         (PretrainVal, "val"),
@@ -73,20 +78,27 @@ def test_pretrain_model(ckpt_path:str):
             (simple_pretrain_df, "simple", "pred"),
             (dropout_pretrain_df, "mcdropout", "mean"),
         ]:
-            base_metrics.append([       
-                mode,
-                source,
-                r2_score(df[pred_label], df["label"]),
-                mean_squared_error(df[pred_label], df["label"], squared=False),
-            ])
+            base_metrics.append(
+                [
+                    mode,
+                    source,
+                    r2_score(df["label"], df[pred_label]),
+                    mean_squared_error(df["label"], df[pred_label], squared=False),
+                ]
+            )
 
         conf_df = conf.confidence_pretrain(dropout_pretrain_df)
 
         fig, ax = plt.subplots()
         ax2 = ax.twinx()
 
-        ax.plot(conf_df["threshold_std"], conf_df["rmse"], 'r', label="rmse")
-        ax2.plot(conf_df["threshold_std"], conf_df["kept_proportion"], 'b', label="Kept proportion")
+        ax.plot(conf_df["threshold_std"], conf_df["rmse"], color="red", label="rmse")
+        ax2.plot(
+            conf_df["threshold_std"],
+            conf_df["kept_proportion"],
+            color="blue",
+            label="Kept proportion",
+        )
 
         plt.xlabel("Confidence threshold (Standard Deviation)")
         ax2.legend(
@@ -94,7 +106,9 @@ def test_pretrain_model(ckpt_path:str):
             labels=["Root Mean Squared Error", "Kept Proportion (%)"],
         )
         plt.tight_layout()
-        plt.savefig(f"report/{exp}/{mode}")
+        plt.savefig(path.join(report_dir, mode))
 
-    base_metrics_df = pd.DataFrame(base_metrics, columns=["mode", "source", "r2", "rmse"])
-    base_metrics_df.to_csv(f"report/{exp}/results.csv")
+    base_metrics_df = pd.DataFrame(
+        base_metrics, columns=["mode", "source", "r2", "rmse"]
+    )
+    base_metrics_df.to_csv(path.join(report_dir, "results.csv"))

@@ -50,7 +50,7 @@ def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
 
 
 def get_pred_from_pretrain(
-    model: PretrainingTask, dataloader: DataLoader, mode: str, label:str="label"
+    model: PretrainingTask, dataloader: DataLoader, mode: str, label: str = "label"
 ) -> pd.DataFrame:
     """Compute prediction of a model on a dataloader
 

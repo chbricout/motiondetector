@@ -2,6 +2,8 @@
 
 from collections import Counter
 import logging
+from os import environ, path
+import os
 import torch.optim
 from torch import nn
 from monai.transforms import CutOut
@@ -35,6 +37,20 @@ class PretrainingTask(EncodeClassifyTask):
         num_classes: int = 1,
     ):
         super().__init__()
+        if (
+            config.IS_NARVAL
+            and torch.distributed.is_available()
+            and torch.distributed.is_initialized()
+        ):
+            cache_dir = path.join(
+                environ.get("SLURM_TMPDIR"),
+                ".triton",
+                f"cache_{torch.distributed.get_rank()}",
+            )
+            os.makedirs(cache_dir, exist_ok=True)
+            environ["TRITON_CACHE_DIR"] = cache_dir
+            self.log(f"Created Triton cache dir: {cache_dir}")
+
         self.num_classes = num_classes
         self.im_shape = im_shape
         self.dropout_rate = dropout_rate
