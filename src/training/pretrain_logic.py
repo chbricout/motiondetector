@@ -46,7 +46,11 @@ class PretrainingTask(EncodeClassifyTask):
             self.im_shape, self.num_classes, self.dropout_rate
         )
         init_model(self.model)
-        self.model = torch.compile(self.model)
+        if model=="SFCN":
+            
+            self.model = torch.compile(self.model, options={"force_disable_caches":True})
+        else:
+            self.model = torch.compile(self.model)
 
         self.use_cutout = use_cutout
         if self.use_cutout:
