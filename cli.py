@@ -6,6 +6,7 @@ from src.commands.test_models import test_pretrain_in_folder
 from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
 from src.commands.launch_slurm import (
+    submit_test_pretrain,
     submit_transfer,
     submit_generate_ds,
     submit_pretrain,
@@ -383,8 +384,12 @@ def test():
     help="Folder containing models",
     type=str,
 )
-def pretrain_test(folder: str):
-    test_pretrain_in_folder(folder)
+@slurm
+def pretrain_test(folder: str, slurm: bool):
+    if slurm:
+        submit_test_pretrain(folder)
+    else:
+        test_pretrain_in_folder(folder)
 
 
 if __name__ == "__main__":

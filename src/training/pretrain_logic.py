@@ -113,7 +113,6 @@ class PretrainingTask(EncodeClassifyTask):
                 "monitor": "val_loss",
             }
         ]
-        
 
 
 class MotionPretrainingTask(PretrainingTask):

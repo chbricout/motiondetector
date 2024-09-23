@@ -55,8 +55,8 @@ def launch_pretrain(
         use_cutout(bool): flag to use cutout in model training
         task(str): Pretraining task to use
     """
-    if model=="SFCN":
-        os.environ["TRITON_DISABLE_CACHE"]=1
+    if model == "SFCN":
+        os.environ["TRITON_DISABLE_CACHE"] = 1
 
     run_name = f"pretraining-{task}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
