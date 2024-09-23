@@ -46,7 +46,7 @@ class PretrainingTask(EncodeClassifyTask):
             self.im_shape, self.num_classes, self.dropout_rate
         )
         init_model(self.model)
-        if model=="SFCN":
+        if self.model=="SFCN":
             
             self.model = torch.compile(self.model, options={"force_disable_caches":True})
         else:
