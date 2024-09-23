@@ -215,6 +215,9 @@ def submit_pretrain(
         time="48:00:00",
         account=account,
     )
+    if model=="SFCN":
+        job.add_cmd("export TRITON_DISABLE_CACHE=1")
+
     cpy_extract_pretrain(job)
     cpy_transfer(job)
 
