@@ -215,7 +215,7 @@ def submit_pretrain(
         time="48:00:00",
         account=account,
     )
-    if model == "SFCN":
+    if model=="SFCN":
         job.add_cmd("export TRITON_DISABLE_CACHE=1")
 
     cpy_extract_pretrain(job)
@@ -348,7 +348,7 @@ def submit_generate_ds():
     job.sbatch(f"srun python {get_full_cmd()}")
 
 
-def submit_test_pretrain(folder: str):
+def submit_test_pretrain(folder:str):
     job = create_job(
         "test-pretrain",
         None,
@@ -361,3 +361,4 @@ def submit_test_pretrain(folder: str):
     cpy_extract_pretrain(job)
 
     job.sbatch(f"srun python {get_full_cmd()}")
+

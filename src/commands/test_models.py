@@ -57,7 +57,7 @@ def test_pretrain_model(ckpt_path: str):
         ds.define_label(task)
         pretrain_dl = DataLoader(
             ds,
-            batch_size=60,
+            batch_size=24,
             pin_memory=True,
             num_workers=20,
             prefetch_factor=2,

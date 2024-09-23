@@ -2,7 +2,7 @@ import warnings
 import click
 
 from src.commands.base_trainer import launch_train_from_scratch
-from src.commands.test_models import test_pretrain_in_folder
+from src.commands.test_models import test_pretrain_in_folder, test_pretrain_model
 from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
 from src.commands.launch_slurm import (
@@ -379,17 +379,28 @@ def test():
 
 @test.command("pretrain")
 @click.option(
-    "-f",
-    "--folder",
-    help="Folder containing models",
+    "-d",
+    "--directory",
+    help="Directory containing models",
     type=str,
+    default=None
+)
+@click.option(
+    "-f",
+    "--file",
+    help="File containing model",
+    type=str,
+    default=None
 )
 @slurm
-def pretrain_test(folder: str, slurm: bool):
+def pretrain_test(directory: str, file:str, slurm: bool):
     if slurm:
-        submit_test_pretrain(folder)
+        submit_test_pretrain(directory)
     else:
-        test_pretrain_in_folder(folder)
+        if file is not None:
+            test_pretrain_model(file)
+        else:
+            test_pretrain_in_folder(directory)
 
 
 if __name__ == "__main__":
