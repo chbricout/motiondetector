@@ -371,7 +371,7 @@ def train():
                 --learning_rate 1e-5\
                 --dropout_rate 0.6\
                 --dataset MRART ",
-            dataset=dataset,
+            dataset="MRART",
         )
             
 
