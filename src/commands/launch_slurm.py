@@ -327,6 +327,8 @@ def submit_scratch(
 
     if cmd is None:
         cmd = get_full_cmd()
+        
+    print(job)
     job.sbatch(f"srun python {cmd}")
 
 
