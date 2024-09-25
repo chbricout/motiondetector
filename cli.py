@@ -363,7 +363,7 @@ def train():
     for model in transfer_confs:
         submit_scratch(
             model["name"],
-            range(1,6),
+            list(range(1,6)),
             f"cli.py train   \
                 --max_epochs 10000\
                 --batch_size {model['batch_size']}\
