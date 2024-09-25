@@ -90,7 +90,7 @@ def launch_train_from_scratch(
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=[1],
+        devices=1,
         accelerator="gpu",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
