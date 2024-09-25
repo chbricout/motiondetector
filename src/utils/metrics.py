@@ -37,8 +37,8 @@ def separation_capacity(
     x_val = val["pred"].to_numpy()
     y_val = val["label"].to_numpy()
 
-    thresholds = separation_capacity_train(
-        X_train=x_train, y_train=y_train, X_val=x_val, y_val=y_val
+    thresholds, _ = separation_capacity_train(
+        X=x_train, y=y_train
     )
 
     fig = plt.figure(figsize=(6, 5))
@@ -56,22 +56,7 @@ def separation_capacity(
     return acc, per_class_accuracy, thresholds,fig, cm_fig
 
 
-
-def separation_capacity_train(
-    X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray
-) -> tuple[float, float]:
-
-    if len(X_train.shape) == 1:
-        X_train = X_train.reshape(-1, 1)
-    if len(X_val.shape) == 1:
-        X_val = X_val.reshape(-1, 1)
-
-    # n_clusters = max(int(max(y_train) + 1), 2)
-
-    thresholds, _ = train_multi_threshold_classifier(X_train, y_train)
-    return thresholds
-
-def train_multi_threshold_classifier(X, y):
+def separation_capacity_train(X, y):
     best_thresholds = None
     best_accuracy = 0
     sorted_indices = np.argsort(X)
@@ -80,7 +65,7 @@ def train_multi_threshold_classifier(X, y):
 
     midpoints = (X_sort[:-1] + X_sort[1:]) / 2
     # Try all pairs of unique values in X as potential thresholds
-    for i,t1 in enumerate(midpoints):
+    for i,t1 in enumerate(midpoints[:-1]):
         for t2 in midpoints[i+1:]:
             
             y_pred = predict_thresholds(X_sort, (t1,t2))

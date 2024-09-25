@@ -342,7 +342,7 @@ def transfer():
                     --task MOTION \
                     --batch_size {model['batch_size']}\
                     --model {model['name']}\
-                    --learning_rate 1e-5\
+                    --learning_rate 5e-6\
                     --dataset {dataset} ",
                 dataset=dataset,
             )

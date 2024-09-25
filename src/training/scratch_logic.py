@@ -25,6 +25,10 @@ class TrainScratchTask(BaseFinalTrain):
             self.im_shape, self.num_classes, self.dropout_rate
         )
         init_model(self.model)
+        if model_class == "SFCN":
+            self.model = torch.compile(self.model, disable=True)
+        else:
+            self.model = torch.compile(self.model)
         self.setup_training()
         self.save_hyperparameters()
 

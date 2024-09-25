@@ -327,7 +327,10 @@ def submit_scratch(
 
     if cmd is None:
         cmd = get_full_cmd()
-        
+    else:
+        if not "--run_num" in cmd and array is not None:
+            cmd += " --run_num $SLURM_ARRAY_TASK_ID"
+
     print(job)
     job.sbatch(f"srun python {cmd}")
 
