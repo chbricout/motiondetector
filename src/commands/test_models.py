@@ -118,7 +118,7 @@ def test_pretrain_model_mrart_data(module:PretrainingTask, report_dir:str):
         dl = DataLoader(dataset.from_env(FinetuneTransform()))
         all_mode_df.append(teval.get_pred_from_pretrain(module, dl, mode))
     all_mode_df = pd.concat(all_mode_df)
-    acc, per_class_accuracy, thresholds,fig_thresh, cm_fig = teval.separation_capacity(
+    acc, per_class_f1, thresholds,fig_thresh, cm_fig = teval.separation_capacity(
         all_mode_df, train_on="train", test_on="test"
     )
 
@@ -131,8 +131,8 @@ def test_pretrain_model_mrart_data(module:PretrainingTask, report_dir:str):
     all_mode_df.to_csv(path.join(report_dir, "mrart.csv"))
 
     recap=pd.DataFrame(
-        [[acc, thresholds[0], thresholds[1], per_class_accuracy[0], per_class_accuracy[1], per_class_accuracy[2]]],
-        columns=["balanced_accuracy", "threshold_1", "threshold_2", "accuracy_0", "accuracy_1", "accuracy_2"],
+        [[acc, thresholds[0], thresholds[1], per_class_f1[0], per_class_f1[1], per_class_f1[2]]],
+        columns=["balanced_accuracy", "threshold_1", "threshold_2", "f1_0", "f1_1", "f1_2"],
     )
     recap.to_csv(path.join(report_dir,"mrart_recap.csv"))
 
@@ -140,7 +140,7 @@ def test_mrart_model(module:BaseFinalTrain, report_dir:str):
     dl = DataLoader(TestMrArt.from_env(FinetuneTransform()))
     test_pred_df = teval.get_pred_from_pretrain(module, dl)
     
-    acc, per_class_accuracy, cm_fig= metrics.prediction_report(test_pred_df['label'], test_pred_df['pred'])
+    acc, per_class_f1, cm_fig= metrics.prediction_report(test_pred_df['label'], test_pred_df['pred'])
 
     cm_fig.tight_layout()
     cm_fig.savefig(path.join(report_dir, "mr-art-confusion"))
@@ -148,7 +148,7 @@ def test_mrart_model(module:BaseFinalTrain, report_dir:str):
     test_pred_df.to_csv(path.join(report_dir, "test-pred.csv"))
 
     recap=pd.DataFrame(
-        [[acc,  per_class_accuracy[0], per_class_accuracy[1], per_class_accuracy[2]]],
-        columns=["balanced_accuracy", "accuracy_0", "accuracy_1", "accuracy_2"],
+        [[acc,  per_class_f1[0], per_class_f1[1], per_class_f1[2]]],
+        columns=["balanced_accuracy", "f1_0", "f1_1", "f1_2"],
     )
     recap.to_csv(path.join(report_dir,"mrart_recap.csv"))

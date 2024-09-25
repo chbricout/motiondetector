@@ -92,6 +92,7 @@ def launch_train_from_scratch(
         logger=comet_logger,
         devices=1,
         accelerator="gpu",
+        precision="16-mixed",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
         callbacks=[
