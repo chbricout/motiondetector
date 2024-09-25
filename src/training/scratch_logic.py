@@ -27,7 +27,6 @@ class TrainScratchTask(BaseFinalTrain):
         init_model(self.model)
         self.setup_training()
         self.save_hyperparameters()
-        self.model = torch.compile(self.model)
 
 
 class MRArtScratchTask(TrainScratchTask):

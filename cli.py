@@ -2,7 +2,11 @@ import warnings
 import click
 
 from src.commands.base_trainer import launch_train_from_scratch
-from src.commands.test_models import test_pretrain_in_folder, test_pretrain_model
+from src.commands.test_models import (
+    test_pretrain_in_folder,
+    test_pretrain_model_mrart_data,
+    test_pretrain_model_pretrain_data,
+)
 from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
 from src.commands.launch_slurm import (
@@ -354,6 +358,23 @@ def transfer():
                 dataset=dataset,
             )
 
+@launch_exp.command()
+def train():
+    for model in transfer_confs:
+        submit_scratch(
+            model["name"],
+            range(1,6),
+            f"cli.py train   \
+                --max_epochs 10000\
+                --batch_size {model['batch_size']}\
+                --model {model['name']}\
+                --learning_rate 1e-5\
+                --dropout_rate 0.6\
+                --dataset MRART ",
+            dataset=dataset,
+        )
+            
+
 
 @cli.group()
 def plot():
@@ -379,26 +400,17 @@ def test():
 
 @test.command("pretrain")
 @click.option(
-    "-d",
-    "--directory",
-    help="Directory containing models",
-    type=str,
-    default=None
+    "-d", "--directory", help="Directory containing models", type=str, default=None
 )
-@click.option(
-    "-f",
-    "--file",
-    help="File containing model",
-    type=str,
-    default=None
-)
+@click.option("-f", "--file", help="File containing model", type=str, default=None)
 @slurm
-def pretrain_test(directory: str, file:str, slurm: bool):
+def pretrain_test(directory: str, file: str, slurm: bool):
     if slurm:
         submit_test_pretrain(directory)
     else:
         if file is not None:
-            test_pretrain_model(file)
+            test_pretrain_model_pretrain_data(file)
+            test_pretrain_model_mrart_data(ckpt_path=file)
         else:
             test_pretrain_in_folder(directory)
 

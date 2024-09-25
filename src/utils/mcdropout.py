@@ -15,8 +15,10 @@ import seaborn as sb
 from tqdm import tqdm
 from src import config
 from src.utils.comet import log_figure_comet
+from src.utils.confidence import confidence_finetune
 from src.utils.log import log_figure
 from src.utils.task import label_from_task_class
+import src.utils.confidence as conf
 
 
 def predict_mcdropout(
@@ -75,25 +77,21 @@ def predict_mcdropout(
     return preds, labels, identifiers
 
 
-def bincount2d(arr: np.ndarray | torch.Tensor, bins: int | None = None) -> np.ndarray:
+def bincount2d(arr: np.ndarray | torch.Tensor) -> np.ndarray:
     """Count number of occurence of each bin / class in a list
     of prediction for the same volume
 
     Args:
         arr (np.ndarray | torch.Tensor): two dimensional array (N_data_point, N_predictions)
          containing multiple list of predictions (one by data point)
-        bins (int | None, optional): Number of bins / classes. Defaults to None.
 
     Returns:
         np.ndarray: Count of occurence for each bins (N_data_point, N_bins)
     """
     if torch.is_tensor(arr):
         arr = arr.numpy()
-    if bins is None:
-        bins = np.max(arr) + 1
-    count = np.zeros(shape=[len(arr), bins], dtype=np.int64)
-    indexing = (np.ones_like(arr).T * np.arange(len(arr))).T
-    np.add.at(count, (indexing, arr), 1)
+    count= np.apply_along_axis(np.bincount, axis=1, arr= arr,
+                                          minlength = np.max(arr) +1)
 
     return count
 
@@ -122,8 +120,10 @@ def finetune_pred_to_df(
     df = pd.DataFrame(np_concat.T, columns=["identifier", "mean", "std", "label"])
     df["count"] = count.tolist()
     df["predictions"] = preds.tolist()
-    df["max_classe"] = np.argmax(count)
-    df["confidence"] = np.max(count) / np.sum(count)
+    df["max_classe"] = np.argmax(count, axis=1)
+    df["confidence"] = np.max(count, axis=1) / np.sum(count, axis=1)
+    df["label"] = df["label"].astype(int)
+
     return df
 
 
@@ -154,64 +154,28 @@ def pretrain_pred_to_df(
     return df
 
 
-def get_acc_prop(df: pd.DataFrame, confidence: float) -> tuple[float, float]:
-    """Compute accuracy by keeping only prediction with confidence higher than `confidence`
-
-    Args:
-        df (pd.DataFrame): Dataframe with colums "label", "max_classe" and "confidence"
-        confidence (int): lower acceptable confidence (included)
-
-    Returns:
-        tuple[float, float]: accuracy, proportion of original dataset kept
-    """
-    assert set(["confidence", "label", "max_classe"]).issubset(df.columns)
-
-    filtered = df[df["confidence"] >= confidence]
-    if len(filtered) > 0:
-        filtered_accuracy = (
-            filtered["label"] == filtered["max_classe"].astype(int)
-        ).sum() / len(filtered)
-    else:
-        filtered_accuracy = 0
-    filtered_prop = len(filtered) / len(df)
-    return filtered_accuracy, filtered_prop
-
-
-def finetune_confidence_plots(
+def finetune_filter_plot(
     df: pd.DataFrame, filt_conf: float = config.CONFIDENCE_FILTER
 ) -> tuple[Figure, Figure]:
     """Plot finetuning confidence/accurac/proportion plot and
     swarmplot of prediction at confidence > `filt_conf`
 
     Args:
-        df (pd.DataFrame): Dataframe from finetune MC-Dropout
+        df (pd.DataFrame): Dataframe from finetune confidence
         filt_conf (float): Confidence for swarmplot filter
 
     Returns:
-        tuple[Figure, Figure]: Confidence plot, Swarm filter plot
+        Figure: Swarm filter plot
     """
-    accs = []
-    props = []
-    x = np.arange(0, 1, 0.01)
-    for i in x:
-        (a, p) = get_acc_prop(df, confidence=i)
-        accs.append(a)
-        props.append(p)
-
-    confidence_fig = plt.figure(figsize=(6, 5))
-    confidence = confidence_fig.add_subplot(1, 1, 1)
-    confidence.plot(x, accs, label="accuracy")
-    confidence.plot(x, props, label="kept proportion")
-    confidence.set_xlabel("Confidence threshold (%)")
-    confidence.legend()
-
     filtered_fig = plt.figure(figsize=(6, 5))
     filtered = filtered_fig.add_subplot(1, 1, 1)
-
-    sb.swarmplot(
-        df[df["confidence"] >= filt_conf], x="label", y="max_classe", ax=filtered
+    sb.stripplot(
+        df[df["confidence"] >= filt_conf],
+        x="label",
+        y="max_classe",
+        ax=filtered,
     )
-    return confidence_fig, filtered_fig
+    return filtered_fig
 
 
 def transfer_mcdropout(
@@ -241,7 +205,15 @@ def transfer_mcdropout(
         pl_module=pl_module, dataloader=dataloader, n_preds=n_preds, label=label
     )
     df = finetune_pred_to_df(*mcdrop_res)
-    confidence_fig, filtered_fig = finetune_confidence_plots(df)
+    conf_df = confidence_finetune(df)
+    confidence_fig = conf.plot_confidence(
+        conf_df=conf_df,
+        threshold_label="threshold_confidence",
+        metric_label="balanced_accuracy",
+        threshold_axis="Threshold Confidence",
+        metric_axis="Balanced Accuracy",
+    )
+    filtered_fig = finetune_filter_plot(df)
 
     if experiment is not None and log_figs:
         experiment.log_table("mcdropout-res.csv", df)
@@ -259,7 +231,7 @@ def transfer_mcdropout(
             "filtered",
         )
 
-    return df
+    return df, conf_df, confidence_fig, filtered_fig
 
 
 def pretrain_mcdropout(

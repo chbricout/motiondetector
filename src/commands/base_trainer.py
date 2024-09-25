@@ -4,22 +4,24 @@ Used as baseline training technic
 """
 
 import logging
+import os
 import shutil
 import tempfile
 import random
 from typing import Type
+from lightning.pytorch.callbacks import ModelCheckpoint
 import lightning
 import lightning.pytorch.loggers
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from src import config
 from src.dataset.mrart.mrart_dataset import MRArtDataModule
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
-from src.config import IM_SHAPE
-from src.training.eval import SaveBestCheckpoint
 from src.training.scratch_logic import (
     AMPSCZScratchTask,
     MRArtScratchTask,
     TrainScratchTask,
 )
+from src.utils.log import get_run_dir
 from src.utils.mcdropout import transfer_mcdropout
 from src.utils.task import EnsureOneProcess
 
@@ -48,6 +50,11 @@ def launch_train_from_scratch(
     """
     assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
 
+    run_name = f"scratch-{model}-{run_num}"
+    os.makedirs("model_report", exist_ok=True)
+    save_model_path = os.path.join("model_report", run_name)
+    os.makedirs(save_model_path, exist_ok=True)
+
     task: Type[TrainScratchTask] = None
     datamodule: Type[lightning.LightningDataModule] = None
     if dataset == "MRART":
@@ -58,7 +65,7 @@ def launch_train_from_scratch(
         task = AMPSCZScratchTask
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
-        api_key="WmA69YL7Rj2AfKqwILBjhJM3k",
+        api_key=config.COMET_API_KEY,
         project_name=f"baseline-{dataset}",
         experiment_name=f"{model}-{run_num}",
     )
@@ -66,23 +73,24 @@ def launch_train_from_scratch(
         seed = random.randint(1, 10000)
     comet_logger.log_hyperparams({"seed": seed, "model": model, "run_num": run_num})
     comet_logger.experiment.log_code(file_name="src/commands/base_trainer.py")
+    comet_logger.experiment.log_code(file_name="src/training/scratch_logic.py")
 
     tempdir = tempfile.TemporaryDirectory()
 
     net = task(
         model_class=model,
-        im_shape=IM_SHAPE,
+        im_shape=config.IM_SHAPE,
         lr=learning_rate,
         dropout_rate=dropout_rate,
         batch_size=batch_size,
     )
 
-    checkpoint = SaveBestCheckpoint(monitor="val_balanced_accuracy", mode="max")
+    checkpoint = ModelCheckpoint(monitor="val_balanced_accuracy", mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=[0],
+        devices=[1],
         accelerator="gpu",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
@@ -95,6 +103,14 @@ def launch_train_from_scratch(
     trainer.fit(net, datamodule=datamodule(batch_size))
 
     with EnsureOneProcess(trainer):
+        logging.warning("Logging pretrain model")
+        comet_logger.experiment.log_model(
+            name=net.model.__class__.__name__,
+            file_or_folder=checkpoint.best_model_path,
+        )
+        shutil.copy(checkpoint.best_model_path, save_model_path)
+        logging.warning("Pretrained model uploaded, saved at : %s", save_model_path)
+
         best_net = task.load_from_checkpoint(checkpoint_path=checkpoint.best_model_path)
 
         transfer_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)

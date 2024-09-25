@@ -5,11 +5,19 @@ from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import balanced_accuracy_score, confusion_matrix,accuracy_score
 import seaborn as sb
 
 
-def separation_capacity(df: pd.DataFrame) -> tuple[float, Figure, list[float]]:
+def prediction_report(y_val, y_pred)->tuple[float, dict[int, float], plt.Figure]:
+    cm_fig = plot_confusion_mat(y_val, y_pred)
+    acc = balanced_accuracy_score(y_val, y_pred)
+    per_class_accuracy = [accuracy_score(np.array(y_val) == i, np.array(y_pred) == i) for i in range(np.max(y_val)+1)]
+    return acc, per_class_accuracy, cm_fig
+
+def separation_capacity(
+    df: pd.DataFrame, train_on: str = "train", test_on: str = "val"
+) -> tuple[float, Figure, list[float], plt.Figure]:
     """Determine the separation capacity by
     training the simplest Tree Classifier on
     train data and then prediction on validation
@@ -22,14 +30,14 @@ def separation_capacity(df: pd.DataFrame) -> tuple[float, Figure, list[float]]:
         tuple[float,Figure,list[float]]: accuracy,
         Figure to save and list of thresholds to classify
     """
-    train = df[df["mode"] == "train"]
-    val = df[df["mode"] == "val"]
+    train = df[df["mode"] == train_on]
+    val = df[df["mode"] == test_on]
 
     x_train = train["pred"].to_numpy()
     y_train = train["label"].to_numpy()
     x_val = val["pred"].to_numpy()
     y_val = val["label"].to_numpy()
-    accuracy, model = separation_capacity_tree(
+    model, val_pred = separation_capacity_tree(
         X_train=x_train, y_train=y_train, X_val=x_val, y_val=y_val
     )
 
@@ -46,12 +54,14 @@ def separation_capacity(df: pd.DataFrame) -> tuple[float, Figure, list[float]]:
     ax.set_xlabel("Prediction metric")
     ax.legend(title="label")
 
-    return accuracy, fig, thresholds
+    acc, per_class_accuracy,cm_fig = prediction_report(y_val, val_pred)
+    
+    return acc, per_class_accuracy, thresholds,fig, cm_fig
 
 
 def separation_capacity_tree(
     X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray
-) -> tuple[float, DecisionTreeClassifier]:
+) -> tuple[float, DecisionTreeClassifier, np.ndarray]:
 
     if len(X_train.shape) == 1:
         X_train = X_train.reshape(-1, 1)
@@ -66,5 +76,27 @@ def separation_capacity_tree(
         class_weight="balanced",
     )
     model.fit(X_train, y_train)
-    accuracy = balanced_accuracy_score(y_val, model.predict(X_val))
-    return accuracy, model
+    val_pred = model.predict(X_val)
+    return model, val_pred
+
+
+def plot_confusion_mat(y_val, val_pred):
+    cm = confusion_matrix(y_val, val_pred)
+
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(1, 1, 1)
+    sb.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["Pred 0", "Pred 1", "Pred 2"],
+        yticklabels=["True 0", "True 1", "True 2"],
+        ax=ax,
+    )
+
+    # Add labels and title
+    ax.set_ylabel("Actual")
+    ax.set_xlabel("Predicted")
+    ax.set_title("Confusion Matrix")
+    return fig

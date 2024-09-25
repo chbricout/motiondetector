@@ -11,6 +11,7 @@ from lightning import Trainer, LightningModule
 from lightning.pytorch.callbacks import ModelCheckpoint
 import pandas as pd
 import seaborn as sb
+from sklearn.metrics import balanced_accuracy_score
 import torch
 import tqdm
 from src.dataset.ampscz.ampscz_dataset import TransferValAMPSCZ, TransferTrainAMPSCZ
@@ -39,18 +40,22 @@ def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
             dl = DataLoader(dataset.from_env(load_tsf))
             all_mode_df.append(get_pred_from_pretrain(model, dl, mode))
         all_mode_df = pd.concat(all_mode_df)
-
-        acc, fig_thresh, thresholds = separation_capacity(all_mode_df)
+        acc, per_class_accuracy, thresholds,fig_thresh, _ = separation_capacity(all_mode_df)
         exp.log_metric(f"{data_name}-acc", acc)
         exp.log_table(f"{data_name}-pred.csv", all_mode_df)
         exp.log_other(f"{data_name}-thresholds-value", thresholds)
+        exp.log_other(f"{data_name}-per-class-accuracy", per_class_accuracy)
+
         fig_box = get_box_plot(all_mode_df["pred"], all_mode_df["label"])
         log_figure_comet(fig_box, f"{data_name}-calibration", exp=exp)
         log_figure_comet(fig_thresh, f"{data_name}-thresholds", exp=exp)
 
 
 def get_pred_from_pretrain(
-    model: PretrainingTask, dataloader: DataLoader, mode: str, label: str = "label"
+    model: PretrainingTask,
+    dataloader: DataLoader,
+    mode: str = "test",
+    label: str = "label",
 ) -> pd.DataFrame:
     """Compute prediction of a model on a dataloader
 
@@ -116,7 +121,7 @@ class SaveBestCheckpoint(ModelCheckpoint):
             pl_module (LightningModule): Trained Lightning module
             task (str): Pretraining task
         """
-        logging.warn("Logging pretrain model")
+        logging.warning("Logging pretrain model")
         comet_logger = pl_module.logger
         comet_logger.experiment.log_model(
             name=pl_module.model.__class__.__name__, file_or_folder=self.best_model_path

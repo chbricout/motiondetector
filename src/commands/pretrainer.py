@@ -55,7 +55,7 @@ def launch_pretrain(
         use_cutout(bool): flag to use cutout in model training
         task(str): Pretraining task to use
     """
-        
+
     run_name = f"pretraining-{task}-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
     os.makedirs("model_report", exist_ok=True)

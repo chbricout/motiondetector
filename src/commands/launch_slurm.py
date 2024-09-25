@@ -215,7 +215,7 @@ def submit_pretrain(
         time="48:00:00",
         account=account,
     )
- 
+
     cpy_extract_pretrain(job)
     cpy_transfer(job)
 
@@ -321,7 +321,7 @@ def submit_scratch(
         n_cpus=20,
         n_gpus=1,
         mem="100G",
-        time="5:00:00",
+        time="4:00:00",
     )
     cpy_transfer(job, dataset)
 
@@ -346,7 +346,7 @@ def submit_generate_ds():
     job.sbatch(f"srun python {get_full_cmd()}")
 
 
-def submit_test_pretrain(folder:str):
+def submit_test_pretrain(folder: str):
     job = create_job(
         "test-pretrain",
         None,
@@ -359,4 +359,3 @@ def submit_test_pretrain(folder:str):
     cpy_extract_pretrain(job)
 
     job.sbatch(f"srun python {get_full_cmd()}")
-

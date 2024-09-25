@@ -24,10 +24,8 @@ from src.training.transfer_logic import (
 )
 from src.utils.mcdropout import (
     bincount2d,
-    finetune_confidence_plots,
     transfer_mcdropout,
     finetune_pred_to_df,
-    get_acc_prop,
     predict_mcdropout,
     pretrain_mcdropout,
     pretrain_pred_to_df,
@@ -68,22 +66,20 @@ def test_pred_to_df(convert_func: Callable, has_bincount: bool):
 
 
 @pytest.mark.parametrize(
-    "n_classes,indicate_bins",
+    "n_classes",
     [
-        (2, False),
-        (3, True),
-        (3, False),
+        (2),
+        (3),
+        (3),
     ],
 )
-def test_bincount(n_classes: int, indicate_bins: bool):
+def test_bincount(n_classes: int):
     n_samples = 10
-    arr = torch.randint(0, n_classes, (n_samples,))
-    if indicate_bins:
-        res = bincount2d(arr, n_classes)
-    else:
-        res = bincount2d(arr)
+    n_indiv=20
+    arr = torch.randint(0, n_classes, (n_indiv, n_samples))
+    res = bincount2d(arr)
 
-    assert res.shape == (n_samples, n_classes)
+    assert res.shape == (n_indiv, n_classes)
 
 
 @pytest.mark.parametrize(
@@ -117,32 +113,8 @@ def test_predict_mc_dropout(
     assert len(identifiers) == n_samples
 
 
-@pytest.mark.parametrize(
-    "confidence",
-    np.arange(0, 1.05, 0.1),
-)
-def test_get_prop_acc(confidence: float):
-    data = np.array(
-        [[0, 0, 1, 1, 2, 2], [0, 1, 1, 2, 0, 2], [0.8, 0.7, 0.9, 0.1, 0.96, 0.2]]
-    )
-    df = pd.DataFrame(data.T, columns=["label", "max_classe", "confidence"])
-    acc, prop = get_acc_prop(df, confidence)
-    assert acc <= 1 and acc >= 0
-    assert prop <= 1 and prop >= 0
 
 
-@pytest.mark.parametrize(
-    "confidence",
-    [0, 1, 0.95],
-)
-def test_finetune_confidence_plots(confidence: float):
-    data = np.array(
-        [[0, 0, 1, 1, 2, 2], [0, 1, 1, 2, 0, 2], [0.8, 0.7, 0.9, 0.1, 0.96, 0.2]]
-    )
-    df = pd.DataFrame(data.T, columns=["label", "max_classe", "confidence"])
-    acc_fig, prop_fig = finetune_confidence_plots(df, confidence)
-    assert isinstance(acc_fig, Figure) and not acc_fig is None
-    assert isinstance(prop_fig, Figure) and not prop_fig is None
 
 
 @pytest.mark.parametrize(

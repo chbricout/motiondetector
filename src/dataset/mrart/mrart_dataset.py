@@ -104,8 +104,11 @@ class MRArtDataModule(BaseDataModule):
         )
 
     def setup(self, stage: str):
-        self.val_ds = self.get_embeddings(self.val_ds_class.from_env(self.load_tsf))
-        self.train_ds = self.get_embeddings(self.train_ds_class.from_env(self.load_tsf))
+        self.val_ds = self.val_ds_class.from_env(self.load_tsf)
+        self.train_ds = self.train_ds_class.from_env(self.load_tsf)
+        if self.pretrained_model:
+            self.val_ds = self.get_embeddings(self.val_ds)
+            self.train_ds = self.get_embeddings(self.train_ds)
         logging.info(
             "Train dataset contains %d datas  \nVal dataset contains %d",
             len(self.train_ds),
