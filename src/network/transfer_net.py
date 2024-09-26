@@ -80,7 +80,7 @@ class TransferMLP(Model):
     """
 
     def __init__(
-        self, input_size: int, output_size: int, dropout_rate: float = 0.8, pool=False
+        self, input_size: int, output_size: int, dropout_rate: float = 0.6, pool=False
     ):
         super().__init__(
             im_shape=input_size, num_classes=output_size, dropout_rate=dropout_rate

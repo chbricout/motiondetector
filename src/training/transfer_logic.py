@@ -2,7 +2,7 @@
 transfer learning on pretrained module"""
 
 import torch.optim
-from torch import nn
+from torch import Tensor, nn
 from src.network.transfer_net import TransferMLP
 from src.network.utils import init_model
 from src.training.common_logic import BaseFinalTrain
@@ -33,6 +33,14 @@ class TransferTask(BaseFinalTrain):
     def train_forward(self,x: torch.Tensor) -> torch.Tensor:
         """Used for transfer learning on encoding only"""
         return self.model(x)
+    
+    def classify(self, embedding: Tensor) -> Tensor:
+        classes= self.model(embedding)
+        raw= self.output_pipeline(classes)
+        return self.raw_to_pred(raw)
+    
+    def encode(self, x: Tensor) -> Tensor:
+        return self.encoder(x)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         encoding = self.encoder(x)

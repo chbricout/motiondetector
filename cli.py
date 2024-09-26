@@ -9,7 +9,8 @@ from src.commands.test_models import (
     test_pretrain_model_mrart_data,
     test_pretrain_model_pretrain_data,
     test_scratch_in_folder,
-    test_scratch_model
+    test_scratch_model,
+    test_transfer_in_folder
 )
 from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
@@ -427,6 +428,13 @@ def scratch_test(directory: str, file: str):
         test_scratch_model(ckpt_path=file)
     else:
         test_scratch_in_folder(directory)
+
+@test.command("transfer")
+@click.option(
+    "-d", "--directory", help="Directory containing models", type=str, default=None
+)
+def scratch_test(directory: str):
+    test_transfer_in_folder(directory)
 
 
 

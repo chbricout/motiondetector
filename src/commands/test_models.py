@@ -14,6 +14,7 @@ from src.dataset.pretraining.pretraining_dataset import (
 from src.training.common_logic import BaseFinalTrain
 from src.training.pretrain_logic import PretrainingTask
 from src.training.scratch_logic import MRArtScratchTask
+from src.training.transfer_logic import MrArtTransferTask
 from src.transforms.load import FinetuneTransform, LoadSynth
 from src.utils import metrics, task as task_utils
 import src.training.eval as teval
@@ -182,5 +183,18 @@ def test_scratch_model(module:BaseFinalTrain, report_dir:str):
     conf_df.to_csv(path.join(report_dir,"confidence.csv"))
     confidence_fig.savefig(path.join(report_dir, "confidence"))
     filtered_fig.savefig(path.join(report_dir, "filtered"))
+
+def test_transfer_in_folder(folder: str):
+    models_ckpt = glob.glob(path.join(folder, "*.ckpt"))
+
+    for ckpt in models_ckpt:
+        print(f"Start Evaluation for {ckpt}")
+        exp = path.basename(ckpt).split(".")[0]
+        report_dir = path.join("test_report", "transfer", exp)
+        if path.exists(report_dir):
+            shutil.rmtree(report_dir)
+        os.makedirs(report_dir)
+        module =MrArtTransferTask.load_from_checkpoint(checkpoint_path=ckpt)
+        test_scratch_model(module=module,  report_dir=report_dir)
 
 
