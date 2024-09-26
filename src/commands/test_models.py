@@ -3,20 +3,17 @@ from os import path
 import os
 import shutil
 
-from matplotlib import pyplot as plt
 import pandas as pd
 from sklearn.metrics import mean_squared_error, r2_score
 from torch.utils.data import DataLoader, Dataset
-import seaborn as sb
 
 from src.dataset.mrart.mrart_dataset import TestMrArt, TrainMrArt
 from src.dataset.pretraining.pretraining_dataset import (
     PretrainTest,
-    PretrainVal,
-    PretrainTrain,
 )
 from src.training.common_logic import BaseFinalTrain
 from src.training.pretrain_logic import PretrainingTask
+from src.training.scratch_logic import MRArtScratchTask
 from src.transforms.load import FinetuneTransform, LoadSynth
 from src.utils import metrics, task as task_utils
 import src.training.eval as teval
@@ -33,7 +30,7 @@ def test_pretrain_in_folder(folder: str):
         test_pretrain_model_mrart_data(module=module,  report_dir=report_dir)
 
 
-def load_from_ckpt(ckpt_path: str):
+def load_pretrain_from_ckpt(ckpt_path: str):
     base_name = path.basename(ckpt_path)
     _, task, *_ = base_name.split("-")
     task_class = task_utils.str_to_task(task)
@@ -41,7 +38,7 @@ def load_from_ckpt(ckpt_path: str):
 
 
 def setup_test_pretrain(ckpt_path: str) -> tuple[PretrainingTask, str, str]:
-    module, task = load_from_ckpt(ckpt_path=ckpt_path)
+    module, task = load_pretrain_from_ckpt(ckpt_path=ckpt_path)
     print(f"Start Evaluation for {ckpt_path}")
 
     exp = path.basename(ckpt_path).split(".")[0]
@@ -136,19 +133,54 @@ def test_pretrain_model_mrart_data(module:PretrainingTask, report_dir:str):
     )
     recap.to_csv(path.join(report_dir,"mrart_recap.csv"))
 
-def test_mrart_model(module:BaseFinalTrain, report_dir:str):
+
+def test_scratch_in_folder(folder: str):
+    models_ckpt = glob.glob(path.join(folder, "*.ckpt"))
+
+    for ckpt in models_ckpt:
+        print(f"Start Evaluation for {ckpt}")
+        exp = path.basename(ckpt).split(".")[0]
+        report_dir = path.join("test_report", "scratch", exp)
+        if path.exists(report_dir):
+            shutil.rmtree(report_dir)
+        os.makedirs(report_dir)
+        module =MRArtScratchTask.load_from_checkpoint(checkpoint_path=ckpt)
+        test_scratch_model(module=module,  report_dir=report_dir)
+
+
+def test_scratch_model(module:BaseFinalTrain, report_dir:str):
+
     dl = DataLoader(TestMrArt.from_env(FinetuneTransform()))
-    test_pred_df = teval.get_pred_from_pretrain(module, dl)
-    
-    acc, per_class_f1, cm_fig= metrics.prediction_report(test_pred_df['label'], test_pred_df['pred'])
+    simple_df = teval.get_pred_from_pretrain(module, dl)
+    dropout_df, conf_df, confidence_fig, filtered_fig = mcdropout.transfer_mcdropout(module, dl, n_preds=1000, log_figs=False)
 
-    cm_fig.tight_layout()
-    cm_fig.savefig(path.join(report_dir, "mr-art-confusion"))
+    base_metrics=[]
+    for df, source, pred_label in [
+        (simple_df, "simple", "pred"),
+        (dropout_df, "mcdropout", "mean"),
+    ]:
+        acc, per_class_f1, cm_fig= metrics.prediction_report(df['label'], df[pred_label].astype(int))
+        base_metrics.append(
+            [
+                source,
+                acc,
+                *per_class_f1
+            ]
+        )
+        cm_fig.tight_layout()
+        cm_fig.savefig(path.join(report_dir, f"{source}-mr-art-confusion"))
 
-    test_pred_df.to_csv(path.join(report_dir, "test-pred.csv"))
 
     recap=pd.DataFrame(
-        [[acc,  per_class_f1[0], per_class_f1[1], per_class_f1[2]]],
-        columns=["balanced_accuracy", "f1_0", "f1_1", "f1_2"],
+        base_metrics,
+        columns=["source", "balanced_accuracy", "f1_0", "f1_1", "f1_2"],
     )
     recap.to_csv(path.join(report_dir,"mrart_recap.csv"))
+
+    dropout_df.to_csv(path.join(report_dir,"dropout.csv"))
+    simple_df.to_csv(path.join(report_dir, "test-pred.csv"))
+    conf_df.to_csv(path.join(report_dir,"confidence.csv"))
+    confidence_fig.savefig(path.join(report_dir, "confidence"))
+    filtered_fig.savefig(path.join(report_dir, "filtered"))
+
+

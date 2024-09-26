@@ -123,6 +123,9 @@ def finetune_pred_to_df(
     df["max_classe"] = np.argmax(count, axis=1)
     df["confidence"] = np.max(count, axis=1) / np.sum(count, axis=1)
     df["label"] = df["label"].astype(int)
+    df["mean"] = df["mean"].astype(float)
+    df["std"] = df["std"].astype(float)
+
 
     return df
 
@@ -185,7 +188,7 @@ def transfer_mcdropout(
     label: str = "label",
     n_preds: int = 100,
     log_figs: bool = True,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame, plt.Figure, plt.Figure]:
     """Evaluate Monte Carlo Dropout bin count for finetune models
 
     Args:
@@ -200,6 +203,10 @@ def transfer_mcdropout(
 
     Returns:
         pd.DataFrame: Dataframe with full results (logged on comet if experiment)
+        pd.DataFrame: Dataframe with confidence results (logged on comet if experiment)
+        plt.Figure: Confidence to Kept proportion figure
+        plt.Figure: Data filtered on confidence figure
+
     """
     mcdrop_res = predict_mcdropout(
         pl_module=pl_module, dataloader=dataloader, n_preds=n_preds, label=label

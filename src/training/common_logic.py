@@ -52,6 +52,12 @@ class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
     model: Model
     batch_size: int
 
+    def train_forward(self,x: torch.Tensor) -> torch.Tensor:
+        """Used for transfer learning on encoding only"""
+        
+        return self.forward(x)
+
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         raw_output = self.model(x)
         return self.output_pipeline(raw_output)
@@ -84,7 +90,7 @@ class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
         volumes: MetaTensor = batch["data"]
         labels = batch["label"]
 
-        predictions = self.forward(volumes)
+        predictions = self.train_forward(volumes)
 
         label_loss = self.label_loss(predictions, labels)
         self.log("train_loss", label_loss.item(), batch_size=self.batch_size)
@@ -118,10 +124,11 @@ class BaseFinalTrain(EncodeClassifyTask):
     label: list[float | int] = []
     prediction: list[float | int] = []
 
+   
     def validation_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
-        prediction = self.forward(volume)
+        prediction = self.train_forward(volume)
 
         label_loss = self.label_loss(prediction, label)
         self.log("val_loss", label_loss.item(), batch_size=self.batch_size)

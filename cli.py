@@ -1,3 +1,5 @@
+from glob import glob
+import os
 import warnings
 import click
 
@@ -6,6 +8,8 @@ from src.commands.test_models import (
     test_pretrain_in_folder,
     test_pretrain_model_mrart_data,
     test_pretrain_model_pretrain_data,
+    test_scratch_in_folder,
+    test_scratch_model
 )
 from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
@@ -165,32 +169,35 @@ def pretrain(
 
 
 @cli.command()
-@task
+@click.option(
+    "-M",
+    "--pretrain_path",
+    help="Pretrain model to use",
+    type=str,
+)
 @max_epoch
 @learning_rate
 @dataset
 @batch_size
-@model
 @run_num
 @seed
 @slurm
 def transfer(
-    task, max_epochs, learning_rate, dataset, batch_size, model, run_num, seed, slurm
+    pretrain_path, max_epochs, learning_rate, dataset, batch_size, run_num, seed, slurm
 ):
     if slurm:
         submit_transfer(
-            model=model,
+            model=pretrain_path,
             array=run_num,
         )
     else:
         lightning_logger()
         launch_transfer(
-            pretrain_task=task,
+            pretrain_path=pretrain_path,
             max_epochs=max_epochs,
             learning_rate=learning_rate,
             dataset=dataset,
             batch_size=batch_size,
-            model=model,
             run_num=run_num,
             seed=seed,
         )
@@ -332,31 +339,27 @@ transfer_confs = [
 
 
 @launch_exp.command()
-def transfer():
-    for model in transfer_confs:
-        for dataset in ["MRART", "AMPSCZ"]:
+@click.option(
+    "-d",
+    "--directory",
+    help="Directory with pretrained models",
+    type=str,
+)
+def transfer(pretrain_path:str):
+    for model in glob(os.path.join(pretrain_path, '*.ckpt')):
+        for dataset in ["MRART"]:
             submit_transfer(
-                model["name"],
-                1,
+                model,
+                range(1,6),
                 f"cli.py transfer   \
-                    --task MOTION \
-                    --batch_size {model['batch_size']}\
-                    --model {model['name']}\
-                    --learning_rate 5e-6\
-                    --dataset {dataset} ",
+                    --batch_size 24\
+                    --pretrain_path {model}\
+                    --learning_rate 1e-3\
+                    --dataset {dataset} \
+                    --max_epochs 100000",
                 dataset=dataset,
             )
-            submit_transfer(
-                model["name"],
-                1,
-                f"cli.py transfer   \
-                    --task SSIM \
-                    --batch_size {model['batch_size']}\
-                    --model {model['name']}\
-                    --learning_rate 1e-5\
-                    --dataset {dataset} ",
-                dataset=dataset,
-            )
+           
 
 @launch_exp.command()
 def train():
@@ -413,6 +416,18 @@ def pretrain_test(directory: str, file: str, slurm: bool):
             test_pretrain_model_mrart_data(ckpt_path=file)
         else:
             test_pretrain_in_folder(directory)
+        
+@test.command("scratch")
+@click.option(
+    "-d", "--directory", help="Directory containing models", type=str, default=None
+)
+@click.option("-f", "--file", help="File containing model", type=str, default=None)
+def scratch_test(directory: str, file: str):
+    if file is not None:
+        test_scratch_model(ckpt_path=file)
+    else:
+        test_scratch_in_folder(directory)
+
 
 
 if __name__ == "__main__":

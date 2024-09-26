@@ -2,6 +2,7 @@
 Module to launch different standard command through slurm jobs
 """
 
+from os import path
 import sys
 import re
 from collections.abc import Sequence
@@ -256,7 +257,7 @@ def cpy_transfer(job: Slurm, dataset: str = ""):
 
 
 def submit_transfer(
-    model: str,
+    pretrain_path: str,
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
     dependency: str | None = None,
@@ -276,9 +277,9 @@ def submit_transfer(
             (used for job name and output). Defaults to "".
     """
     job = create_job(
-        get_name("transfer", model, array),
+        get_name("transfer", path.basename(pretrain_path), array),
         array,
-        get_output("transfer", model, array) + f"_{dataset}",
+        get_output("transfer", path.basename(pretrain_path), array) + f"_{dataset}",
         n_cpus=20,
         n_gpus=1,
         mem="100G",
