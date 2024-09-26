@@ -345,8 +345,8 @@ transfer_confs = [
     help="Directory with pretrained models",
     type=str,
 )
-def transfer(pretrain_path:str):
-    for model in glob(os.path.join(pretrain_path, '*.ckpt')):
+def transfer(directory:str):
+    for model in glob(os.path.join(directory, '*.ckpt')):
         for dataset in ["MRART"]:
             submit_transfer(
                 model,
