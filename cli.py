@@ -188,7 +188,7 @@ def transfer(
 ):
     if slurm:
         submit_transfer(
-            model=pretrain_path,
+            pretrain_path=pretrain_path,
             array=run_num,
         )
     else:
@@ -289,7 +289,7 @@ def launch_exp():
 
 
 run_confs = [
-    # {"name": "VIT", "batch_size": 18},
+    {"name": "VIT", "batch_size": 18},
     {"name": "SFCN", "batch_size": 24},
     {"name": "CONV5_FC3", "batch_size": 24},
     {"name": "RES", "batch_size": 24},
