@@ -3,10 +3,11 @@ transfer learning on pretrained module"""
 
 import torch.optim
 from torch import Tensor, nn
+
+from src.network.archi import Encoder, Model
 from src.network.transfer_net import TransferMLP
 from src.network.utils import init_model
 from src.training.common_logic import BaseFinalTrain
-from src.network.archi import Encoder, Model
 
 
 class TransferTask(BaseFinalTrain):
@@ -18,27 +19,29 @@ class TransferTask(BaseFinalTrain):
     batch_size: int
     output_size: int
 
-    def __init__(self, input_size: int,encoder:Encoder, lr=1e-5, batch_size=14, pool=False):
+    def __init__(
+        self, input_size: int, encoder: Encoder, lr=1e-5, batch_size=14, pool=False
+    ):
         super().__init__()
         self.lr = lr
         self.input_size = input_size
         self.encoder = encoder
         for weigth in self.encoder.parameters():
-            weigth.requires_grad=False
+            weigth.requires_grad = False
         self.model = TransferMLP(self.input_size, self.output_size, pool=pool)
         init_model(self.model)
         self.batch_size = batch_size
         self.save_hyperparameters()
-    
-    def train_forward(self,x: torch.Tensor) -> torch.Tensor:
+
+    def train_forward(self, x: torch.Tensor) -> torch.Tensor:
         """Used for transfer learning on encoding only"""
         return self.model(x)
-    
+
     def classify(self, embedding: Tensor) -> Tensor:
-        classes= self.model(embedding)
-        raw= self.output_pipeline(classes)
+        classes = self.model(embedding)
+        raw = self.output_pipeline(classes)
         return self.raw_to_pred(raw)
-    
+
     def encode(self, x: Tensor) -> Tensor:
         return self.encoder(x)
 

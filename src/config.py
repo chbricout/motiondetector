@@ -1,3 +1,4 @@
+# %%
 """
 File to regroup important constant for the project
 """

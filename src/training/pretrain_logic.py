@@ -191,7 +191,7 @@ class BinaryPretrainingTask(PretrainingTask):
 
     hard_label_tag = "motion_binary"
     output_pipeline = nn.Sequential(nn.Flatten(start_dim=0))
-    label_loss = nn.BCEWithLogitsLoss(pos_weight=torch.as_tensor(1))
+    label_loss = nn.BCEWithLogitsLoss()
 
     def __init__(
         self,
@@ -246,3 +246,9 @@ class BinaryPretrainingTask(PretrainingTask):
         )
         self.label = []
         self.prediction = []
+
+    def predict_step(self, batch, _):
+        volume = batch["data"]
+        prediction = self.forward(volume)
+
+        return prediction.sigmoid().flatten()

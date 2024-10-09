@@ -48,7 +48,12 @@ class BasePretrain(Dataset, BaseDataset):
         Args:
             task (str, optional): pretraining task. Defaults to "MOTION".
         """
-        self.file["label"] = self.file[label_from_task(task)].astype(float)
+        if task=="BINARY":
+            self.file["label"] = self.file[label_from_task(task)].astype(int)
+        else:
+            self.file["label"] = self.file[label_from_task(task)].astype(float)
+
+
 
 
 class PretrainTrain(BasePretrain):

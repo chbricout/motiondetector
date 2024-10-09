@@ -131,3 +131,94 @@ class MRArtDataModule(BaseDataModule):
                     cache_ds.append(batch)
         logging.error(f"Output shape {cache_ds[0]['data'].shape}")
         return cache_ds
+
+
+
+class TrainUnbalancedMrArt(BaseMrArt):
+    """
+    Pytorch Dataset to use the Unbalanced train split of MR-ART (in finetune).
+    It relies on the "unbalanced_train_preproc.csv" file
+    """
+
+    csv_path = "src/dataset/mrart/unbalanced_train_preproc.csv"
+
+
+class ValUnbalancedMrArt(BaseMrArt):
+    """
+    Pytorch Dataset to use the Unbalanced validation split of MR-ART (in finetune).
+    It relies on the "unbalanced_val_preproc.csv" file
+    """
+
+    csv_path = "src/dataset/mrart/unbalanced_val_preproc.csv"
+
+
+class TestUnbalancedMrArt(BaseMrArt):
+    """
+    Pytorch Dataset to use the Unbalanced test split of MR-ART (in finetune).
+    It relies on the "unbalanced_test_preproc.csv" file
+    """
+
+    csv_path = "src/dataset/mrart/unbalanced_test_preproc.csv"
+
+
+class UnbalancedMRArtDataModule(MRArtDataModule):
+    """
+    Lightning data module to use Unbalanced MR-ART data in lightning trainers (for finetune)
+    """
+
+    def __init__(self, batch_size: int = 32, pretrained_model: Model | None = None):
+        super().__init__(batch_size)
+
+        self.load_tsf: Callable = FinetuneTransform()
+        self.val_ds_class = ValUnbalancedMrArt
+        self.train_ds_class = TrainUnbalancedMrArt
+        self.pretrained_model = pretrained_model
+    
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_ds,
+            batch_size=self.batch_size,
+            num_workers=25,
+            prefetch_factor=3,
+            shuffle=True,
+            pin_memory=True,
+            persistent_workers=True,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_ds,
+            batch_size=self.batch_size,
+            num_workers=14,
+            pin_memory=True,
+            persistent_workers=True,
+        )
+
+    def setup(self, stage: str):
+        self.val_ds = self.val_ds_class.from_env(self.load_tsf)
+        self.train_ds = self.train_ds_class.from_env(self.load_tsf)
+        if self.pretrained_model:
+            self.val_ds = self.get_embeddings(self.val_ds)
+            self.train_ds = self.get_embeddings(self.train_ds)
+        logging.info(
+            "Train dataset contains %d datas  \nVal dataset contains %d",
+            len(self.train_ds),
+            len(self.val_ds),
+        )
+
+    def get_embeddings(self, dataset: CacheDataset):
+        cache_ds = []
+        self.pretrained_model.cuda()
+        with torch.no_grad():
+            for batch in tqdm.tqdm(dataset):
+                with torch.autocast(device_type="cuda"):
+                    if isinstance(batch["data"], torch.IntTensor):
+                        batch["data"] = batch["data"].as_tensor()
+                    batch["data"] = batch["data"].unsqueeze(0).cuda()
+
+                    batch["data"] = (
+                        self.pretrained_model(batch["data"]).cpu().squeeze(0)
+                    )
+                    cache_ds.append(batch)
+        logging.error(f"Output shape {cache_ds[0]['data'].shape}")
+        return cache_ds

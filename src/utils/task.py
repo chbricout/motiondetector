@@ -1,8 +1,11 @@
 """Module to define any utility function to use tasks"""
 
+from os import path
 from typing import Type
 import sys
 from lightning import Trainer
+import torch
+from src import config
 from src.training.pretrain_logic import (
     BinaryPretrainingTask,
     MotionPretrainingTask,
@@ -74,5 +77,16 @@ def str_to_task(task_str: str) -> Type[PretrainingTask]:
         task_class = SSIMPretrainingTask
     elif task_str == "BINARY":
         task_class = BinaryPretrainingTask
-    assert not task_class is None, "Error, task doesnt exists"
+    assert not task_class is None, f"Error, task {task_str} doesnt exists"
     return task_class
+
+def load_pretrain_from_ckpt(ckpt_path: str):
+    base_name = path.basename(ckpt_path)
+    print(base_name)
+    model_str, task, *_ = base_name.split("-")
+    task_class = str_to_task(task)
+    checkpoint = torch.load(ckpt_path)
+    checkpoint['state_dict'].pop('label_loss.pos_weight', None)  # Safely removes the key
+    module = task_class(model_str,config.IM_SHAPE)
+    module.load_state_dict(checkpoint['state_dict'])
+    return module, task

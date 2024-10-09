@@ -6,9 +6,11 @@ Medical Image Analysis, 68, 101871. https://doi.org/10.1016/j.media.2020.101871
 """
 
 from collections.abc import Sequence
+
 import torch
 from torch import nn
-from src.network.archi import Encoder, Classifier, Model
+
+from src.network.archi import Classifier, Encoder, Model
 
 
 class SFCNBlock(nn.Module):
@@ -111,4 +113,10 @@ class SFCNModel(Model):
         self.encoder = SFCNEncoder(self.im_shape, self.dropout_rate)
         self.classifier = SFCNClassifier(
             self.encoder.latent_shape[1:], self.num_classes, self.dropout_rate
+        )
+
+    def change_classifier(self, num_classes):
+        self.num_classes = num_classes
+        self.classifier = SFCNClassifier(
+            self.encoder.latent_shape[1:], self.num_classes, 0.6
         )

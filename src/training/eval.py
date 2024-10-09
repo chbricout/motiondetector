@@ -56,6 +56,7 @@ def get_pred_from_pretrain(
     dataloader: DataLoader,
     mode: str = "test",
     label: str = "label",
+    cuda=True
 ) -> pd.DataFrame:
     """Compute prediction of a model on a dataloader
 
@@ -67,13 +68,18 @@ def get_pred_from_pretrain(
     Returns:
         pd.DataFrame: results dataframe containing "pred", "identifier" and "label
     """
-    model = model.cuda().eval()
+    if cuda:
+        model = model.cuda().eval()
+    else:
+        model = model.cpu().eval()
+
     preds = []
     labels = []
     ids = []
     with torch.no_grad():
         for idx, batch in enumerate(tqdm.tqdm(dataloader)):
-            batch["data"] = batch["data"].cuda()
+            if cuda:
+                batch["data"] = batch["data"].cuda()
             prediction = model.predict_step(batch, idx)
             prediction = prediction.cpu()
 

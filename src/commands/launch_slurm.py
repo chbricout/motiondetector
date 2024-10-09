@@ -249,7 +249,7 @@ def cpy_transfer(job: Slurm, dataset: str = ""):
     """
     to_load = ["MRART-Preproc", "AMPSCZ-Preproc"]
 
-    if dataset == "MRART":
+    if dataset == "MRART" or dataset == "UNBALANCED-MRART":
         to_load = ["MRART-Preproc"]
     elif dataset == "AMPSCZ":
         to_load = ["AMPSCZ-Prepoc"]
@@ -291,9 +291,8 @@ def submit_transfer(
         job.set_dependency(f"afterok:${dependency}")
     if cmd is None:
         cmd = get_full_cmd()
-    else:
-        if not "--run_num" in cmd and array is not None:
-            cmd += " --run_num $SLURM_ARRAY_TASK_ID"
+    if not "--run_num" in cmd and array is not None:
+        cmd += " --run_num $SLURM_ARRAY_TASK_ID"
 
     job.sbatch(f"srun python {cmd}")
 
@@ -332,8 +331,8 @@ def submit_scratch(
         if not "--run_num" in cmd and array is not None:
             cmd += " --run_num $SLURM_ARRAY_TASK_ID"
 
-    print(job)
     job.sbatch(f"srun python {cmd}")
+    print(job)
 
 
 def submit_generate_ds():

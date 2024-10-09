@@ -8,27 +8,27 @@ import random
 import shutil
 from typing import Type
 
-import torch
 import lightning
 import lightning.pytorch.loggers
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 from src import config
-from src.dataset.mrart.mrart_dataset import MRArtDataModule
+from src.config import PROJECT_NAME
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
-from src.config import  PROJECT_NAME
+from src.dataset.mrart.mrart_dataset import MRArtDataModule, UnbalancedMRArtDataModule
 from src.network.archi import Encoder
 from src.training.pretrain_logic import PretrainingTask
 from src.training.transfer_logic import (
-    TransferTask,
-    MrArtTransferTask,
     AMPSCZTransferTask,
+    MrArtTransferTask,
+    TransferTask,
 )
 from src.utils.comet import get_pretrain_task
 from src.utils.log import get_run_dir
 from src.utils.mcdropout import transfer_mcdropout
-from src.utils.task import EnsureOneProcess, str_to_task
+from src.utils.task import EnsureOneProcess, load_pretrain_from_ckpt, str_to_task
 
 
 def launch_transfer(
@@ -52,10 +52,12 @@ def launch_transfer(
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
     """
-    assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
-    model, pretrain_task, _ = os.path.basename(pretrain_path).split('-')
+    assert dataset in ("MRART", "AMPSCZ", "UNBALANCED-MRART"), "Dataset does not exist"
+    project_name = PROJECT_NAME if dataset != "UNBALANCED-MRART" else "unbalanced-mrart"
+
+    model, pretrain_task, _ = os.path.basename(pretrain_path).split("-")
     run_name = f"transfer-{dataset}-{model}-{pretrain_task}-{run_num}"
-    run_dir = get_run_dir(PROJECT_NAME, run_name)
+    run_dir = get_run_dir(project_name, run_name)
     os.makedirs("model_report", exist_ok=True)
     save_model_path = os.path.join("model_report", run_name)
     os.makedirs(save_model_path, exist_ok=True)
@@ -65,13 +67,16 @@ def launch_transfer(
     if dataset == "MRART":
         datamodule = MRArtDataModule
         task = MrArtTransferTask
+    elif dataset == "UNBALANCED-MRART":
+        datamodule = UnbalancedMRArtDataModule
+        task = MrArtTransferTask
     elif dataset == "AMPSCZ":
         datamodule = AMPSCZDataModule
         task = AMPSCZTransferTask
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=config.COMET_API_KEY,
-        project_name=PROJECT_NAME,
+        project_name=project_name,
         experiment_name=run_name,
     )
 
@@ -84,9 +89,8 @@ def launch_transfer(
     comet_logger.experiment.log_code(file_name="src/commands/transfer.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    task_class: Type[PretrainingTask] = str_to_task(pretrain_task)
-    pretrained = task_class.load_from_checkpoint(checkpoint_path=pretrain_path)
-    
+    pretrained, _ = load_pretrain_from_ckpt(pretrain_path)
+
     encoding_model: Encoder = pretrained.model.encoder
     net = task(
         input_size=encoding_model.latent_shape,

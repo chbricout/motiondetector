@@ -5,17 +5,19 @@ Used as baseline training technic
 
 import logging
 import os
+import random
 import shutil
 import tempfile
-import random
 from typing import Type
-from lightning.pytorch.callbacks import ModelCheckpoint
+
 import lightning
 import lightning.pytorch.loggers
+from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+
 from src import config
-from src.dataset.mrart.mrart_dataset import MRArtDataModule
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
+from src.dataset.mrart.mrart_dataset import MRArtDataModule, UnbalancedMRArtDataModule
 from src.training.scratch_logic import (
     AMPSCZScratchTask,
     MRArtScratchTask,
@@ -48,11 +50,17 @@ def launch_train_from_scratch(
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
     """
-    assert dataset in ("MRART", "AMPSCZ"), "Dataset does not exist"
+    assert dataset in ("MRART", "AMPSCZ", "UNBALANCED-MRART"), "Dataset does not exist"
+    project_name = (
+        f"baseline-{dataset}" if dataset != "UNBALANCED-MRART" else "unbalanced-mrart"
+    )
 
     run_name = f"scratch-{model}-{run_num}"
+    report_name = f"{run_name}-{dataset}"
     os.makedirs("model_report", exist_ok=True)
-    save_model_path = os.path.join("model_report", run_name)
+    save_model_path = os.path.join("model_report", report_name)
+    if os.path.exists(save_model_path):
+        shutil.rmtree(save_model_path)
     os.makedirs(save_model_path, exist_ok=True)
 
     task: Type[TrainScratchTask] = None
@@ -60,13 +68,16 @@ def launch_train_from_scratch(
     if dataset == "MRART":
         datamodule = MRArtDataModule
         task = MRArtScratchTask
+    elif dataset == "UNBALANCED-MRART":
+        datamodule = UnbalancedMRArtDataModule
+        task = MRArtScratchTask
     elif dataset == "AMPSCZ":
         datamodule = AMPSCZDataModule
         task = AMPSCZScratchTask
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=config.COMET_API_KEY,
-        project_name=f"baseline-{dataset}",
+        project_name=project_name,
         experiment_name=f"{model}-{run_num}",
     )
     if seed is None:

@@ -3,8 +3,9 @@ Module to define the common logic shared by all the defined Model.
 They all use a combination of Encoder and Classifier.
 """
 
-from collections.abc import Sequence
 import abc
+from collections.abc import Sequence
+
 import torch
 from torch import nn
 
@@ -143,3 +144,6 @@ class Model(abc.ABC, nn.Module):
         for m in self.modules():
             if m.__class__.__name__.startswith("Dropout"):
                 m.train()
+
+    def change_classifier(self, num_classes):
+        pass

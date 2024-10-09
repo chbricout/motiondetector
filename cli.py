@@ -10,7 +10,10 @@ from src.commands.test_models import (
     test_pretrain_model_pretrain_data,
     test_scratch_in_folder,
     test_scratch_model,
-    test_transfer_in_folder
+    test_transfer_in_folder,
+    test_unbalanced_pretrain_in_folder,
+    test_unbalanced_scratch_in_folder,
+    test_unbalanced_transfer_in_folder
 )
 from src.commands.transfer import launch_transfer
 from src.commands.generate_datasets import launch_generate_data
@@ -61,9 +64,9 @@ batch_size = click.option(
 )
 dataset = click.option(
     "--dataset",
-    help="Dataset for finetuning mode : MRART or AMPSCZ",
-    default=click.Choice(["MRART", "AMPSCZ"], case_sensitive=True),
-    type=str,
+    help="Dataset for finetuning mode : MRART, UNBALANCED-MRART or AMPSCZ",
+    default="MRART",
+    type=click.Choice(["MRART", "AMPSCZ", "UNBALANCED-MRART"], case_sensitive=True),
 )
 model = click.option(
     "--model",
@@ -189,7 +192,7 @@ def transfer(
     if slurm:
         submit_transfer(
             pretrain_path=pretrain_path,
-            array=run_num,
+            array=range(1,6),
         )
     else:
         lightning_logger()
@@ -346,24 +349,25 @@ transfer_confs = [
     help="Directory with pretrained models",
     type=str,
 )
-def transfer(directory:str):
+@dataset
+def transfer(directory:str, dataset:str):
     for model in glob(os.path.join(directory, '*.ckpt')):
-        for dataset in ["MRART"]:
-            submit_transfer(
-                model,
-                range(1,6),
-                f"cli.py transfer   \
-                    --batch_size 24\
-                    --pretrain_path {model}\
-                    --learning_rate 1e-3\
-                    --dataset {dataset} \
-                    --max_epochs 100000",
-                dataset=dataset,
-            )
+        submit_transfer(
+            model,
+            range(1,6),
+            f"cli.py transfer   \
+                --batch_size 24\
+                --pretrain_path {model}\
+                --learning_rate 1e-3\
+                --dataset {dataset} \
+                --max_epochs 100000",
+            dataset=dataset,
+        )
            
 
 @launch_exp.command()
-def train():
+@dataset
+def train(dataset:str):
     for model in transfer_confs:
         submit_scratch(
             model["name"],
@@ -374,8 +378,8 @@ def train():
                 --model {model['name']}\
                 --learning_rate 1e-5\
                 --dropout_rate 0.6\
-                --dataset MRART ",
-            dataset="MRART",
+                --dataset {dataset} ",
+            dataset=dataset,
         )
             
 
@@ -433,8 +437,30 @@ def scratch_test(directory: str, file: str):
 @click.option(
     "-d", "--directory", help="Directory containing models", type=str, default=None
 )
-def scratch_test(directory: str):
+def transfer_test(directory: str):
     test_transfer_in_folder(directory)
+
+@test.command("transfer-unbalanced")
+@click.option(
+    "-d", "--directory", help="Directory containing models", type=str, default=None
+)
+def transfer_unbalanced_test(directory: str):
+    test_unbalanced_transfer_in_folder(directory)
+
+@test.command("scratch-unbalanced")
+@click.option(
+    "-d", "--directory", help="Directory containing models", type=str, default=None
+)
+def scratch_unbalanced_test(directory: str):
+    test_unbalanced_scratch_in_folder(directory)
+
+@test.command("pretrain-unbalanced")
+@click.option(
+    "-d", "--directory", help="Directory containing models", type=str, default=None
+)
+def pretrain_unbalanced_test(directory: str):
+    test_unbalanced_pretrain_in_folder(directory)
+
 
 
 
