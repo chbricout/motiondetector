@@ -228,22 +228,29 @@ def get_duration_df_pretrain(experiments):
         ms = exp.get_metadata()["durationMillis"]
         model = exp.get_parameters_summary("model_class")["valueMax"]
         task = exp.get_parameters_summary("task")["valueMax"]
-        hours, minutes = ms_to_time(ms)
+        hours, minutes, seconds = ms_to_time(ms)
         durations.append(
-            (model, task, hours, minutes, f"{hours}:{str(minutes).zfill(2)}")
+            (
+                model,
+                task,
+                hours,
+                minutes,
+                seconds,
+                f"{hours}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}",
+            )
         )
     return pd.DataFrame(
-        durations, columns=("model", "task", "hours", "minutes", "duration")
+        durations, columns=("model", "task", "hours", "minutes", "seconds", "duration")
     )
 
 
-def get_compute_usage_df(experiments, task_dependent=False):
+def get_compute_usage_df(experiments, task_dependent=False, pretrain=False):
     durations = []
     for exp in experiments:
         ms = exp.get_metadata()["durationMillis"]
         model = exp.get_parameters_summary("model")["valueMax"]
 
-        hours, minutes = ms_to_time(ms)
+        hours, minutes, seconds = ms_to_time(ms)
         gpu_memory = (
             float(exp.get_metrics_summary("sys.gpu.0.used_memory")["valueMax"]) / 1e9
         )
@@ -252,7 +259,10 @@ def get_compute_usage_df(experiments, task_dependent=False):
         )
 
         if task_dependent:
-            _, _, _, task, _ = exp.name.split("-")
+            if pretrain:
+                _, task, _, _ = exp.name.split("-")
+            else:
+                _, _, task, _ = exp.name.split("-")
             durations.append(
                 (
                     model,
@@ -260,7 +270,8 @@ def get_compute_usage_df(experiments, task_dependent=False):
                     ms,
                     hours,
                     minutes,
-                    f"{hours}:{str(minutes).zfill(2)}",
+                    seconds,
+                    f"{hours}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}",
                     gpu_memory,
                     gpu_power_usage,
                 )
@@ -272,7 +283,8 @@ def get_compute_usage_df(experiments, task_dependent=False):
                     ms,
                     hours,
                     minutes,
-                    f"{hours}:{str(minutes).zfill(2)}",
+                    seconds,
+                    f"{hours}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}",
                     gpu_memory,
                     gpu_power_usage,
                 )
@@ -285,6 +297,7 @@ def get_compute_usage_df(experiments, task_dependent=False):
             "millis",
             "hours",
             "minutes",
+            "seconds",
             "duration",
             "max_gpu_ram_used",
             "max_gpu_power_usage",
@@ -295,6 +308,7 @@ def get_compute_usage_df(experiments, task_dependent=False):
             "millis",
             "hours",
             "minutes",
+            "seconds",
             "duration",
             "max_gpu_ram_used",
             "max_gpu_power_usage",

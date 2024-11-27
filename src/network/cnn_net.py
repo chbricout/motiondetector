@@ -3,10 +3,12 @@ Module to define a basic convolution network
 """
 
 from collections.abc import Sequence
+
 import torch
-from torch import nn
 from monai.networks.blocks import Convolution
-from src.network.archi import Model, Encoder, Classifier
+from torch import nn
+
+from src.network.archi import Classifier, Encoder, Model
 
 
 class ConvModule(nn.Module):
@@ -115,6 +117,12 @@ class CNNModel(Model):
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate
         )
         self.encoder = CNNEncoder(self.im_shape, self.dropout_rate)
+        self.classifier = CNNClassifier(
+            self.encoder.latent_size, self.num_classes, self.dropout_rate
+        )
+
+    def change_classifier(self, num_classes):
+        self.num_classes = num_classes
         self.classifier = CNNClassifier(
             self.encoder.latent_size, self.num_classes, self.dropout_rate
         )

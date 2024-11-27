@@ -1,9 +1,27 @@
-from glob import glob
+import json
 import os
 import warnings
+from glob import glob
+
 import click
 
+from src import config
 from src.commands.base_trainer import launch_train_from_scratch
+from src.commands.continual_trainer import launch_continual
+from src.commands.generate_datasets import launch_generate_data
+from src.commands.launch_slurm import (
+    submit_continual,
+    submit_generate_ds,
+    submit_pretrain,
+    submit_scratch,
+    submit_test_pretrain,
+    submit_transfer,
+    submit_tune_scratch,
+    submit_tune_transfer,
+)
+from src.commands.mr_art_to_bids import launch_convert_mrart_to_bids
+from src.commands.plot import pretrain_calibration_gif
+from src.commands.pretrainer import launch_pretrain
 from src.commands.test_models import (
     test_pretrain_in_folder,
     test_pretrain_model_mrart_data,
@@ -13,23 +31,12 @@ from src.commands.test_models import (
     test_transfer_in_folder,
     test_unbalanced_pretrain_in_folder,
     test_unbalanced_scratch_in_folder,
-    test_unbalanced_transfer_in_folder
+    test_unbalanced_transfer_in_folder,
 )
 from src.commands.transfer import launch_transfer
-from src.commands.generate_datasets import launch_generate_data
-from src.commands.launch_slurm import (
-    submit_test_pretrain,
-    submit_transfer,
-    submit_generate_ds,
-    submit_pretrain,
-    submit_scratch,
-)
-from src.commands.mr_art_to_bids import launch_convert_mrart_to_bids
-from src.commands.plot import pretrain_calibration_gif
-from src.commands.pretrainer import launch_pretrain
+from src.commands.tune import run_scratch_tune, run_transfer_tune
 from src.utils.comet import export_torchscript
 from src.utils.log import lightning_logger, rich_logger
-from src import config
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning, message=".*has_cuda.*")
@@ -54,6 +61,12 @@ dropout_rate = click.option(
     "--dropout_rate",
     help="dropout rate",
     default=0.7,
+    type=float,
+)
+weight_decay = click.option(
+    "--weight_decay",
+    help="AdamW weight decay",
+    default=0.05,
     type=float,
 )
 batch_size = click.option(
@@ -95,12 +108,7 @@ slurm = click.option(
     is_flag=True,
     type=bool,
 )
-cutout = click.option(
-    "--cutout",
-    help="Flag to use cutout strategy in training",
-    is_flag=True,
-    type=bool,
-)
+
 project = click.option(
     "--project",
     help="Comet project to use",
@@ -139,7 +147,6 @@ def cli():
 @run_num
 @seed
 @slurm
-@cutout
 @task
 @account
 def pretrain(
@@ -151,7 +158,6 @@ def pretrain(
     run_num,
     seed,
     slurm,
-    cutout,
     task: str,
     account,
 ):
@@ -167,7 +173,6 @@ def pretrain(
             model=model,
             run_num=run_num,
             seed=seed,
-            use_cutout=cutout,
             task=task,
         )
 
@@ -181,18 +186,35 @@ def pretrain(
 )
 @max_epoch
 @learning_rate
+@dropout_rate
 @dataset
 @batch_size
+@weight_decay
+@click.option(
+    "--num_layers",
+    help="Number of layers in transfer network",
+    type=int,
+)
 @run_num
 @seed
 @slurm
 def transfer(
-    pretrain_path, max_epochs, learning_rate, dataset, batch_size, run_num, seed, slurm
+    pretrain_path,
+    max_epochs,
+    learning_rate,
+    dropout_rate,
+    dataset,
+    batch_size,
+    num_layers,
+    weight_decay,
+    run_num,
+    seed,
+    slurm,
 ):
     if slurm:
         submit_transfer(
             pretrain_path=pretrain_path,
-            array=range(1,6),
+            array=range(1, 6),
         )
     else:
         lightning_logger()
@@ -200,8 +222,46 @@ def transfer(
             pretrain_path=pretrain_path,
             max_epochs=max_epochs,
             learning_rate=learning_rate,
+            dropout_rate=dropout_rate,
             dataset=dataset,
             batch_size=batch_size,
+            run_num=run_num,
+            num_layers=num_layers,
+            weight_decay=weight_decay,
+            seed=seed,
+        )
+
+
+@cli.command()
+@click.option(
+    "-M",
+    "--pretrain_path",
+    help="Pretrain model to use",
+    type=str,
+)
+@max_epoch
+@learning_rate
+@batch_size
+@task
+@run_num
+@seed
+@slurm
+def continual(
+    pretrain_path, max_epochs, learning_rate, batch_size, task, run_num, seed, slurm
+):
+    if slurm:
+        submit_continual(
+            pretrain_path=pretrain_path,
+            array=range(1, 6),
+        )
+    else:
+        lightning_logger()
+        launch_continual(
+            pretrain_path=pretrain_path,
+            max_epochs=max_epochs,
+            learning_rate=learning_rate,
+            batch_size=batch_size,
+            task=task,
             run_num=run_num,
             seed=seed,
         )
@@ -213,6 +273,7 @@ def transfer(
 @dropout_rate
 @dataset
 @batch_size
+@weight_decay
 @model
 @run_num
 @seed
@@ -223,6 +284,7 @@ def train(
     dropout_rate,
     dataset,
     batch_size,
+    weight_decay,
     model,
     run_num,
     seed,
@@ -238,6 +300,7 @@ def train(
             dropout_rate=dropout_rate,
             dataset=dataset,
             batch_size=batch_size,
+            weight_decay=weight_decay,
             model=model,
             run_num=run_num,
             seed=seed,
@@ -301,7 +364,6 @@ run_confs = [
 
 
 @launch_exp.command()
-@cutout
 @click.option(
     "-t",
     "--test",
@@ -310,7 +372,7 @@ run_confs = [
     type=bool,
 )
 @task
-def pretrainer(cutout: bool, test: bool, task: str):
+def pretrainer(test: bool, task: str):
     for model in run_confs:
 
         cmd = f"cli.py pretrain  \
@@ -319,8 +381,6 @@ def pretrainer(cutout: bool, test: bool, task: str):
                 --learning_rate 2e-5\
                 --dropout_rate 0.6\
                 --task {task}"
-        if cutout:
-            cmd += " --cutout"
 
         array = range(1, 6)
         if test:
@@ -333,13 +393,33 @@ def pretrainer(cutout: bool, test: bool, task: str):
         )
 
 
-transfer_confs = [
-    {"name": "VIT", "batch_size": 16},
-    {"name": "SFCN", "batch_size": 16},
-    {"name": "CONV5_FC3", "batch_size": 16},
-    {"name": "RES", "batch_size": 16},
-    {"name": "SERES", "batch_size": 16},
-]
+@launch_exp.command()
+@click.option(
+    "-t",
+    "--test",
+    help="Flag to run one run for each conf (no array job)",
+    is_flag=True,
+    type=bool,
+)
+@task
+def continual(test: bool, task: str):
+    for model in run_confs:
+
+        cmd = f"cli.py continual  \
+                -M models/pretrained/{model['name']}-{task}-1.ckpt\
+                --batch_size {model['batch_size']}\
+                --learning_rate 5e-6\
+                --task {task}"
+
+        array = range(1, 6)
+        if test:
+            array = 1
+
+        submit_continual(
+            model["name"],
+            array,
+            cmd,
+        )
 
 
 @launch_exp.command()
@@ -350,38 +430,47 @@ transfer_confs = [
     type=str,
 )
 @dataset
-def transfer(directory:str, dataset:str):
-    for model in glob(os.path.join(directory, '*.ckpt')):
-        submit_transfer(
-            model,
-            range(1,6),
-            f"cli.py transfer   \
-                --batch_size 24\
-                --pretrain_path {model}\
-                --learning_rate 1e-3\
-                --dataset {dataset} \
-                --max_epochs 100000",
-            dataset=dataset,
-        )
-           
+def transfer(directory: str, dataset: str):
+    with open("run_config.json", "r") as file:
+        setting = json.load(file)["transfer"]
+        for model in glob(os.path.join(directory, "*.ckpt")):
+            model_name = os.path.basename(model).removesuffix(".ckpt")
+            conf = setting[model_name]
+            submit_transfer(
+                model,
+                range(1, 6),
+                f"cli.py transfer   \
+                    --batch_size {conf['batch_size']}\
+                    --dropout_rate {conf['dropout_rate']}\
+                    --weight_decay {conf['weight_decay']}\
+                    --num_layers {conf['num_layers']}\
+                    --learning_rate {conf['lr']}\
+                    --pretrain_path {model}\
+                    --dataset {dataset} \
+                    --max_epochs 100000",
+                dataset=dataset,
+            )
+
 
 @launch_exp.command()
 @dataset
-def train(dataset:str):
-    for model in transfer_confs:
-        submit_scratch(
-            model["name"],
-            list(range(1,6)),
-            f"cli.py train   \
-                --max_epochs 10000\
-                --batch_size {model['batch_size']}\
-                --model {model['name']}\
-                --learning_rate 1e-5\
-                --dropout_rate 0.6\
-                --dataset {dataset} ",
-            dataset=dataset,
-        )
-            
+def train(dataset: str):
+    with open("run_config.json", "r") as file:
+        setting = json.load(file)["scratch"]
+        for model, conf in setting.items():
+            submit_scratch(
+                model,
+                list(range(1, 6)),
+                f"cli.py train   \
+                    --max_epochs 10000\
+                    --batch_size {conf['batch_size']}\
+                    --model {model}\
+                    --learning_rate {conf['lr']}\
+                    --dropout_rate {conf['dropout_rate']}\
+                    --weight_decay {conf['weight_decay']}\
+                    --dataset {dataset} ",
+                dataset=dataset,
+            )
 
 
 @cli.group()
@@ -418,10 +507,10 @@ def pretrain_test(directory: str, file: str, slurm: bool):
     else:
         if file is not None:
             test_pretrain_model_pretrain_data(file)
-            test_pretrain_model_mrart_data(ckpt_path=file)
         else:
             test_pretrain_in_folder(directory)
-        
+
+
 @test.command("scratch")
 @click.option(
     "-d", "--directory", help="Directory containing models", type=str, default=None
@@ -433,12 +522,14 @@ def scratch_test(directory: str, file: str):
     else:
         test_scratch_in_folder(directory)
 
+
 @test.command("transfer")
 @click.option(
     "-d", "--directory", help="Directory containing models", type=str, default=None
 )
 def transfer_test(directory: str):
     test_transfer_in_folder(directory)
+
 
 @test.command("transfer-unbalanced")
 @click.option(
@@ -447,12 +538,14 @@ def transfer_test(directory: str):
 def transfer_unbalanced_test(directory: str):
     test_unbalanced_transfer_in_folder(directory)
 
+
 @test.command("scratch-unbalanced")
 @click.option(
     "-d", "--directory", help="Directory containing models", type=str, default=None
 )
 def scratch_unbalanced_test(directory: str):
     test_unbalanced_scratch_in_folder(directory)
+
 
 @test.command("pretrain-unbalanced")
 @click.option(
@@ -462,6 +555,41 @@ def pretrain_unbalanced_test(directory: str):
     test_unbalanced_pretrain_in_folder(directory)
 
 
+@cli.group()
+def tune():
+    pass
+
+
+@tune.command("scratch")
+@model
+@click.option("-A", "--all", help="Use all models", type=bool, is_flag=True)
+@slurm
+def tune_scratch(model: str, all: bool, slurm: bool):
+    if not all:
+        if slurm:
+            submit_tune_scratch(model)
+        else:
+            run_scratch_tune(model)
+    else:
+        for model_str in ["RES", "SFCN", "CONV5_FC3", "SERES", "VIT"]:
+            submit_tune_scratch(model_str, f"cli.py tune scratch --model {model_str}")
+
+
+@tune.command("transfer")
+@click.option("-f", "--file", help="File containing model", type=str, default=None)
+@click.option(
+    "-d", "--directory", help="Directory containing models", type=str, default=None
+)
+@slurm
+def tune_transfer(file: str, directory: str, slurm: bool):
+    if not directory:
+        if slurm:
+            submit_tune_transfer(file)
+        else:
+            run_transfer_tune(file)
+    else:
+        for model in glob(os.path.join(directory, "*.ckpt")):
+            submit_tune_transfer(model, cmd=f"cli.py tune transfer --file {model}")
 
 
 if __name__ == "__main__":

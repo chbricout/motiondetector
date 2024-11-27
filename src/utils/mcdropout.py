@@ -90,8 +90,7 @@ def bincount2d(arr: np.ndarray | torch.Tensor) -> np.ndarray:
     """
     if torch.is_tensor(arr):
         arr = arr.numpy()
-    count= np.apply_along_axis(np.bincount, axis=1, arr= arr,
-                                          minlength = np.max(arr) +1)
+    count = np.apply_along_axis(np.bincount, axis=1, arr=arr, minlength=np.max(arr) + 1)
 
     return count
 
@@ -125,7 +124,6 @@ def finetune_pred_to_df(
     df["label"] = df["label"].astype(int)
     df["mean"] = df["mean"].astype(float)
     df["std"] = df["std"].astype(float)
-
 
     return df
 

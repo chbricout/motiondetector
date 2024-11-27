@@ -75,7 +75,7 @@ def test_pred_to_df(convert_func: Callable, has_bincount: bool):
 )
 def test_bincount(n_classes: int):
     n_samples = 10
-    n_indiv=20
+    n_indiv = 20
     arr = torch.randint(0, n_classes, (n_indiv, n_samples))
     res = bincount2d(arr)
 
@@ -111,10 +111,6 @@ def test_predict_mc_dropout(
     assert preds.shape == (n_samples, n_preds)
     assert len(labels) == n_samples
     assert len(identifiers) == n_samples
-
-
-
-
 
 
 @pytest.mark.parametrize(

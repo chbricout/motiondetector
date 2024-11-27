@@ -4,6 +4,7 @@ File to regroup important constant for the project
 """
 
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
@@ -38,3 +39,7 @@ GENERATE_ROOT_DIR = os.getenv("GENERATE_ROOT_DIR", "/home/cbricout/scratch/")
 # PLOTS
 PLOT_DIR = "plots"
 CONFIDENCE_FILTER = 0.95  # Min confidence for swarm plot filter
+
+# RAYTUNE
+RAYTUNE_DIR = "/lustre07/scratch/cbricout/ray_results" if IS_NARVAL else  "~/ray_results"
+

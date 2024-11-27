@@ -7,9 +7,11 @@ in 2019 Second International Conference on Advanced Computational and Communicat
 """
 
 from collections.abc import Sequence
-from torch import nn
+
 import torch
-from src.network.archi import Encoder, Classifier, Model
+from torch import nn
+
+from src.network.archi import Classifier, Encoder, Model
 
 
 class SqueezeNExcite(nn.Module):
@@ -134,6 +136,12 @@ class SEResModel(Model):
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate
         )
         self.encoder = SEResEncoder(self.im_shape, self.dropout_rate)
+        self.classifier = SEResClassifier(
+            self.encoder.latent_size, self.num_classes, self.dropout_rate
+        )
+
+    def change_classifier(self, num_classes):
+        self.num_classes = num_classes
         self.classifier = SEResClassifier(
             self.encoder.latent_size, self.num_classes, self.dropout_rate
         )

@@ -2,28 +2,28 @@
 Module to launch pretraining job on synthetic motion dataset.
 """
 
-import os
 import logging
+import os
 import random
 import shutil
 from typing import Type
 
 import comet_ml
-import torch
 import lightning
 import lightning.pytorch.loggers
+import torch
+import torch.distributed
 from lightning.pytorch.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
+    ModelCheckpoint,
 )
-from lightning.pytorch.callbacks import ModelCheckpoint
-import torch.distributed
 
-from src.utils.comet import get_experiment_key
+from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
 from src.training.eval import get_correlations
 from src.training.pretrain_logic import PretrainingTask
-from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
+from src.utils.comet import get_experiment_key
 from src.utils.log import get_run_dir
 from src.utils.mcdropout import pretrain_mcdropout
 from src.utils.task import EnsureOneProcess, label_from_task, str_to_task
@@ -39,7 +39,6 @@ def launch_pretrain(
     model: str,
     run_num: int,
     seed: int | None,
-    use_cutout: bool,
     task: str,
 ):
     """Launch the pretraining process
@@ -52,7 +51,6 @@ def launch_pretrain(
         model (str): model to train
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
-        use_cutout(bool): flag to use cutout in model training
         task(str): Pretraining task to use
     """
 
@@ -76,7 +74,6 @@ def launch_pretrain(
             "seed": seed,
             "model": model,
             "run_num": run_num,
-            "use_cutout": use_cutout,
             "task": task,
         }
     )
@@ -91,7 +88,6 @@ def launch_pretrain(
         lr=learning_rate,
         dropout_rate=dropout_rate,
         batch_size=batch_size,
-        use_cutout=use_cutout,
     )
 
     monitor_metrics = "r2_score"

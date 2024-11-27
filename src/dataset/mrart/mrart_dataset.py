@@ -4,11 +4,13 @@ Module to use the MR-ART dataset from python (require split csv files)
 
 import logging
 from typing import Callable
-from monai.data.dataset import CacheDataset
-from monai.data.dataloader import DataLoader
+
 import pandas as pd
 import torch
 import tqdm
+from monai.data.dataloader import DataLoader
+from monai.data.dataset import CacheDataset
+
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.network.archi import Model
 from src.transforms.load import FinetuneTransform, TransferTransform
@@ -129,9 +131,7 @@ class MRArtDataModule(BaseDataModule):
                         self.pretrained_model(batch["data"]).cpu().squeeze(0)
                     )
                     cache_ds.append(batch)
-        logging.error(f"Output shape {cache_ds[0]['data'].shape}")
         return cache_ds
-
 
 
 class TrainUnbalancedMrArt(BaseMrArt):
@@ -173,7 +173,7 @@ class UnbalancedMRArtDataModule(MRArtDataModule):
         self.val_ds_class = ValUnbalancedMrArt
         self.train_ds_class = TrainUnbalancedMrArt
         self.pretrained_model = pretrained_model
-    
+
     def train_dataloader(self):
         return DataLoader(
             self.train_ds,
@@ -220,5 +220,4 @@ class UnbalancedMRArtDataModule(MRArtDataModule):
                         self.pretrained_model(batch["data"]).cpu().squeeze(0)
                     )
                     cache_ds.append(batch)
-        logging.error(f"Output shape {cache_ds[0]['data'].shape}")
         return cache_ds

@@ -6,9 +6,11 @@ data warehouse. Medical Image Analysis, 75, 102219. https://doi.org/10.1016/j.me
 """
 
 from collections.abc import Sequence
+
 import torch
 from torch import nn
-from src.network.archi import Classifier, Model, Encoder
+
+from src.network.archi import Classifier, Encoder, Model
 
 
 class ConvBlock(nn.Sequential):
@@ -82,6 +84,12 @@ class Conv5FC3Model(Model):
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate
         )
         self.encoder = Conv5FC3Encoder(self.im_shape, self.dropout_rate)
+        self.classifier = Conv5FC3Classifier(
+            self.encoder.latent_size, self.num_classes, self.dropout_rate
+        )
+
+    def change_classifier(self, num_classes):
+        self.num_classes = num_classes
         self.classifier = Conv5FC3Classifier(
             self.encoder.latent_size, self.num_classes, self.dropout_rate
         )

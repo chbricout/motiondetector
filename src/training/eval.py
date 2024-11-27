@@ -3,22 +3,24 @@
 
 import logging
 from typing import Sequence
+
 import comet_ml
+import pandas as pd
+import seaborn as sb
+import torch
+import tqdm
+from lightning import LightningModule, Trainer
+from lightning.pytorch.callbacks import ModelCheckpoint
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from monai.data.dataloader import DataLoader
-from lightning import Trainer, LightningModule
-from lightning.pytorch.callbacks import ModelCheckpoint
-import pandas as pd
-import seaborn as sb
 from sklearn.metrics import balanced_accuracy_score
-import torch
-import tqdm
-from src.dataset.ampscz.ampscz_dataset import TransferValAMPSCZ, TransferTrainAMPSCZ
+
+from src.dataset.ampscz.ampscz_dataset import TransferTrainAMPSCZ, TransferValAMPSCZ
 from src.dataset.mrart.mrart_dataset import TrainMrArt, ValMrArt
 from src.training.pretrain_logic import PretrainingTask
-from src.utils.comet import log_figure_comet
 from src.transforms.load import FinetuneTransform
+from src.utils.comet import log_figure_comet
 from src.utils.metrics import separation_capacity
 
 
@@ -40,7 +42,9 @@ def get_correlations(model: PretrainingTask, exp: comet_ml.BaseExperiment):
             dl = DataLoader(dataset.from_env(load_tsf))
             all_mode_df.append(get_pred_from_pretrain(model, dl, mode))
         all_mode_df = pd.concat(all_mode_df)
-        acc, per_class_accuracy, thresholds,fig_thresh, _ = separation_capacity(all_mode_df)
+        acc, per_class_accuracy, thresholds, fig_thresh, _ = separation_capacity(
+            all_mode_df
+        )
         exp.log_metric(f"{data_name}-acc", acc)
         exp.log_table(f"{data_name}-pred.csv", all_mode_df)
         exp.log_other(f"{data_name}-thresholds-value", thresholds)
@@ -56,7 +60,7 @@ def get_pred_from_pretrain(
     dataloader: DataLoader,
     mode: str = "test",
     label: str = "label",
-    cuda=True
+    cuda=True,
 ) -> pd.DataFrame:
     """Compute prediction of a model on a dataloader
 
@@ -82,13 +86,13 @@ def get_pred_from_pretrain(
                 batch["data"] = batch["data"].cuda()
             prediction = model.predict_step(batch, idx)
             prediction = prediction.cpu()
-
             preds += prediction.tolist()
             labels += batch[label].tolist()
             ids += batch["identifier"]
             torch.cuda.empty_cache()
 
     full = pd.DataFrame(columns=["pred"])
+    print(len(preds), len(ids), len(labels))
     full["pred"] = preds
     full["identifier"] = ids
     full["label"] = labels

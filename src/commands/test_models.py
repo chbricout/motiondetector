@@ -11,6 +11,11 @@ from torch.utils.data import DataLoader, Dataset
 
 import src.training.eval as teval
 from src import config
+from src.dataset.ampscz.ampscz_dataset import (
+    FullTestAMPSCZ,
+    TransferTestAMPSCZ,
+    TransferTrainAMPSCZ,
+)
 from src.dataset.base_dataset import BaseDataset
 from src.dataset.mrart.mrart_dataset import (
     TestMrArt,
@@ -19,7 +24,7 @@ from src.dataset.mrart.mrart_dataset import (
     TrainUnbalancedMrArt,
 )
 from src.dataset.pretraining.pretraining_dataset import PretrainTest
-from src.training.common_logic import BaseFinalTrain
+from src.training.common_logic import BaseFinalTrain, get_calibration_curve
 from src.training.pretrain_logic import BinaryPretrainingTask, PretrainingTask
 from src.training.scratch_logic import MRArtScratchTask
 from src.training.transfer_logic import MrArtTransferTask
@@ -37,22 +42,28 @@ def test_pretrain_in_folder(folder: str):
         test_pretrain_model_pretrain_data(
             module=module, task=task, report_dir=report_dir
         )
-        test_pretrain_model_mrart_data(
-            module=module,
-            report_dir=report_dir,
-            datasets=[("train", TrainMrArt), ("test", TestMrArt)],
-            prefix="mrart",
-        )
-        test_pretrain_model_mrart_data(
-            module=module,
-            report_dir=report_dir,
-            datasets=[("train", TrainUnbalancedMrArt), ("test", TestUnbalancedMrArt)],
-            prefix="unbalanced-mrart",
-        )
+        # test_pretrain_model_mrart_data(
+        #     module=module,
+        #     report_dir=report_dir,
+        #     datasets=[("train", TransferTrainAMPSCZ), ("test", FullTestAMPSCZ)],
+        #     prefix="ampscz",
+        # )
+        # test_pretrain_model_mrart_data(
+        #     module=module,
+        #     report_dir=report_dir,
+        #     datasets=[("train", TrainMrArt), ("test", TestMrArt)],
+        #     prefix="mrart",
+        # )
+        # test_pretrain_model_mrart_data(
+        #     module=module,
+        #     report_dir=report_dir,
+        #     datasets=[("train", TrainUnbalancedMrArt), ("test", TestUnbalancedMrArt)],
+        #     prefix="unbalanced-mrart",
+        # )
 
 
 def setup_test_pretrain(ckpt_path: str) -> tuple[PretrainingTask, str, str]:
-    module, task = task_utils.load_pretrain_from_ckpt(ckpt_path=ckpt_path)
+    module, task, model_str = task_utils.load_pretrain_from_ckpt(ckpt_path=ckpt_path)
     print(f"Start Evaluation for {ckpt_path}")
 
     exp = path.basename(ckpt_path).split(".")[0]
@@ -78,15 +89,18 @@ def inference_test(
     simple_pretrain_df = teval.get_pred_from_pretrain(module, dataloader, label=label)
     print("Pretrain DONE")
 
-    print("Predict MC-Dropout")
-    drop_res = mcdropout.predict_mcdropout(module, dataloader, n_preds=10, label=label)
-    convert_func = (
-        mcdropout.finetune_pred_to_df
-        if isinstance(module, BinaryPretrainingTask)
-        else mcdropout.pretrain_pred_to_df
-    )
-    dropout_pretrain_df = convert_func(*drop_res)
-    print("MC-Dropout DONE")
+    # print("Predict MC-Dropout")
+    # drop_res = mcdropout.predict_mcdropout(
+    #     module, dataloader, n_preds=1000, label=label
+    # )
+    # convert_func = (
+    #     mcdropout.finetune_pred_to_df
+    #     if isinstance(module, BinaryPretrainingTask)
+    #     else mcdropout.pretrain_pred_to_df
+    # )
+    # dropout_pretrain_df = convert_func(*drop_res)
+    # print("MC-Dropout DONE")
+    dropout_pretrain_df = pd.DataFrame()
 
     return simple_pretrain_df, dropout_pretrain_df
 
@@ -106,7 +120,7 @@ def test_pretrain_model_pretrain_data(
 
     for df, source, pred_label in [
         (simple_df, "simple", "pred"),
-        (dropout_df, "mcdropout", "mean"),
+        # (dropout_df, "mcdropout", "mean"),
     ]:
         if task == "BINARY":
             base_metrics.append(
@@ -126,28 +140,30 @@ def test_pretrain_model_pretrain_data(
                     mean_squared_error(df["label"], df[pred_label], squared=False),
                 ]
             )
-    confidence_func = (
-        conf.confidence_finetune if is_binary else conf.confidence_pretrain
-    )
-    conf_df = confidence_func(dropout_df)
+    # confidence_func = (
+    #     conf.confidence_finetune if is_binary else conf.confidence_pretrain
+    # )
+    # conf_df = confidence_func(dropout_df)
 
-    fig = conf.plot_confidence(
-        conf_df=conf_df,
-        threshold_label="threshold_confidence" if is_binary else "threshold_std",
-        metric_label="balanced_accuracy" if is_binary else "rmse",
-        threshold_axis=(
-            "Threshold Confidence" if is_binary else "Threshold Standard Deviation"
-        ),
-        metric_axis="Balanced Accuracy" if is_binary else "Root Mean Squared Error",
-    )
-    fig.savefig(path.join(report_dir, "test"))
+    # fig = conf.plot_confidence(
+    #     conf_df=conf_df,
+    #     threshold_label="threshold_confidence" if is_binary else "threshold_std",
+    #     metric_label="balanced_accuracy" if is_binary else "rmse",
+    #     threshold_axis=(
+    #         "Threshold Confidence" if is_binary else "Threshold Standard Deviation"
+    #     ),
+    #     metric_axis="Balanced Accuracy" if is_binary else "Root Mean Squared Error",
+    # )
+    # fig.savefig(path.join(report_dir, "test"))
 
     base_metrics_df = pd.DataFrame(
         base_metrics,
         columns=["source", "balanced_accuracy" if is_binary else "r2", "rmse"],
     )
     base_metrics_df.to_csv(path.join(report_dir, "results.csv"))
-    conf_df.to_csv(path.join(report_dir, "confidence.csv"))
+    calib_fig = get_calibration_curve(simple_df["pred"], simple_df["label"])
+    calib_fig.savefig(path.join(report_dir, "calibration"))
+    # conf_df.to_csv(path.join(report_dir, "confidence.csv"))
     plt.close()
 
 
@@ -209,7 +225,9 @@ def test_scratch_in_folder(folder: str):
             shutil.rmtree(report_dir)
         os.makedirs(report_dir)
         module = MRArtScratchTask.load_from_checkpoint(checkpoint_path=ckpt)
-        test_scratch_model(module=module, report_dir=report_dir)
+        test_scratch_model(
+            module=module, report_dir=report_dir, dataset_class=FullTestAMPSCZ
+        )
 
 
 def test_scratch_model(
@@ -218,14 +236,14 @@ def test_scratch_model(
 
     dl = DataLoader(dataset_class.from_env(FinetuneTransform()))
     simple_df = teval.get_pred_from_pretrain(module, dl)
-    dropout_df, conf_df, confidence_fig, filtered_fig = mcdropout.transfer_mcdropout(
-        module, dl, n_preds=1000, log_figs=False
-    )
+    # dropout_df, conf_df, confidence_fig, filtered_fig = mcdropout.transfer_mcdropout(
+    #     module, dl, n_preds=1000, log_figs=False
+    # )
 
     base_metrics = []
     for df, source, pred_label in [
         (simple_df, "simple", "pred"),
-        (dropout_df, "mcdropout", "mean"),
+        # (dropout_df, "mcdropout", "mean"),
     ]:
         acc, per_class_f1, cm_fig = metrics.prediction_report(
             df["label"], df[pred_label].astype(int)
@@ -240,11 +258,11 @@ def test_scratch_model(
     )
     recap.to_csv(path.join(report_dir, "mrart_recap.csv"))
 
-    dropout_df.to_csv(path.join(report_dir, "dropout.csv"))
+    # dropout_df.to_csv(path.join(report_dir, "dropout.csv"))
     simple_df.to_csv(path.join(report_dir, "test-pred.csv"))
-    conf_df.to_csv(path.join(report_dir, "confidence.csv"))
-    confidence_fig.savefig(path.join(report_dir, "confidence"))
-    filtered_fig.savefig(path.join(report_dir, "filtered"))
+    # conf_df.to_csv(path.join(report_dir, "confidence.csv"))
+    # confidence_fig.savefig(path.join(report_dir, "confidence"))
+    # filtered_fig.savefig(path.join(report_dir, "filtered"))
     plt.close()
 
 
@@ -259,7 +277,9 @@ def test_transfer_in_folder(folder: str):
             shutil.rmtree(report_dir)
         os.makedirs(report_dir)
         module = MrArtTransferTask.load_from_checkpoint(checkpoint_path=ckpt)
-        test_scratch_model(module=module, report_dir=report_dir)
+        test_scratch_model(
+            module=module, report_dir=report_dir, dataset_class=FullTestAMPSCZ
+        )
 
 
 def test_unbalanced_transfer_in_folder(folder: str):

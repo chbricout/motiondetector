@@ -1,20 +1,22 @@
 """Module to load data during training"""
 
 from __future__ import annotations
+
 from typing import Callable, Dict, Hashable, Mapping, Self, Union
-from monai.transforms import (
-    Compose,
-    LoadImaged,
-    Orientationd,
-    ScaleIntensityd,
-    CenterSpatialCropd,
-    MapTransform,
-    ToTensord,
-)
-from monai.config import KeysCollection
-from scipy.stats import norm
+
 import numpy as np
 import torch
+from monai.config import KeysCollection
+from monai.transforms import (
+    CenterSpatialCropd,
+    Compose,
+    LoadImaged,
+    MapTransform,
+    Orientationd,
+    ScaleIntensityd,
+    ToTensord,
+)
+from scipy.stats import norm
 from torch import nn
 
 from src import config
@@ -248,7 +250,7 @@ class LoadSynth(Compose):
             return LoadSynth(ToSoftLabel.motion_config())
         elif task == "SSIM":
             return LoadSynth(ToSoftLabel.ssim_config())
-        elif task == "BINARY":
+        elif task == "BINARY" or "CONTINUAL" in task:
             return LoadSynth(torch.nn.Identity())
 
 

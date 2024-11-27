@@ -9,8 +9,10 @@ With a dropout layer moved at the beginning of the network
 """
 
 from collections.abc import Sequence
+
 import torch
 from torch import nn
+
 from src.network.archi import Classifier, Encoder, Model
 
 
@@ -111,6 +113,12 @@ class ResModel(Model):
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate
         )
         self.encoder = ResEncoder(self.im_shape, self.dropout_rate)
+        self.classifier = ResClassifier(
+            self.encoder.latent_size, self.num_classes, self.dropout_rate
+        )
+
+    def change_classifier(self, num_classes):
+        self.num_classes = num_classes
         self.classifier = ResClassifier(
             self.encoder.latent_size, self.num_classes, self.dropout_rate
         )

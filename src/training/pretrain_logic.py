@@ -1,17 +1,18 @@
 """Module to define logic for pretraining"""
 
-from collections import Counter
 import logging
-import torch.optim
-from torch import nn
-from monai.transforms import CutOut
-from sklearn.metrics import r2_score, mean_squared_error, balanced_accuracy_score
+from collections import Counter
+
 import matplotlib.pyplot as plt
+import torch.optim
+from sklearn.metrics import balanced_accuracy_score, mean_squared_error, r2_score
+from torch import nn
+
 from src import config
+from src.network.archi import Model
+from src.network.utils import KLDivLoss, init_model, parse_model
 from src.training.common_logic import EncodeClassifyTask, get_calibration_curve
 from src.transforms.load import ToSoftLabel
-from src.network.archi import Model
-from src.network.utils import init_model, parse_model, KLDivLoss
 
 
 class PretrainingTask(EncodeClassifyTask):
@@ -26,13 +27,13 @@ class PretrainingTask(EncodeClassifyTask):
 
     def __init__(
         self,
-        model_class: str,
-        im_shape,
+        model_class: str = "",
+        im_shape=config.IM_SHAPE,
         lr=1e-5,
         dropout_rate=0.5,
         batch_size=14,
-        use_cutout=False,
         num_classes: int = 1,
+        pretrained_model: Model = None,
     ):
         super().__init__()
 
@@ -41,26 +42,27 @@ class PretrainingTask(EncodeClassifyTask):
         self.dropout_rate = dropout_rate
         self.batch_size = batch_size
         self.lr = lr
-        self.model_class = parse_model(model_class)
-        self.model = self.model_class(
-            self.im_shape, self.num_classes, self.dropout_rate
-        )
-        init_model(self.model)
-        if model_class == "SFCN":
-            self.model = torch.compile(self.model, disable=True)
+        if pretrained_model:
+            self.model_class = pretrained_model.__class__
+            self.model = pretrained_model
+            self.model = torch.compile(pretrained_model)
         else:
-            self.model = torch.compile(self.model)
+            self.model_class = parse_model(model_class)
+            self.model = self.model_class(
+                self.im_shape, self.num_classes, self.dropout_rate
+            )
+            init_model(self.model)
+            if model_class == "SFCN":
+                self.model = torch.compile(self.model, disable=True)
+            else:
+                self.model = torch.compile(self.model)
 
-        self.use_cutout = use_cutout
-        if self.use_cutout:
-            self.cutout = CutOut(self.batch_size)
         self.save_hyperparameters()
 
     def validation_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.forward(volume)
-
         label_loss = self.label_loss(prediction, label)
         self.log(
             "val_loss",
@@ -135,7 +137,6 @@ class MotionPretrainingTask(PretrainingTask):
         lr=1e-5,
         dropout_rate=0.5,
         batch_size=14,
-        use_cutout=False,
     ):
         super().__init__(
             model_class=model_class,
@@ -143,7 +144,6 @@ class MotionPretrainingTask(PretrainingTask):
             lr=lr,
             dropout_rate=dropout_rate,
             batch_size=batch_size,
-            use_cutout=use_cutout,
             num_classes=config.MOTION_N_BINS,
         )
 
@@ -168,7 +168,6 @@ class SSIMPretrainingTask(PretrainingTask):
         lr=1e-5,
         dropout_rate=0.5,
         batch_size=14,
-        use_cutout=False,
     ):
         super().__init__(
             model_class=model_class,
@@ -176,7 +175,6 @@ class SSIMPretrainingTask(PretrainingTask):
             lr=lr,
             dropout_rate=dropout_rate,
             batch_size=batch_size,
-            use_cutout=use_cutout,
             num_classes=config.SSIM_N_BINS,
         )
 
@@ -200,7 +198,6 @@ class BinaryPretrainingTask(PretrainingTask):
         lr=1e-5,
         dropout_rate=0.5,
         batch_size=14,
-        use_cutout=False,
     ):
         super().__init__(
             model_class=model_class,
@@ -208,7 +205,6 @@ class BinaryPretrainingTask(PretrainingTask):
             lr=lr,
             dropout_rate=dropout_rate,
             batch_size=batch_size,
-            use_cutout=use_cutout,
             num_classes=1,
         )
 
@@ -252,3 +248,67 @@ class BinaryPretrainingTask(PretrainingTask):
         prediction = self.forward(volume)
 
         return prediction.sigmoid().flatten()
+
+
+class ContinualPretrainingTask(PretrainingTask):
+    """
+    Pretraining Task for Binary motion prediction task
+    """
+
+    hard_label_tag = "three_motion"
+    output_pipeline = nn.Identity()
+    label_loss = nn.CrossEntropyLoss()
+
+    def __init__(
+        self,
+        pretrained: Model,
+        lr=1e-5,
+        batch_size=14,
+    ):
+        pretrained.change_classifier(3)
+        super().__init__(
+            pretrained_model=pretrained,
+            lr=lr,
+            batch_size=batch_size,
+            num_classes=1,
+        )
+
+    def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
+        return pred.argmax(dim=1).flatten()
+
+    def on_validation_epoch_end(self) -> None:
+        self.log(
+            "balanced_accuracy",
+            balanced_accuracy_score(self.label, self.prediction),
+            sync_dist=True,
+            batch_size=self.batch_size,
+        )
+        self.logger.experiment.log_confusion_matrix(
+            self.label, self.prediction, epoch=self.current_epoch
+        )
+        self.label = []
+        self.prediction = []
+
+    def predict_step(self, batch, _):
+        volume = batch["data"]
+        prediction = self.forward(volume)
+        return prediction.argmax(dim=1).flatten()
+
+
+class ContinualMotionPretrainingTask(ContinualPretrainingTask):
+    def __init__(self, pretrained: Model, lr=1e-5, batch_size=14):
+        super().__init__(pretrained, lr, batch_size)
+
+
+class ContinualSSIMPretrainingTask(ContinualPretrainingTask):
+    def __init__(
+        self,
+        pretrained: Model,
+        lr=1e-5,
+        batch_size=14,
+    ):
+        super().__init__(
+            pretrained,
+            lr,
+            batch_size,
+        )

@@ -12,8 +12,12 @@ from typing import Type
 
 import lightning
 import lightning.pytorch.loggers
-from lightning.pytorch.callbacks import ModelCheckpoint
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
+from lightning.pytorch.tuner import Tuner
 
 from src import config
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
@@ -33,6 +37,7 @@ def launch_train_from_scratch(
     dropout_rate: float,
     max_epochs: int,
     batch_size: int,
+    weight_decay: float,
     dataset: str,
     model: str,
     run_num: int,
@@ -58,7 +63,7 @@ def launch_train_from_scratch(
     run_name = f"scratch-{model}-{run_num}"
     report_name = f"{run_name}-{dataset}"
     os.makedirs("model_report", exist_ok=True)
-    save_model_path = os.path.join("model_report", report_name)
+    save_model_path = os.path.join("model_report", "scratch", report_name)
     if os.path.exists(save_model_path):
         shutil.rmtree(save_model_path)
     os.makedirs(save_model_path, exist_ok=True)
@@ -73,7 +78,7 @@ def launch_train_from_scratch(
         task = MRArtScratchTask
     elif dataset == "AMPSCZ":
         datamodule = AMPSCZDataModule
-        task = AMPSCZScratchTask
+        task = MRArtScratchTask
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=config.COMET_API_KEY,
@@ -94,6 +99,7 @@ def launch_train_from_scratch(
         lr=learning_rate,
         dropout_rate=dropout_rate,
         batch_size=batch_size,
+        weight_decay=weight_decay,
     )
 
     checkpoint = ModelCheckpoint(monitor="val_balanced_accuracy", mode="max")
@@ -103,16 +109,17 @@ def launch_train_from_scratch(
         logger=comet_logger,
         devices=1,
         accelerator="gpu",
-        precision="16-mixed",
+        # precision="16-mixed",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
         callbacks=[
             EarlyStopping(monitor="val_loss", mode="min", patience=100),
             checkpoint,
+            LearningRateMonitor(logging_interval="epoch"),
         ],
     )
-
-    trainer.fit(net, datamodule=datamodule(batch_size))
+    data = datamodule(batch_size)
+    trainer.fit(net, datamodule=data)
 
     with EnsureOneProcess(trainer):
         logging.warning("Logging pretrain model")

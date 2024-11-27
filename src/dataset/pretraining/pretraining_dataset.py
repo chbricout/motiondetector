@@ -4,9 +4,10 @@ Module to use the synthetic motion pretraining dataset from python (require spli
 
 import os
 from typing import Callable, Self
-from torch.utils.data import Dataset
+
 import pandas as pd
 from monai.data.dataloader import DataLoader
+from torch.utils.data import Dataset
 
 from src import config
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
@@ -48,12 +49,10 @@ class BasePretrain(Dataset, BaseDataset):
         Args:
             task (str, optional): pretraining task. Defaults to "MOTION".
         """
-        if task=="BINARY":
+        if task == "BINARY" or "CONTINUAL" in task:
             self.file["label"] = self.file[label_from_task(task)].astype(int)
         else:
             self.file["label"] = self.file[label_from_task(task)].astype(float)
-
-
 
 
 class PretrainTrain(BasePretrain):

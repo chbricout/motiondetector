@@ -1,16 +1,18 @@
 """Module to define common lightning logic elements"""
 
-from collections.abc import Sequence
-import gc
 import abc
+import gc
+from collections.abc import Sequence
+
 import lightning
-from sklearn.metrics import balanced_accuracy_score
-import torch.optim
-from torch import nn
-from monai.data.meta_tensor import MetaTensor
-from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import seaborn as sb
+import torch.optim
+from matplotlib.figure import Figure
+from monai.data.meta_tensor import MetaTensor
+from sklearn.metrics import balanced_accuracy_score
+from torch import nn
+
 from src.network.archi import Model
 
 
@@ -34,8 +36,8 @@ def get_calibration_curve(
     min_lab = min(label)
     max_lab = max(label)
     plt.plot([min_lab, max_lab], [min_lab, max_lab], "r")
-    plt.xlabel("Correct Label")
-    plt.ylabel("Estimated Label")
+    plt.xlabel("True Motion Score")
+    plt.ylabel("Estimated Motion Score")
     return fig
 
 
@@ -52,11 +54,10 @@ class EncodeClassifyTask(abc.ABC, lightning.LightningModule):
     model: Model
     batch_size: int
 
-    def train_forward(self,x: torch.Tensor) -> torch.Tensor:
+    def train_forward(self, x: torch.Tensor) -> torch.Tensor:
         """Used for transfer learning on encoding only"""
-        
-        return self.forward(x)
 
+        return self.forward(x)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         raw_output = self.model(x)
@@ -120,38 +121,59 @@ class BaseFinalTrain(EncodeClassifyTask):
     output_pipeline: nn.Module
     label_loss: nn.Module
     batch_size: int
+    lr: float
+    weight_decay: float
 
     label: list[float | int] = []
     prediction: list[float | int] = []
+    val_loss = []
 
-   
     def validation_step(self, batch, _):
         volume = batch["data"]
         label = batch["label"]
         prediction = self.train_forward(volume)
 
         label_loss = self.label_loss(prediction, label)
-        self.log("val_loss", label_loss.item(), batch_size=self.batch_size)
 
         lab = label.detach().cpu()
         prediction = prediction.detach().cpu()
+        self.val_loss.append(label_loss.item())
         self.label += lab.int().tolist()
         self.prediction += self.raw_to_pred(prediction).tolist()
-        return label_loss
 
     def on_validation_epoch_end(self) -> None:
-        self.logger.experiment.log_confusion_matrix(
-            self.label, self.prediction, epoch=self.current_epoch
-        )
+        if hasattr(self.logger.experiment, "log_confusion_matrix"):
+            self.logger.experiment.log_confusion_matrix(
+                self.label, self.prediction, epoch=self.current_epoch
+            )
 
+        val_acc = balanced_accuracy_score(self.label, self.prediction)
         self.log(
             "val_balanced_accuracy",
-            balanced_accuracy_score(self.label, self.prediction),
+            val_acc,
             sync_dist=True,
             batch_size=self.batch_size,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
+
+        val_loss = sum(self.val_loss) / len(self.val_loss)
+        self.log(
+            "val_loss",
+            val_loss,
+            batch_size=self.batch_size,
+            sync_dist=True,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
         )
         self.label = []
         self.prediction = []
+        self.val_loss = []
+        return {"val_balanced_accuracy": val_acc, "val_loss": val_loss}
 
     def predict_step(self, batch, _):
         volume = batch["data"]
@@ -161,5 +183,7 @@ class BaseFinalTrain(EncodeClassifyTask):
         return prediction
 
     def configure_optimizers(self):
-        optim = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.05)
+        optim = torch.optim.AdamW(
+            self.parameters(), lr=self.lr, weight_decay=self.weight_decay
+        )
         return optim

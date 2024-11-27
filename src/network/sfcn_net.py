@@ -118,5 +118,5 @@ class SFCNModel(Model):
     def change_classifier(self, num_classes):
         self.num_classes = num_classes
         self.classifier = SFCNClassifier(
-            self.encoder.latent_shape[1:], self.num_classes, 0.6
+            self.encoder.latent_shape[1:], self.num_classes, self.dropout_rate
         )

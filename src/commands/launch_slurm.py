@@ -2,10 +2,11 @@
 Module to launch different standard command through slurm jobs
 """
 
-from os import path
-import sys
 import re
+import sys
 from collections.abc import Sequence
+from os import path
+
 from simple_slurm import Slurm
 
 from src import config
@@ -23,7 +24,7 @@ def setup_python(job: Slurm):
     job.add_cmd("export TRITON_CACHE_DIR=$SLURM_TMPDIR/.triton/cache")
     job.add_cmd('echo "Triton is setup"')
 
-    job.add_cmd("module load python cuda httpproxy")
+    job.add_cmd("module load python cuda httpproxy arrow r-bundle-bioconductor")
     job.add_cmd("source ~/fix_bowl/bin/activate")
     job.add_cmd('echo "python is setup"')
 
@@ -81,7 +82,7 @@ def get_full_cmd() -> str:
         str: the command arguments
     """
     full_command = " ".join(sys.argv)
-    full_command = full_command.replace("-S", "").replace("--slurm", "")
+    full_command = full_command.replace(" -S", " ").replace("--slurm", "")
     if full_command.find("--run_num"):
         full_command = re.sub(
             r"(--run_num)\s?[^\s-]*", r"\1 $SLURM_ARRAY_TASK_ID", full_command
@@ -193,7 +194,6 @@ def submit_pretrain(
     model: str,
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
-    send_transfer: bool = False,
     account: str = config.DEFAULT_SLURM_ACCOUNT,
 ):
     """Submit pretrain job on SLURM cluster
@@ -229,15 +229,44 @@ def submit_pretrain(
     job_id = job.sbatch(f"srun python3 {cmd}")
     print(job)
 
-    if send_transfer:
-        transfer_cmd = get_transfer_cmd_from_pretrain(cmd)
-        for dataset in ["MRART", "AMPSCZ"]:
-            submit_transfer(
-                model,
-                cmd=transfer_cmd + f" --dataset ${dataset}",
-                dependency=job_id,
-                dataset=dataset,
-            )
+
+def submit_continual(
+    model: str,
+    array: Sequence[int] | int | None = None,
+    cmd: str | None = None,
+    account: str = config.DEFAULT_SLURM_ACCOUNT,
+):
+    """Submit pretrain job on SLURM cluster
+
+    Args:
+        model (str): Model to use
+        array (Sequence[int] | int | None, optional): Can be single id, sequence, range or nothing.
+            Defaults to None.
+        cmd (str | None, optional): command to run, if None, retrieve the parameters
+            used from the CLI. Defaults to None.
+        send_transfer (bool, optional): flag to send transfer command. Defaults to False.
+    """
+    job = create_job(
+        get_name("continual", model, array),
+        array,
+        get_output("continual", model, array),
+        n_cpus=10,
+        n_gpus=4,
+        mem="300G",
+        time="48:00:00",
+        account=account,
+    )
+
+    cpy_extract_pretrain(job)
+
+    if cmd is None:
+        cmd = get_full_cmd()
+    else:
+        if not "--run_num" in cmd and array is not None:
+            cmd += " --run_num $SLURM_ARRAY_TASK_ID"
+
+    job_id = job.sbatch(f"srun python3 {cmd}")
+    print(job)
 
 
 def cpy_transfer(job: Slurm, dataset: str = ""):
@@ -252,7 +281,7 @@ def cpy_transfer(job: Slurm, dataset: str = ""):
     if dataset == "MRART" or dataset == "UNBALANCED-MRART":
         to_load = ["MRART-Preproc"]
     elif dataset == "AMPSCZ":
-        to_load = ["AMPSCZ-Prepoc"]
+        to_load = ["AMPSCZ-Preproc"]
     cpy_extract_tar(job, to_load)
 
 
@@ -364,3 +393,47 @@ def submit_test_pretrain(folder: str):
     cpy_extract_pretrain(job)
 
     job.sbatch(f"srun python {get_full_cmd()}")
+
+
+def submit_tune_transfer(model: str, cmd: str = None):
+    job = Slurm(
+        job_name=f"tune_transfer_{model}",
+        nodes=1,
+        gres="gpu:3",
+        cpus_per_task=48,
+        ntasks_per_node=1,
+        ntasks=1,
+        mem="400G",
+        time="3:00:00",
+        account=config.DEFAULT_SLURM_ACCOUNT,
+        output=f"./logs/tune_transfer.{Slurm.JOB_ARRAY_MASTER_ID}.out",
+    )
+    setup_python(job)
+    cpy_extract_tar(job, ["AMPSCZ-Preproc"])
+
+    if not cmd:
+        cmd = get_full_cmd()
+
+    job.sbatch(f"srun python {cmd}")
+
+
+def submit_tune_scratch(model: str, cmd: str = None):
+    job = Slurm(
+        job_name=f"tune_scratch_{model}",
+        nodes=1,
+        gres="gpu:4",
+        cpus_per_task=48,
+        ntasks_per_node=1,
+        ntasks=1,
+        mem="498G",
+        time="16:00:00",
+        account=config.DEFAULT_SLURM_ACCOUNT,
+        output=f"./logs/tune_scratch_.{Slurm.JOB_ARRAY_MASTER_ID}.out",
+    )
+    setup_python(job)
+    cpy_extract_tar(job, ["AMPSCZ-Preproc"])
+
+    if not cmd:
+        cmd = get_full_cmd()
+
+    job.sbatch(f"python {cmd}")

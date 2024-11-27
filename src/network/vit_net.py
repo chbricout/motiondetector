@@ -1,9 +1,11 @@
 """Module use to define a model compliant to our framework from monai ViT"""
 
 from collections.abc import Sequence
+
 import torch
-from torch import nn
 from monai.networks.nets import vit
+from torch import nn
+
 from src.network.archi import Classifier, Encoder, Model
 
 
@@ -60,6 +62,12 @@ class ViTModel(Model):
             im_shape=im_shape, num_classes=num_classes, dropout_rate=dropout_rate
         )
         self.encoder = ViTEncoder(self.im_shape, self.dropout_rate)
+        self.classifier = ViTClassifier(
+            self.encoder.latent_size, self.num_classes, self.dropout_rate
+        )
+
+    def change_classifier(self, num_classes):
+        self.num_classes = num_classes
         self.classifier = ViTClassifier(
             self.encoder.latent_size, self.num_classes, self.dropout_rate
         )

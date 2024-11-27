@@ -3,9 +3,10 @@ Module defining function related to confidence estimation
 """
 
 from typing import Callable
-from matplotlib import pyplot as plt
+
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.metrics import balanced_accuracy_score, mean_squared_error
 
 
@@ -14,7 +15,7 @@ def compute_prop_metrics(
     threshold: float,
     threshold_label: str,
     metric_f: Callable[[pd.DataFrame], float],
-    threshold_f : Callable[[pd.Series, float], pd.Series],
+    threshold_f: Callable[[pd.Series, float], pd.Series],
 ):
     filtered = df[threshold_f(df[threshold_label], threshold)]
     if len(filtered) == 0:
@@ -63,7 +64,7 @@ def confidence_pretrain(df: pd.DataFrame) -> pd.DataFrame:
             thresh,
             threshold_label="std",
             metric_f=lambda x: mean_squared_error(x["label"], x["mean"], squared=False),
-            threshold_f=lambda serie, x : serie <= x
+            threshold_f=lambda serie, x: serie <= x,
         )
         res.append((thresh, prop, rmse))
 
@@ -73,13 +74,13 @@ def confidence_pretrain(df: pd.DataFrame) -> pd.DataFrame:
 
 def confidence_finetune(df: pd.DataFrame) -> pd.DataFrame:
     res = []
-    for thresh in np.arange(0, 1, 0.01):
+    for thresh in np.arange(0, 1.01, 0.01):
         prop, baccuracy = compute_prop_metrics(
             df,
             thresh,
             threshold_label="confidence",
             metric_f=lambda x: balanced_accuracy_score(x["label"], x["max_classe"]),
-            threshold_f=lambda serie, x : serie >= x
+            threshold_f=lambda serie, x: serie >= x,
         )
         res.append((thresh, prop, baccuracy))
 
