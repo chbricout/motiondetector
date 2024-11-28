@@ -6,16 +6,13 @@ import torch
 from lightning import LightningModule
 
 from src import config
-from src.network.utils import parse_model
 from src.training.pretrain_logic import MotionPretrainingTask
 from src.training.scratch_logic import AMPSCZScratchTask
 from src.training.transfer_logic import AMPSCZTransferTask, TransferTask
 from src.transforms.load import ToSoftLabel
 
 
-def parse_module(
-    task_class: Type[TransferTask | LightningModule], model: str
-) -> LightningModule:
+def parse_module(task_class: Type[TransferTask | LightningModule]) -> LightningModule:
     """Return correct lightning module with default init depending on the type of task
     for test purposes
 
@@ -32,7 +29,6 @@ def parse_module(
         )
     else:
         module = task_class(
-            model_class=model,
             im_shape=config.IM_SHAPE,
         )
     return module
@@ -81,7 +77,6 @@ def get_dl(
 
 def get_module_dl(
     task_class: Type[TransferTask | LightningModule],
-    model: str,
     batch_size: int = 3,
     num_samples: int = 3,
 ):
@@ -97,6 +92,6 @@ def get_module_dl(
         _type_: _description_
     """
 
-    module = parse_module(task_class, model)
+    module = parse_module(task_class)
     dl = get_dl(task_class=task_class, batch_size=batch_size, num_samples=num_samples)
     return module, dl

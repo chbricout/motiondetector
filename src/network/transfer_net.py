@@ -2,7 +2,6 @@
 Module to define a special kind of Model use for transfer learning
 """
 
-import itertools
 from collections.abc import Sequence
 
 from torch import nn

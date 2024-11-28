@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Hashable, Mapping, Self, Union
+from typing import Callable, Dict, Hashable, Mapping, Union
 
 import numpy as np
 import torch
@@ -20,7 +20,6 @@ from scipy.stats import norm
 from torch import nn
 
 from src import config
-from src.network.archi import Model
 
 
 class ToSoftLabel(MapTransform):

@@ -21,11 +21,7 @@ from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
 from src.network.archi import Encoder
 from src.training.transfer_logic import AMPSCZTransferTask
 from src.utils.log import get_run_dir
-from src.utils.task import (
-    EnsureOneProcess,
-    load_pretrain_from_ckpt,
-    parse_transfer_path,
-)
+from src.utils.task import EnsureOneProcess, load_pretrain_from_ckpt
 
 
 def launch_transfer(
@@ -46,14 +42,12 @@ def launch_transfer(
         learning_rate (float): training learning rate
         max_epochs (int): max number of epoch to train for
         batch_size (int): batch size (on one GPU)
-        model (str): model to train()
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
     """
     project_name = f"transfer-AMPSCZ"
-    model = parse_transfer_path(pretrain_path)
 
-    run_name = f"AMPSCZ-{model}-MOTION-{run_num}"
+    run_name = f"AMPSCZ-SFCN-MOTION-{run_num}"
     run_dir = get_run_dir(project_name, run_name)
     os.makedirs("model_report", exist_ok=True)
     save_model_path = os.path.join("model_report", "transfer", run_name)
@@ -68,11 +62,11 @@ def launch_transfer(
     if seed is None:
         seed = random.randint(1, 10000)
     torch.manual_seed(seed)
-    comet_logger.log_hyperparams({"seed": seed, "model": model, "run_num": run_num})
+    comet_logger.log_hyperparams({"seed": seed, "run_num": run_num})
     comet_logger.experiment.log_code(file_name="src/commands/transfer.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    pretrained, _ = load_pretrain_from_ckpt(pretrain_path)
+    pretrained = load_pretrain_from_ckpt(pretrain_path)
 
     encoding_model: Encoder = pretrained.model.encoder
 
@@ -89,7 +83,7 @@ def launch_transfer(
     checkpoint = ModelCheckpoint(monitor="val_balanced_accuracy", mode="max")
 
     trainer = lightning.Trainer(
-        max_epochs=50,
+        max_epochs=max_epochs,
         logger=comet_logger,
         devices=1,
         accelerator="gpu",
@@ -113,7 +107,7 @@ def launch_transfer(
     with EnsureOneProcess(trainer):
         logging.warning("Logging pretrain model")
         comet_logger.experiment.log_model(
-            name=net.model.__class__.__name__,
+            name="SFCNModel",
             file_or_folder=checkpoint.best_model_path,
         )
         shutil.copy(checkpoint.best_model_path, save_model_path)

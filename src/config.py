@@ -1,4 +1,3 @@
-# %%
 """
 File to regroup important constant for the project
 """
@@ -25,11 +24,6 @@ MOTION_N_BINS = 50
 MOTION_BIN_RANGE = (-0.8, 4.8)
 MOTION_BIN_STEP = (MOTION_BIN_RANGE[1] - MOTION_BIN_RANGE[0]) / MOTION_N_BINS
 
-## SSIM PARAMETERS
-SSIM_N_BINS = 50
-SSIM_BIN_RANGE = (-0.08, 0.48)
-SSIM_BIN_STEP = (SSIM_BIN_RANGE[1] - SSIM_BIN_RANGE[0]) / SSIM_N_BINS
-
 ## COMET
 COMET_API_KEY = os.getenv("COMET_API_KEY")
 
@@ -41,5 +35,4 @@ PLOT_DIR = "plots"
 CONFIDENCE_FILTER = 0.95  # Min confidence for swarm plot filter
 
 # RAYTUNE
-RAYTUNE_DIR = "/lustre07/scratch/cbricout/ray_results" if IS_NARVAL else  "~/ray_results"
-
+RAYTUNE_DIR = "/lustre07/scratch/cbricout/ray_results" if IS_NARVAL else "~/ray_results"

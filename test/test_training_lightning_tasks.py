@@ -20,25 +20,20 @@ from src.utils.test import get_module_dl
                 AMPSCZTransferTask,
                 AMPSCZScratchTask,
             ],
-            ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"],
         )
     ),
 )
 class TestLightningModule:
-    def test_train_step(
-        self, task_class: Type[TransferTask | LightningModule], model: str
-    ):
-        module, dl = get_module_dl(task_class, model, 2, 2)
+    def test_train_step(self, task_class: Type[TransferTask | LightningModule]):
+        module, dl = get_module_dl(task_class, 2, 2)
 
         train_loss = module.training_step(next(iter(dl)), 1)
         assert train_loss is not None
         assert train_loss.numel() == 1
         assert type(train_loss.item()) is float
 
-    def test_val_step(
-        self, task_class: Type[TransferTask | LightningModule], model: str
-    ):
-        module, dl = get_module_dl(task_class, model, 2, 2)
+    def test_val_step(self, task_class: Type[TransferTask | LightningModule]):
+        module, dl = get_module_dl(task_class, 2, 2)
 
         with torch.no_grad():
             val_loss = module.validation_step(next(iter(dl)), 1)
@@ -46,10 +41,8 @@ class TestLightningModule:
         assert val_loss.numel() == 1
         assert type(val_loss.item()) is float
 
-    def test_pred_step(
-        self, task_class: Type[TransferTask | LightningModule], model: str
-    ):
-        module, dl = get_module_dl(task_class, model, 2, 2)
+    def test_pred_step(self, task_class: Type[TransferTask | LightningModule]):
+        module, dl = get_module_dl(task_class, 2, 2)
 
         with torch.no_grad():
             predict = module.predict_step(next(iter(dl)), 1)

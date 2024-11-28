@@ -1,30 +1,18 @@
-from comet_ml import Model
 import numpy as np
 import pytest
 import torch
-from src import config
-from src.network.cnn_net import CNNModel
-from src.network.conv5_fc3_net import Conv5FC3Model
-from src.network.res_net import ResModel
-from src.network.seres_net import SEResModel
-from src.network.sfcn_net import SFCNModel
-from src.network.vit_net import ViTModel
-from src.transforms.load import PretrainerTransform, ToSoftLabel
-from src.config import (
-    SSIM_BIN_RANGE,
-    SSIM_BIN_STEP,
-    SSIM_N_BINS,
-    MOTION_BIN_RANGE,
-    MOTION_BIN_STEP,
-    MOTION_N_BINS,
-)
+from comet_ml import Model
 from monai.data import Dataset
+
+from src import config
+from src.config import MOTION_BIN_RANGE, MOTION_BIN_STEP, MOTION_N_BINS
+from src.network.sfcn_net import SFCNModel
+from src.transforms.load import PretrainerTransform, ToSoftLabel
 
 
 @pytest.mark.parametrize(
     "bin_range,bin_step,n_bins,value_range,expected_precision",
     [
-        (SSIM_BIN_RANGE, SSIM_BIN_STEP, SSIM_N_BINS, (0, 0.4), 1e-5),
         (MOTION_BIN_RANGE, MOTION_BIN_STEP, MOTION_N_BINS, (0, 4), 1e-4),
     ],
 )
@@ -71,12 +59,8 @@ def test_soft_label_scalar(val: float):
     assert soft_x.shape == (n_bins,)
 
 
-@pytest.mark.parametrize(
-    "model_to_test",
-    [CNNModel, ResModel, Conv5FC3Model, SEResModel, SFCNModel, ViTModel],
-)
-def test_pretrain_transform(model_to_test: Model):
-    net = model_to_test(config.IM_SHAPE, 10, 0.5)
+def test_pretrain_transform():
+    net = SFCNModel(config.IM_SHAPE, 10, 0.5)
     transf = PretrainerTransform("data", net.encoder)
     ds = Dataset(
         [

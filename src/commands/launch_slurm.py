@@ -191,7 +191,6 @@ def create_job(
 
 
 def submit_pretrain(
-    model: str,
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
     account: str = config.DEFAULT_SLURM_ACCOUNT,
@@ -199,7 +198,6 @@ def submit_pretrain(
     """Submit pretrain job on SLURM cluster
 
     Args:
-        model (str): Model to use
         array (Sequence[int] | int | None, optional): Can be single id, sequence, range or nothing.
             Defaults to None.
         cmd (str | None, optional): command to run, if None, retrieve the parameters
@@ -207,9 +205,9 @@ def submit_pretrain(
         send_transfer (bool, optional): flag to send transfer command. Defaults to False.
     """
     job = create_job(
-        get_name("pretrain", model, array),
+        get_name("pretrain", "SFCN", array),
         array,
-        get_output("pretrain", model, array),
+        get_output("pretrain", "SFCN", array),
         n_cpus=10,
         n_gpus=4,
         mem="300G",
@@ -239,15 +237,13 @@ def submit_transfer(
     """Submit transfer job on SLURM cluster
 
     Args:
-        model (str): Model to use
         array (Sequence[int] | int | None, optional): Can be single id, sequence, range or nothing.
             Defaults to None.
         cmd (str | None, optional): command to run, if None, retrieve the parameters
             used from the CLI. Defaults to None.
         dependency (str | None, optional): optionnal job_id dependency to wait for.
             Defaults to None.
-        dataset (str, optional): dataset to run the transfer process on
-            (used for job name and output). Defaults to "".
+
     """
     job = create_job(
         get_name("transfer", path.basename(pretrain_path), array),
@@ -271,25 +267,21 @@ def submit_transfer(
 
 
 def submit_scratch(
-    model: str,
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
 ):
     """Submit base train job on SLURM cluster
 
     Args:
-        model (str): Model to use
         array (Sequence[int] | int | None, optional): Can be single id, sequence, range or nothing.
             Defaults to None.
         cmd (str | None, optional): command to run, if None, retrieve the parameters
             used from the CLI. Defaults to None.
-        dataset (str, optional): dataset to run the training process on
-            (used for job name and output). Defaults to "".
     """
     job = create_job(
-        get_name("base", model, array),
+        get_name("base", "SFCN", array),
         array,
-        get_output("base", model, array),
+        get_output("base", "SFCN", array),
         n_cpus=20,
         n_gpus=1,
         mem="100G",
@@ -323,9 +315,9 @@ def submit_generate_ds():
     job.sbatch(f"srun python {get_full_cmd()}")
 
 
-def submit_tune_transfer(model: str, cmd: str = None):
+def submit_tune_transfer(cmd: str = None):
     job = Slurm(
-        job_name=f"tune_transfer_{model}",
+        job_name=f"tune_transfer_SFCN",
         nodes=1,
         gres="gpu:3",
         cpus_per_task=48,
@@ -345,9 +337,9 @@ def submit_tune_transfer(model: str, cmd: str = None):
     job.sbatch(f"srun python {cmd}")
 
 
-def submit_tune_scratch(model: str, cmd: str = None):
+def submit_tune_scratch(cmd: str = None):
     job = Slurm(
-        job_name=f"tune_scratch_{model}",
+        job_name=f"tune_scratch_SFCN",
         nodes=1,
         gres="gpu:4",
         cpus_per_task=48,

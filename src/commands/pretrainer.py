@@ -6,7 +6,6 @@ import logging
 import os
 import random
 import shutil
-from typing import Type
 
 import comet_ml
 import lightning
@@ -33,7 +32,6 @@ def launch_pretrain(
     dropout_rate: float,
     max_epochs: int,
     batch_size: int,
-    model: str,
     run_num: int,
     seed: int | None,
 ):
@@ -44,12 +42,11 @@ def launch_pretrain(
         dropout_rate (float): dropout rate before final layer
         max_epochs (int): max number of epoch to train for
         batch_size (int): batch size (on one GPU)
-        model (str): model to train
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
     """
 
-    run_name = f"pretraining-{model}-{run_num}"
+    run_name = f"pretraining-SFCN-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
     os.makedirs("model_report", exist_ok=True)
     save_model_path = os.path.join("model_report", run_name)
@@ -66,7 +63,6 @@ def launch_pretrain(
     comet_logger.log_hyperparams(
         {
             "seed": seed,
-            "model": model,
             "run_num": run_num,
         }
     )
@@ -74,7 +70,6 @@ def launch_pretrain(
     logging.info("Run dir path is : %s", run_dir)
 
     net = MotionPretrainingTask(
-        model_class=model,
         im_shape=IM_SHAPE,
         lr=learning_rate,
         dropout_rate=dropout_rate,
@@ -111,16 +106,10 @@ def launch_pretrain(
 
         logging.warning("Logging pretrain model")
         comet_logger.experiment.log_model(
-            name=net.model.__class__.__name__,
+            name="SFCNModel",
             file_or_folder=checkpoint.best_model_path,
         )
         shutil.copy(checkpoint.best_model_path, save_model_path)
         logging.warning("Pretrained model uploaded, saved at : %s", save_model_path)
-
-        best_net = MotionPretrainingTask.load_from_checkpoint(
-            checkpoint_path=checkpoint.best_model_path
-        )
-
-        logging.info("Running dropout on pretrain")
         logging.info("Removing Checkpoints")
         shutil.rmtree(trainer.default_root_dir)

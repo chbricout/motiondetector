@@ -64,14 +64,7 @@ batch_size = click.option(
     default=12,
     type=int,
 )
-model = click.option(
-    "--model",
-    help="Model architecture : CNN, RES, SFCN, CONV5_FC3, SERES, VIT",
-    default="CNN",
-    type=click.Choice(
-        ["CNN", "RES", "SFCN", "CONV5_FC3", "SERES", "VIT"], case_sensitive=True
-    ),
-)
+
 run_num = click.option(
     "--run_num",
     help="Identifier of job in the array job list",
@@ -113,7 +106,6 @@ def cli():
 @learning_rate
 @dropout_rate
 @batch_size
-@model
 @run_num
 @seed
 @slurm
@@ -123,14 +115,13 @@ def pretrain(
     learning_rate,
     dropout_rate,
     batch_size,
-    model,
     run_num,
     seed,
     slurm,
     account,
 ):
     if slurm:
-        submit_pretrain(model=model, array=run_num, account=account)
+        submit_pretrain(array=run_num, account=account)
     else:
         lightning_logger()
         launch_pretrain(
@@ -138,7 +129,6 @@ def pretrain(
             learning_rate=learning_rate,
             dropout_rate=dropout_rate,
             batch_size=batch_size,
-            model=model,
             run_num=run_num,
             seed=seed,
         )
@@ -202,7 +192,6 @@ def transfer(
 @dropout_rate
 @batch_size
 @weight_decay
-@model
 @run_num
 @seed
 @slurm
@@ -212,13 +201,12 @@ def train(
     dropout_rate,
     batch_size,
     weight_decay,
-    model,
     run_num,
     seed,
     slurm,
 ):
     if slurm:
-        submit_scratch(model=model, array=run_num)
+        submit_scratch(array=run_num)
     else:
         lightning_logger()
         launch_train_from_scratch(
@@ -227,7 +215,6 @@ def train(
             dropout_rate=dropout_rate,
             batch_size=batch_size,
             weight_decay=weight_decay,
-            model=model,
             run_num=run_num,
             seed=seed,
         )
@@ -286,7 +273,6 @@ def pretrainer(test: bool):
             array = 1
 
         submit_pretrain(
-            model["name"],
             array,
             cmd,
         )
@@ -323,14 +309,12 @@ def transfer(directory: str):
 def train():
     with open("run_config.json", "r") as file:
         setting = json.load(file)["scratch"]
-        for model, conf in setting.items():
+        for _, conf in setting.items():
             submit_scratch(
-                model,
                 list(range(1, 6)),
                 f"cli.py train   \
                     --max_epochs 10000\
                     --batch_size {conf['batch_size']}\
-                    --model {model}\
                     --learning_rate {conf['lr']}\
                     --dropout_rate {conf['dropout_rate']}\
                     --weight_decay {conf['weight_decay']}",
@@ -381,18 +365,12 @@ def tune():
 
 
 @tune.command("scratch")
-@model
 @click.option("-A", "--all", help="Use all models", type=bool, is_flag=True)
-@slurm
-def tune_scratch(model: str, all: bool, slurm: bool):
+def tune_scratch(all: bool):
     if not all:
-        if slurm:
-            submit_tune_scratch(model)
-        else:
-            run_scratch_tune(model)
+        run_scratch_tune()
     else:
-        for model_str in ["RES", "SFCN", "CONV5_FC3", "SERES", "VIT"]:
-            submit_tune_scratch(model_str, f"cli.py tune scratch --model {model_str}")
+        submit_tune_scratch(f"cli.py tune scratch")
 
 
 @tune.command("transfer")
@@ -400,16 +378,12 @@ def tune_scratch(model: str, all: bool, slurm: bool):
 @click.option(
     "-d", "--directory", help="Directory containing models", type=str, default=None
 )
-@slurm
-def tune_transfer(file: str, directory: str, slurm: bool):
+def tune_transfer(file: str, directory: str):
     if not directory:
-        if slurm:
-            submit_tune_transfer(file)
-        else:
-            run_transfer_tune(file)
+        run_transfer_tune(file)
     else:
         for model in glob(os.path.join(directory, "*.ckpt")):
-            submit_tune_transfer(model, cmd=f"cli.py tune transfer --file {model}")
+            submit_tune_transfer(cmd=f"cli.py tune transfer --file {model}")
 
 
 if __name__ == "__main__":

@@ -4,10 +4,9 @@ import shutil
 from os import path
 
 import pandas as pd
-import torch
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 
 import src.training.eval as teval
 from src.dataset.ampscz.ampscz_dataset import FullTestAMPSCZ
@@ -31,7 +30,7 @@ def test_pretrain_in_folder(folder: str):
 
 
 def setup_test_pretrain(ckpt_path: str) -> tuple[PretrainingTask, str, str]:
-    module, _ = task_utils.load_pretrain_from_ckpt(ckpt_path=ckpt_path)
+    module = task_utils.load_pretrain_from_ckpt(ckpt_path=ckpt_path)
     print(f"Start Evaluation for {ckpt_path}")
 
     exp = path.basename(ckpt_path).split(".")[0]

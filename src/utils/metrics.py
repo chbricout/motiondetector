@@ -1,10 +1,8 @@
 """Module used to define special metrics"""
 
 import numpy as np
-import pandas as pd
 import seaborn as sb
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 from sklearn.metrics import balanced_accuracy_score, confusion_matrix, f1_score
 
 

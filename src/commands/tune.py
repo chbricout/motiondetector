@@ -2,15 +2,12 @@ import json
 import os
 import shutil
 from functools import partial
-from typing import Any, Type
+from typing import Any
 
 import lightning as L
-import pandas as pd
-import ray
 import torch
-from pyarrow.fs import LocalFileSystem
 from ray import tune
-from ray.train import CheckpointConfig, RunConfig, ScalingConfig, SyncConfig
+from ray.train import CheckpointConfig, RunConfig, ScalingConfig
 from ray.train.lightning import RayTrainReportCallback
 from ray.train.torch import TorchTrainer
 from ray.tune import CLIReporter
@@ -26,7 +23,6 @@ from src.utils.task import load_pretrain_from_ckpt
 
 def scratch_tune(
     config: dict[str, Any],
-    model_str: str,
 ):
     torch.cuda.empty_cache()
     os.chdir(
@@ -35,7 +31,6 @@ def scratch_tune(
         else "/home/at70870/Desktop/mrart"
     )
     model = AMPSCZScratchTask(
-        model_str,
         conf.IM_SHAPE,
         lr=config["lr"],
         dropout_rate=config["dropout_rate"],
@@ -53,8 +48,8 @@ def scratch_tune(
     trainer.fit(model, datamodule=datamodule)
 
 
-def run_scratch_tune(model_str: str):
-    report_dir = f"hp_tune/scratch/{model_str}"
+def run_scratch_tune():
+    report_dir = f"hp_tune/scratch/SFCN"
     if os.path.exists(report_dir):
         shutil.rmtree(report_dir)
     os.makedirs(report_dir)
@@ -86,13 +81,13 @@ def run_scratch_tune(model_str: str):
             checkpoint_score_order="max",
         ),
         storage_path=conf.RAYTUNE_DIR,
-        name=model_str,
+        name="SFCN",
         progress_reporter=CLIReporter(metric_columns=["val_balanced_accuracy"]),
     )
 
     # Define a TorchTrainer without hyper-parameters for Tuner
     ray_trainer = TorchTrainer(
-        partial(scratch_tune, model_str=model_str),
+        scratch_tune,
         scaling_config=scaling_config,
         run_config=run_config,
     )
@@ -201,7 +196,7 @@ def run_transfer_tune(pretrain_path: str):
         name=os.path.basename(pretrain_path).replace(".ckpt", ""),
     )
 
-    pretrained, _ = load_pretrain_from_ckpt(pretrain_path)
+    pretrained = load_pretrain_from_ckpt(pretrain_path)
     model = pretrained.model.float()
     # Define a TorchTrainer without hyper-parameters for Tuner
     ray_trainer = TorchTrainer(

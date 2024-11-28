@@ -5,7 +5,6 @@ import torch.optim
 from torch import Tensor, nn
 
 from src.network.archi import Encoder, Model
-from src.network.sfcn_net import SFCNClassifier
 from src.network.transfer_net import TransferMLP
 from src.network.utils import init_model
 from src.training.common_logic import BaseFinalTrain

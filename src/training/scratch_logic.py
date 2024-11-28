@@ -3,7 +3,8 @@
 import torch
 from torch import nn
 
-from src.network.utils import init_model, parse_model
+from src.network.sfcn_net import SFCNModel
+from src.network.utils import init_model
 from src.training.common_logic import BaseFinalTrain
 
 
@@ -15,7 +16,6 @@ class TrainScratchTask(BaseFinalTrain):
 
     def __init__(
         self,
-        model_class: str,
         im_shape,
         lr=1e-5,
         dropout_rate=0.5,
@@ -28,10 +28,7 @@ class TrainScratchTask(BaseFinalTrain):
         self.lr = lr
         self.weight_decay = weight_decay
         self.batch_size = batch_size
-        self.model_class = parse_model(model_class)
-        self.model = self.model_class(
-            self.im_shape, self.num_classes, self.dropout_rate
-        )
+        self.model = SFCNModel(self.im_shape, self.num_classes, self.dropout_rate)
         init_model(self.model)
         self.setup_training()
         self.save_hyperparameters()

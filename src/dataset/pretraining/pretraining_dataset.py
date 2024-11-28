@@ -2,8 +2,7 @@
 Module to use the synthetic motion pretraining dataset from python (require split csv files)
 """
 
-import os
-from typing import Callable, Self
+from typing import Callable
 
 import pandas as pd
 from monai.data.dataloader import DataLoader

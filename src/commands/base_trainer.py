@@ -29,7 +29,6 @@ def launch_train_from_scratch(
     max_epochs: int,
     batch_size: int,
     weight_decay: float,
-    model: str,
     run_num: int,
     seed: int | None,
 ):
@@ -40,15 +39,11 @@ def launch_train_from_scratch(
         dropout_rate (float): dropout rate before final layer
         max_epochs (int): max number of epoch to train for
         batch_size (int): batch size (on one GPU)
-        dataset (str): dataset to train on "AMPSCZ" or "MRART"
-        model (str): model to train
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
     """
-    task = AMPSCZScratchTask
-
     project_name = f"baseline-AMPSCZ"
-    run_name = f"scratch-{model}-{run_num}"
+    run_name = f"scratch-SFCN-{run_num}"
     report_name = f"{run_name}-AMPSCZ"
     os.makedirs("model_report", exist_ok=True)
     save_model_path = os.path.join("model_report", "scratch", report_name)
@@ -59,18 +54,17 @@ def launch_train_from_scratch(
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=config.COMET_API_KEY,
         project_name=project_name,
-        experiment_name=f"{model}-{run_num}",
+        experiment_name=f"SFCN-{run_num}",
     )
     if seed is None:
         seed = random.randint(1, 10000)
-    comet_logger.log_hyperparams({"seed": seed, "model": model, "run_num": run_num})
+    comet_logger.log_hyperparams({"seed": seed, "run_num": run_num})
     comet_logger.experiment.log_code(file_name="src/commands/base_trainer.py")
     comet_logger.experiment.log_code(file_name="src/training/scratch_logic.py")
 
     tempdir = tempfile.TemporaryDirectory()
 
-    net = task(
-        model_class=model,
+    net = AMPSCZScratchTask(
         im_shape=config.IM_SHAPE,
         lr=learning_rate,
         dropout_rate=dropout_rate,

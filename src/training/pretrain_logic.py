@@ -1,16 +1,14 @@
 """Module to define logic for pretraining"""
 
-import logging
-from collections import Counter
-
 import matplotlib.pyplot as plt
 import torch.optim
-from sklearn.metrics import balanced_accuracy_score, mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 from torch import nn
 
 from src import config
 from src.network.archi import Model
-from src.network.utils import KLDivLoss, init_model, parse_model
+from src.network.sfcn_net import SFCNModel
+from src.network.utils import KLDivLoss, init_model
 from src.training.common_logic import EncodeClassifyTask, get_calibration_curve
 from src.transforms.load import ToSoftLabel
 
@@ -27,7 +25,6 @@ class PretrainingTask(EncodeClassifyTask):
 
     def __init__(
         self,
-        model_class: str = "",
         im_shape=config.IM_SHAPE,
         lr=1e-5,
         dropout_rate=0.5,
@@ -41,15 +38,8 @@ class PretrainingTask(EncodeClassifyTask):
         self.dropout_rate = dropout_rate
         self.batch_size = batch_size
         self.lr = lr
-        self.model_class = parse_model(model_class)
-        self.model = self.model_class(
-            self.im_shape, self.num_classes, self.dropout_rate
-        )
+        self.model = SFCNModel(self.im_shape, self.num_classes, self.dropout_rate)
         init_model(self.model)
-        if model_class == "SFCN":
-            self.model = torch.compile(self.model, disable=True)
-        else:
-            self.model = torch.compile(self.model)
 
         self.save_hyperparameters()
 
@@ -126,14 +116,12 @@ class MotionPretrainingTask(PretrainingTask):
 
     def __init__(
         self,
-        model_class: str,
         im_shape,
         lr=1e-5,
         dropout_rate=0.5,
         batch_size=14,
     ):
         super().__init__(
-            model_class=model_class,
             im_shape=im_shape,
             lr=lr,
             dropout_rate=dropout_rate,
