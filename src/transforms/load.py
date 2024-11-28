@@ -208,20 +208,6 @@ class ToSoftLabel(MapTransform):
             bin_step=config.MOTION_BIN_STEP,
         )
 
-    @staticmethod
-    def ssim_config() -> ToSoftLabel:
-        """Create an instance with basic configuration (see config.py)
-
-        Returns:
-            Self: Instance with basic config
-        """
-        return ToSoftLabel(
-            keys="label",
-            backup_keys="ssim_loss",
-            bin_range=config.SSIM_BIN_RANGE,
-            bin_step=config.SSIM_BIN_STEP,
-        )
-
 
 class LoadSynth(Compose):
     """Transform to load synthetic motion data and create soft labels"""
@@ -237,7 +223,7 @@ class LoadSynth(Compose):
         super().__init__(self.tsf)
 
     @staticmethod
-    def from_task(task: str) -> LoadSynth:
+    def from_task() -> LoadSynth:
         """Load synthetic data depending on task
 
         Args:
@@ -246,12 +232,7 @@ class LoadSynth(Compose):
         Returns:
             Self: corresponding Loader
         """
-        if task == "MOTION":
-            return LoadSynth(ToSoftLabel.motion_config())
-        elif task == "SSIM":
-            return LoadSynth(ToSoftLabel.ssim_config())
-        elif task == "BINARY" or "CONTINUAL" in task:
-            return LoadSynth(torch.nn.Identity())
+        return LoadSynth(ToSoftLabel.motion_config())
 
 
 class FinetuneTransform(Compose):
@@ -283,10 +264,3 @@ class PretrainerTransform(MapTransform):
             for key in self.key_iterator(x):
                 x[key] = self.model(x[key].unsqueeze(0))
         return x
-
-
-class TransferTransform(Compose):
-    """Transform to load data in finetune process"""
-
-    def __init__(self, model: Model):
-        super().__init__([FinetuneTransform(), PretrainerTransform("data", model)])

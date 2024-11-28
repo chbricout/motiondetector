@@ -33,16 +33,12 @@ class TrainScratchTask(BaseFinalTrain):
             self.im_shape, self.num_classes, self.dropout_rate
         )
         init_model(self.model)
-        # if model_class == "SFCN":
-        #     self.model = torch.compile(self.model, disable=True)
-        # else:
-        #     self.model = torch.compile(self.model)
         self.setup_training()
         self.save_hyperparameters()
 
 
-class MRArtScratchTask(TrainScratchTask):
-    """Task to train from scratch on MR-ART"""
+class AMPSCZScratchTask(TrainScratchTask):
+    """Task to train from scratch on AMPSCZ"""
 
     num_classes = 3
 
@@ -53,19 +49,3 @@ class MRArtScratchTask(TrainScratchTask):
 
     def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
         return pred.argmax(dim=1)
-
-
-class AMPSCZScratchTask(TrainScratchTask):
-    """Task to train from scratch on AMPSCZ"""
-
-    num_classes = 1
-
-    def setup_training(self):
-        """Function used to define output pipeline and label loss"""
-        self.output_pipeline = nn.Sequential(
-            nn.Flatten(start_dim=0),
-        )
-        self.label_loss = nn.BCEWithLogitsLoss()
-
-    def raw_to_pred(self, pred: torch.Tensor) -> torch.Tensor:
-        return pred.sigmoid().round().int()

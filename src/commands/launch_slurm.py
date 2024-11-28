@@ -218,7 +218,7 @@ def submit_pretrain(
     )
 
     cpy_extract_pretrain(job)
-    cpy_transfer(job)
+    cpy_extract_tar(job, "AMPSCZ-Preproc")
 
     if cmd is None:
         cmd = get_full_cmd()
@@ -228,61 +228,6 @@ def submit_pretrain(
 
     job_id = job.sbatch(f"srun python3 {cmd}")
     print(job)
-
-
-def submit_continual(
-    model: str,
-    array: Sequence[int] | int | None = None,
-    cmd: str | None = None,
-    account: str = config.DEFAULT_SLURM_ACCOUNT,
-):
-    """Submit pretrain job on SLURM cluster
-
-    Args:
-        model (str): Model to use
-        array (Sequence[int] | int | None, optional): Can be single id, sequence, range or nothing.
-            Defaults to None.
-        cmd (str | None, optional): command to run, if None, retrieve the parameters
-            used from the CLI. Defaults to None.
-        send_transfer (bool, optional): flag to send transfer command. Defaults to False.
-    """
-    job = create_job(
-        get_name("continual", model, array),
-        array,
-        get_output("continual", model, array),
-        n_cpus=10,
-        n_gpus=4,
-        mem="300G",
-        time="48:00:00",
-        account=account,
-    )
-
-    cpy_extract_pretrain(job)
-
-    if cmd is None:
-        cmd = get_full_cmd()
-    else:
-        if not "--run_num" in cmd and array is not None:
-            cmd += " --run_num $SLURM_ARRAY_TASK_ID"
-
-    job_id = job.sbatch(f"srun python3 {cmd}")
-    print(job)
-
-
-def cpy_transfer(job: Slurm, dataset: str = ""):
-    """Decide on which tarball to copy for transfer learning
-
-    Args:
-        job (Slurm): Job to modify
-        dataset (str): dataset for transfer learning
-    """
-    to_load = ["MRART-Preproc", "AMPSCZ-Preproc"]
-
-    if dataset == "MRART" or dataset == "UNBALANCED-MRART":
-        to_load = ["MRART-Preproc"]
-    elif dataset == "AMPSCZ":
-        to_load = ["AMPSCZ-Preproc"]
-    cpy_extract_tar(job, to_load)
 
 
 def submit_transfer(
@@ -290,7 +235,6 @@ def submit_transfer(
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
     dependency: str | None = None,
-    dataset: str = "",
 ):
     """Submit transfer job on SLURM cluster
 
@@ -308,13 +252,13 @@ def submit_transfer(
     job = create_job(
         get_name("transfer", path.basename(pretrain_path), array),
         array,
-        get_output("transfer", path.basename(pretrain_path), array) + f"_{dataset}",
+        get_output("transfer", path.basename(pretrain_path), array),
         n_cpus=20,
         n_gpus=1,
         mem="100G",
         time="1:00:00",
     )
-    cpy_transfer(job, dataset)
+    cpy_extract_tar(job, "AMPSCZ-Preproc")
 
     if dependency:
         job.set_dependency(f"afterok:${dependency}")
@@ -330,7 +274,6 @@ def submit_scratch(
     model: str,
     array: Sequence[int] | int | None = None,
     cmd: str | None = None,
-    dataset: str = "",
 ):
     """Submit base train job on SLURM cluster
 
@@ -346,13 +289,13 @@ def submit_scratch(
     job = create_job(
         get_name("base", model, array),
         array,
-        get_output("base", model, array) + f"_{dataset}",
+        get_output("base", model, array),
         n_cpus=20,
         n_gpus=1,
         mem="100G",
         time="4:00:00",
     )
-    cpy_transfer(job, dataset)
+    cpy_extract_tar(job, "AMPSCZ-Preproc")
 
     if cmd is None:
         cmd = get_full_cmd()
@@ -376,21 +319,6 @@ def submit_generate_ds():
         time="50:00:00",
     )
     cpy_extract_tar(job, ["HCPEP-Preproc", "AMPSCZ-Preproc"])
-
-    job.sbatch(f"srun python {get_full_cmd()}")
-
-
-def submit_test_pretrain(folder: str):
-    job = create_job(
-        "test-pretrain",
-        None,
-        f"./logs/test_pretrain.%j.out",
-        n_cpus=30,
-        n_gpus=1,
-        mem="400G",
-        time="24:00:00",
-    )
-    cpy_extract_pretrain(job)
 
     job.sbatch(f"srun python {get_full_cmd()}")
 

@@ -2,16 +2,14 @@
 
 from typing import Type
 
-from lightning import LightningModule
 import torch
+from lightning import LightningModule
+
 from src import config
 from src.network.utils import parse_model
-from src.training.pretrain_logic import MotionPretrainingTask, SSIMPretrainingTask
-from src.training.scratch_logic import MRArtScratchTask
-from src.training.transfer_logic import (
-    TransferTask,
-    MrArtTransferTask,
-)
+from src.training.pretrain_logic import MotionPretrainingTask
+from src.training.scratch_logic import AMPSCZScratchTask
+from src.training.transfer_logic import AMPSCZTransferTask, TransferTask
 from src.transforms.load import ToSoftLabel
 
 
@@ -60,10 +58,7 @@ def get_dl(
     if issubclass(task_class, MotionPretrainingTask):
         soft_util: ToSoftLabel = ToSoftLabel.motion_config()
         label = soft_util.value_to_softlabel(label)
-    elif issubclass(task_class, SSIMPretrainingTask):
-        soft_util: ToSoftLabel = ToSoftLabel.ssim_config()
-        label = soft_util.value_to_softlabel(label)
-    elif issubclass(task_class, (MrArtTransferTask, MRArtScratchTask)):
+    elif issubclass(task_class, (AMPSCZTransferTask, AMPSCZScratchTask)):
         label = torch.tensor(1)
 
     data = torch.randn(config.IM_SHAPE)

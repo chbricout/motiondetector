@@ -1,13 +1,14 @@
 import pytest
 import torch
+
 from src.config import IM_SHAPE
 from src.network.archi import Encoder, Model
-from src.network.cnn_net import CNNModel, CNNEncoder
-from src.network.conv5_fc3_net import Conv5FC3Model, Conv5FC3Encoder
-from src.network.res_net import ResModel, ResEncoder
-from src.network.seres_net import SEResModel, SEResEncoder
-from src.network.sfcn_net import SFCNModel, SFCNEncoder
-from src.network.vit_net import ViTModel, ViTEncoder
+from src.network.cnn_net import CNNEncoder, CNNModel
+from src.network.conv5_fc3_net import Conv5FC3Encoder, Conv5FC3Model
+from src.network.res_net import ResEncoder, ResModel
+from src.network.seres_net import SEResEncoder, SEResModel
+from src.network.sfcn_net import SFCNEncoder, SFCNModel
+from src.network.vit_net import ViTEncoder, ViTModel
 
 
 @pytest.mark.parametrize(
@@ -36,18 +37,5 @@ def test_model_init(model_to_test):
     dummy = torch.rand(IM_SHAPE).unsqueeze(0).cuda()
     preds = net(dummy)
 
-    assert preds.shape == (1, 40)
-    assert torch.isnan(preds).sum() == 0
-
-
-@pytest.mark.parametrize(
-    "model_to_test",
-    [(CNNModel), (ResModel), (Conv5FC3Model), (SEResModel), (SFCNModel), (ViTModel)],
-)
-def test_model_mc_dropout(model_to_test):
-    net: Model = model_to_test(im_shape=IM_SHAPE, num_classes=40, dropout_rate=0.5)
-    net = net.cuda()
-    dummy = torch.rand(IM_SHAPE).unsqueeze(0).cuda()
-    preds = net(dummy)
     assert preds.shape == (1, 40)
     assert torch.isnan(preds).sum() == 0

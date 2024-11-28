@@ -138,12 +138,5 @@ class Model(abc.ABC, nn.Module):
         encoded = self.encoder(x)
         return self.classifier(encoded)
 
-    def mc_dropout(self):
-        """Function to enable the dropout layers during test-time"""
-        self.eval()
-        for m in self.modules():
-            if m.__class__.__name__.startswith("Dropout"):
-                m.train()
-
     def change_classifier(self, num_classes):
         pass

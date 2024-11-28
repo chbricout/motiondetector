@@ -19,16 +19,14 @@ from ray.tune.schedulers import ASHAScheduler
 from src import config as conf
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
 from src.network.archi import Model
-from src.training.scratch_logic import MRArtScratchTask
-from src.training.transfer_logic import MrArtTransferTask
+from src.training.scratch_logic import AMPSCZScratchTask
+from src.training.transfer_logic import AMPSCZTransferTask
 from src.utils.task import load_pretrain_from_ckpt
 
 
 def scratch_tune(
     config: dict[str, Any],
     model_str: str,
-    task_cls=MRArtScratchTask,
-    datamodule_cls=AMPSCZDataModule,
 ):
     torch.cuda.empty_cache()
     os.chdir(
@@ -36,7 +34,7 @@ def scratch_tune(
         if conf.IS_NARVAL
         else "/home/at70870/Desktop/mrart"
     )
-    model = task_cls(
+    model = AMPSCZScratchTask(
         model_str,
         conf.IM_SHAPE,
         lr=config["lr"],
@@ -51,7 +49,7 @@ def scratch_tune(
         enable_progress_bar=False,
         default_root_dir=os.environ.get("SLURM_TMPDIR", "temp/"),
     )
-    datamodule = datamodule_cls(config["batch_size"])
+    datamodule = AMPSCZDataModule(config["batch_size"])
     trainer.fit(model, datamodule=datamodule)
 
 
@@ -133,8 +131,6 @@ def run_scratch_tune(model_str: str):
 def transfer_tune(
     config: dict[str, Any],
     pretrained: Model,
-    task_cls=MrArtTransferTask,
-    datamodule_cls=AMPSCZDataModule,
 ):
     torch.cuda.empty_cache()
     os.chdir(
@@ -142,7 +138,7 @@ def transfer_tune(
         if conf.IS_NARVAL
         else "/home/at70870/Desktop/mrart"
     )
-    model = task_cls(
+    model = AMPSCZTransferTask(
         input_size=pretrained.encoder.latent_shape,
         pretrained=pretrained,
         lr=config["lr"],
@@ -158,7 +154,7 @@ def transfer_tune(
         enable_progress_bar=False,
         default_root_dir=os.environ.get("SLURM_TMPDIR", "temp/"),
     )
-    datamodule = datamodule_cls(
+    datamodule = AMPSCZDataModule(
         config["batch_size"], pretrained_model=pretrained.encoder
     )
     trainer.fit(model, datamodule=datamodule)
@@ -205,7 +201,7 @@ def run_transfer_tune(pretrain_path: str):
         name=os.path.basename(pretrain_path).replace(".ckpt", ""),
     )
 
-    pretrained, _, _ = load_pretrain_from_ckpt(pretrain_path)
+    pretrained, _ = load_pretrain_from_ckpt(pretrain_path)
     model = pretrained.model.float()
     # Define a TorchTrainer without hyper-parameters for Tuner
     ray_trainer = TorchTrainer(

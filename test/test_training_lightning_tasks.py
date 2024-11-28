@@ -1,19 +1,13 @@
 import itertools
 from typing import Type
-from lightning import LightningModule
+
 import pytest
 import torch
-from src.training.pretrain_logic import (
-    BinaryPretrainingTask,
-    MotionPretrainingTask,
-    SSIMPretrainingTask,
-)
-from src.training.scratch_logic import AMPSCZScratchTask, MRArtScratchTask
-from src.training.transfer_logic import (
-    TransferTask,
-    MrArtTransferTask,
-    AMPSCZTransferTask,
-)
+from lightning import LightningModule
+
+from src.training.pretrain_logic import MotionPretrainingTask
+from src.training.scratch_logic import AMPSCZScratchTask
+from src.training.transfer_logic import AMPSCZTransferTask, TransferTask
 from src.utils.test import get_module_dl
 
 
@@ -23,10 +17,6 @@ from src.utils.test import get_module_dl
         itertools.product(
             [
                 MotionPretrainingTask,
-                SSIMPretrainingTask,
-                BinaryPretrainingTask,
-                MrArtTransferTask,
-                MRArtScratchTask,
                 AMPSCZTransferTask,
                 AMPSCZScratchTask,
             ],
@@ -65,7 +55,5 @@ class TestLightningModule:
             predict = module.predict_step(next(iter(dl)), 1)
         assert predict is not None
         assert predict.numel() == 2
-        if issubclass(task_class, (MotionPretrainingTask, SSIMPretrainingTask)):
+        if issubclass(task_class, MotionPretrainingTask):
             assert predict.is_floating_point()
-        else:
-            assert not predict.is_floating_point()

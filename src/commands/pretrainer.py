@@ -21,12 +21,9 @@ from lightning.pytorch.callbacks import (
 
 from src.config import COMET_API_KEY, IM_SHAPE, PROJECT_NAME
 from src.dataset.pretraining.pretraining_dataset import PretrainingDataModule
-from src.training.eval import get_correlations
-from src.training.pretrain_logic import PretrainingTask
-from src.utils.comet import get_experiment_key
+from src.training.pretrain_logic import MotionPretrainingTask
 from src.utils.log import get_run_dir
-from src.utils.mcdropout import pretrain_mcdropout
-from src.utils.task import EnsureOneProcess, label_from_task, str_to_task
+from src.utils.task import EnsureOneProcess
 
 torch.set_float32_matmul_precision("high")
 
@@ -39,7 +36,6 @@ def launch_pretrain(
     model: str,
     run_num: int,
     seed: int | None,
-    task: str,
 ):
     """Launch the pretraining process
 
@@ -51,10 +47,9 @@ def launch_pretrain(
         model (str): model to train
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
-        task(str): Pretraining task to use
     """
 
-    run_name = f"pretraining-{task}-{model}-{run_num}"
+    run_name = f"pretraining-{model}-{run_num}"
     run_dir = get_run_dir(PROJECT_NAME, run_name)
     os.makedirs("model_report", exist_ok=True)
     save_model_path = os.path.join("model_report", run_name)
@@ -63,7 +58,6 @@ def launch_pretrain(
         api_key=COMET_API_KEY,
         project_name=PROJECT_NAME,
         experiment_name=run_name,
-        experiment_key=get_experiment_key("mrart", PROJECT_NAME, run_name),
     )
 
     if seed is None:
@@ -74,15 +68,12 @@ def launch_pretrain(
             "seed": seed,
             "model": model,
             "run_num": run_num,
-            "task": task,
         }
     )
     comet_logger.experiment.log_code(file_name="src/commands/pretrainer.py")
     logging.info("Run dir path is : %s", run_dir)
 
-    task_class: Type[PretrainingTask] = str_to_task(task)
-
-    net = task_class(
+    net = MotionPretrainingTask(
         model_class=model,
         im_shape=IM_SHAPE,
         lr=learning_rate,
@@ -90,15 +81,12 @@ def launch_pretrain(
         batch_size=batch_size,
     )
 
-    monitor_metrics = "r2_score"
-    if task == "BINARY":
-        monitor_metrics = "balanced_accuracy"
-    checkpoint = ModelCheckpoint(monitor=monitor_metrics, mode="max")
+    checkpoint = ModelCheckpoint(monitor="r2_score", mode="max")
 
     trainer = lightning.Trainer(
         max_epochs=max_epochs,
         logger=comet_logger,
-        devices=4,
+        devices=torch.cuda.device_count(),
         strategy="ddp",
         accelerator="gpu",
         precision="16-mixed",
@@ -117,7 +105,7 @@ def launch_pretrain(
         ],
     )
 
-    trainer.fit(net, datamodule=PretrainingDataModule(batch_size, task))
+    trainer.fit(net, datamodule=PretrainingDataModule(batch_size))
 
     with EnsureOneProcess(trainer):
 
@@ -129,19 +117,10 @@ def launch_pretrain(
         shutil.copy(checkpoint.best_model_path, save_model_path)
         logging.warning("Pretrained model uploaded, saved at : %s", save_model_path)
 
-        best_net = task_class.load_from_checkpoint(
+        best_net = MotionPretrainingTask.load_from_checkpoint(
             checkpoint_path=checkpoint.best_model_path
         )
-        logging.info("Running correlation on pretrain")
-        get_correlations(best_net, comet_logger.experiment)
 
         logging.info("Running dropout on pretrain")
-        pretrain_mcdropout(
-            best_net,
-            trainer.val_dataloaders,
-            comet_logger.experiment,
-            label=label_from_task(task),
-        )
-
         logging.info("Removing Checkpoints")
         shutil.rmtree(trainer.default_root_dir)

@@ -2,41 +2,10 @@
 
 import logging
 import os
-from matplotlib.figure import Figure
-import torch
+
 from rich.logging import RichHandler
-from PIL import Image
-from torchvision.transforms import ToPILImage
-from monai.transforms.intensity.array import ScaleIntensity
 
 from src import config
-
-
-def save_array_as_gif(imgs: list[Image.Image], file_path: str):
-    """Save an array of Pillow Image as a gif
-
-    Args:
-        volume (list[Image.Image]): images to save
-        file_path (str): path to save gif to
-    """
-
-    # duration is the number of milliseconds between frames; this is 40 frames per second
-    imgs[0].save(file_path, save_all=True, append_images=imgs[1:], duration=50, loop=0)
-
-
-def save_volume_as_gif(volume: torch.Tensor, file_path: str):
-    """Save a volume as a gif
-
-    Args:
-        volume (torch.Tensor): volume to save
-        file_path (str): path to save gif to
-    """
-    convert = ToPILImage()
-    scale_01 = ScaleIntensity(0, 1)
-    scaled = scale_01(volume)
-    imgs = [convert(img) for img in scaled]
-
-    save_array_as_gif(imgs, file_path)
 
 
 def get_run_dir(project_name: str, run_name: str) -> str:
@@ -75,17 +44,3 @@ def rich_logger():
     logging.basicConfig(
         level="INFO", handlers=[RichHandler()], format="%(message)s", datefmt="[%X]"
     )
-
-
-def log_figure(figure: Figure, exp_dir: str, name: str, root_dir=config.PLOT_DIR):
-    """Log Figure to a local directory
-
-    Args:
-        figure (Figure): Figure to log
-        exp_dir (str): directory corresponding to experiment
-        name (str): file name
-        root_dir (_type_, optional): root directory for every figures. Defaults to config.PLOT_DIR.
-    """
-    img_path = os.path.join(root_dir, exp_dir, name)
-    figure.savefig(img_path)
-    logging.debug("logged figure to %s", img_path)

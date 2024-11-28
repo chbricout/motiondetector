@@ -12,7 +12,6 @@ from torch.utils.data import Dataset
 from src import config
 from src.dataset.base_dataset import BaseDataModule, BaseDataset
 from src.transforms.load import LoadSynth
-from src.utils.task import label_from_task
 
 
 class BasePretrain(Dataset, BaseDataset):
@@ -32,7 +31,7 @@ class BasePretrain(Dataset, BaseDataset):
         self.transform = transform
 
         # Define default label
-        self.define_label()
+        self.file["label"] = self.file["motion_mm"].astype(float)
 
     def __len__(self):
         return len(self.file)
@@ -42,17 +41,6 @@ class BasePretrain(Dataset, BaseDataset):
         if self.transform:
             data = self.transform(data)
         return data
-
-    def define_label(self, task: str = "MOTION"):
-        """Setup dataset label corresponding to task
-
-        Args:
-            task (str, optional): pretraining task. Defaults to "MOTION".
-        """
-        if task == "BINARY" or "CONTINUAL" in task:
-            self.file["label"] = self.file[label_from_task(task)].astype(int)
-        else:
-            self.file["label"] = self.file[label_from_task(task)].astype(float)
 
 
 class PretrainTrain(BasePretrain):
@@ -71,7 +59,7 @@ class PretrainVal(BasePretrain):
     It relies on the "val.csv" file
     """
 
-    huge_path: str = "src/dataset/pretraining/veryhuge-val.csv"
+    huge_path: str = "src/dataset/pretraining/huge-val.csv"
     veryhuge_path: str = "src/dataset/pretraining/veryhuge-val.csv"
 
 
@@ -81,7 +69,7 @@ class PretrainTest(BasePretrain):
     It relies on the "val.csv" file
     """
 
-    huge_path: str = "src/dataset/pretraining/veryhuge-test.csv"
+    huge_path: str = "src/dataset/pretraining/huge-test.csv"
     veryhuge_path: str = "src/dataset/pretraining/veryhuge-test.csv"
 
 
@@ -90,15 +78,13 @@ class PretrainingDataModule(BaseDataModule):
     Lightning data module to use synthetic motion pretraining data in lightning trainers
     """
 
-    def __init__(self, batch_size: int = 32, task: str = "MOTION"):
+    def __init__(self, batch_size: int = 32):
         super().__init__(batch_size)
-        self.load_tsf = LoadSynth.from_task(task)
+        self.load_tsf = LoadSynth.from_task()
         self.val_ds_class = PretrainVal
         self.train_ds_class = PretrainTrain
-        self.task = task
 
     def train_dataloader(self):
-        self.train_ds.define_label(self.task)
         return DataLoader(
             self.train_ds,
             batch_size=self.batch_size,
@@ -110,7 +96,6 @@ class PretrainingDataModule(BaseDataModule):
         )
 
     def val_dataloader(self, num_workers=9):
-        self.val_ds.define_label(self.task)
         return DataLoader(
             self.val_ds,
             batch_size=self.batch_size,

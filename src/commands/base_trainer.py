@@ -8,7 +8,6 @@ import os
 import random
 import shutil
 import tempfile
-from typing import Type
 
 import lightning
 import lightning.pytorch.loggers
@@ -17,18 +16,10 @@ from lightning.pytorch.callbacks import (
     LearningRateMonitor,
     ModelCheckpoint,
 )
-from lightning.pytorch.tuner import Tuner
 
 from src import config
 from src.dataset.ampscz.ampscz_dataset import AMPSCZDataModule
-from src.dataset.mrart.mrart_dataset import MRArtDataModule, UnbalancedMRArtDataModule
-from src.training.scratch_logic import (
-    AMPSCZScratchTask,
-    MRArtScratchTask,
-    TrainScratchTask,
-)
-from src.utils.log import get_run_dir
-from src.utils.mcdropout import transfer_mcdropout
+from src.training.scratch_logic import AMPSCZScratchTask
 from src.utils.task import EnsureOneProcess
 
 
@@ -38,7 +29,6 @@ def launch_train_from_scratch(
     max_epochs: int,
     batch_size: int,
     weight_decay: float,
-    dataset: str,
     model: str,
     run_num: int,
     seed: int | None,
@@ -55,30 +45,16 @@ def launch_train_from_scratch(
         run_num (int): array id for slurm job when running multiple seeds
         seed (int | None): random seed to run on
     """
-    assert dataset in ("MRART", "AMPSCZ", "UNBALANCED-MRART"), "Dataset does not exist"
-    project_name = (
-        f"baseline-{dataset}" if dataset != "UNBALANCED-MRART" else "unbalanced-mrart"
-    )
+    task = AMPSCZScratchTask
 
+    project_name = f"baseline-AMPSCZ"
     run_name = f"scratch-{model}-{run_num}"
-    report_name = f"{run_name}-{dataset}"
+    report_name = f"{run_name}-AMPSCZ"
     os.makedirs("model_report", exist_ok=True)
     save_model_path = os.path.join("model_report", "scratch", report_name)
     if os.path.exists(save_model_path):
         shutil.rmtree(save_model_path)
     os.makedirs(save_model_path, exist_ok=True)
-
-    task: Type[TrainScratchTask] = None
-    datamodule: Type[lightning.LightningDataModule] = None
-    if dataset == "MRART":
-        datamodule = MRArtDataModule
-        task = MRArtScratchTask
-    elif dataset == "UNBALANCED-MRART":
-        datamodule = UnbalancedMRArtDataModule
-        task = MRArtScratchTask
-    elif dataset == "AMPSCZ":
-        datamodule = AMPSCZDataModule
-        task = MRArtScratchTask
 
     comet_logger = lightning.pytorch.loggers.CometLogger(
         api_key=config.COMET_API_KEY,
@@ -109,7 +85,6 @@ def launch_train_from_scratch(
         logger=comet_logger,
         devices=1,
         accelerator="gpu",
-        # precision="16-mixed",
         default_root_dir=tempdir.name,
         log_every_n_steps=10,
         callbacks=[
@@ -118,7 +93,7 @@ def launch_train_from_scratch(
             LearningRateMonitor(logging_interval="epoch"),
         ],
     )
-    data = datamodule(batch_size)
+    data = AMPSCZDataModule(batch_size)
     trainer.fit(net, datamodule=data)
 
     with EnsureOneProcess(trainer):
@@ -129,9 +104,5 @@ def launch_train_from_scratch(
         )
         shutil.copy(checkpoint.best_model_path, save_model_path)
         logging.warning("Pretrained model uploaded, saved at : %s", save_model_path)
-
-        best_net = task.load_from_checkpoint(checkpoint_path=checkpoint.best_model_path)
-
-        transfer_mcdropout(best_net, trainer.val_dataloaders, comet_logger.experiment)
         logging.info("Removing Checkpoints")
         shutil.rmtree(trainer.default_root_dir)

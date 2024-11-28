@@ -1,29 +1,5 @@
 {
     "scratch": {
-        "RES": {
-            "lr": 0.0000093435,
-            "batch_size": 12,
-            "dropout_rate": 0.62,
-            "weight_decay": 0.04
-        },
-        "CONV5_FC3": {
-            "lr": 0.0079193016,
-            "batch_size": 12,
-            "dropout_rate": 0.62,
-            "weight_decay": 0.043
-        },
-        "SERES": {
-            "lr": 0.0008079327,
-            "batch_size": 16,
-            "dropout_rate": 0.72,
-            "weight_decay": 0.063
-        },
-        "VIT": {
-            "lr": 0.0476156867,
-            "batch_size": 14,
-            "dropout_rate": 0.66,
-            "weight_decay": 0.126
-        },
         "SFCN": {
             "lr": 0.00000279,
             "batch_size": 12,
@@ -32,110 +8,12 @@
         }
     },
     "transfer": {
-        "SERES-BINARY-1": {
-            "lr": 0.0000547286,
-            "batch_size": 12,
-            "dropout_rate": 0.63,
-            "weight_decay": 0.176,
-            "num_layers": 1
-        },
-        "CONV5_FC3-SSIM-1": {
-            "lr": 0.0000071783,
-            "batch_size": 16,
-            "dropout_rate": 0.66,
-            "weight_decay": 0.029,
-            "num_layers": 2
-        },
-        "SFCN-BINARY-1": {
-            "lr": 0.0000118645,
-            "batch_size": 14,
-            "dropout_rate": 0.64,
-            "weight_decay": 0.092,
-            "num_layers": 2
-        },
-        "CONV5_FC3-MOTION-1": {
-            "lr": 0.0001313255,
-            "batch_size": 16,
-            "dropout_rate": 0.77,
-            "weight_decay": 0.124,
-            "num_layers": 1
-        },
         "SFCN-MOTION-1": {
             "lr": 0.0000920048,
             "batch_size": 16,
             "dropout_rate": 0.77,
             "weight_decay": 0.04,
             "num_layers": 2
-        },
-        "RES-SSIM-1": {
-            "lr": 0.0000202721,
-            "batch_size": 16,
-            "dropout_rate": 0.71,
-            "weight_decay": 0.175,
-            "num_layers": 1
-        },
-        "VIT-SSIM-1": {
-            "lr": 0.0000160531,
-            "batch_size": 14,
-            "dropout_rate": 0.67,
-            "weight_decay": 0.162,
-            "num_layers": 1
-        },
-        "SERES-SSIM-1": {
-            "lr": 0.000001276,
-            "batch_size": 12,
-            "dropout_rate": 0.7,
-            "weight_decay": 0.128,
-            "num_layers": 2
-        },
-        "RES-BINARY-1": {
-            "lr": 0.000249715,
-            "batch_size": 14,
-            "dropout_rate": 0.71,
-            "weight_decay": 0.138,
-            "num_layers": 2
-        },
-        "VIT-MOTION-1": {
-            "lr": 0.0000106236,
-            "batch_size": 16,
-            "dropout_rate": 0.74,
-            "weight_decay": 0.061,
-            "num_layers": 1
-        },
-        "SFCN-SSIM-1": {
-            "lr": 0.0000026404,
-            "batch_size": 14,
-            "dropout_rate": 0.64,
-            "weight_decay": 0.136,
-            "num_layers": 1
-        },
-        "RES-MOTION-1": {
-            "lr": 0.0001049692,
-            "batch_size": 14,
-            "dropout_rate": 0.7,
-            "weight_decay": 0.069,
-            "num_layers": 1
-        },
-        "SERES-MOTION-1": {
-            "lr": 0.0000195024,
-            "batch_size": 12,
-            "dropout_rate": 0.66,
-            "weight_decay": 0.029,
-            "num_layers": 1
-        },
-        "VIT-BINARY-1": {
-            "lr": 0.0001742231,
-            "batch_size": 12,
-            "dropout_rate": 0.71,
-            "weight_decay": 0.079,
-            "num_layers": 1
-        },
-        "CONV5_FC3-BINARY-1": {
-            "lr": 0.0000144151,
-            "batch_size": 12,
-            "dropout_rate": 0.8,
-            "weight_decay": 0.107,
-            "num_layers": 1
         }
     }
 }
