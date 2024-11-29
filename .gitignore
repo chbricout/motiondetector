@@ -8,3 +8,4 @@ plots
 .mypy_cache
 models*/
 model_report/
+.vscode
