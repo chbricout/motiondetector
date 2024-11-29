@@ -94,13 +94,13 @@ class TransferMLP(Model):
     def __init__(
         self,
         input_size: int,
-        output_size: int,
+        num_classes: int,
         dropout_rate: float = 0.7,
         pool=False,
         num_layers=3,
     ):
         super().__init__(
-            im_shape=input_size, num_classes=output_size, dropout_rate=dropout_rate
+            im_shape=input_size, num_classes=num_classes, dropout_rate=dropout_rate
         )
         self.encoder = (
             FlattenEncoder(im_shape=self.im_shape, dropout_rate=self.dropout_rate)

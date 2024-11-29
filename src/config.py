@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+## LAB ENV
+LAB_DIR = os.getenv("LAB_DIR", "")
+
 ## NARVAL ENV
 IS_NARVAL = os.getenv("IS_NARVAL", "False").lower() in ("true", "1", "t")
 

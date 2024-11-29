@@ -34,7 +34,7 @@ def setup_test_pretrain(ckpt_path: str) -> tuple[PretrainingTask, str, str]:
     print(f"Start Evaluation for {ckpt_path}")
 
     exp = path.basename(ckpt_path).split(".")[0]
-    report_dir = path.join("test_report", "pretraining", exp)
+    report_dir = path.join("report", "pretraining", exp)
     if path.exists(report_dir):
         shutil.rmtree(report_dir)
     os.makedirs(report_dir)
@@ -57,8 +57,10 @@ def test_pretrain_model_pretrain_data(module: PretrainingTask, report_dir: str):
     print("Pretrain DONE")
 
     base_metrics = [
-        r2_score(simple_df["label"], simple_df["pred"]),
-        mean_squared_error(simple_df["label"], simple_df["pred"], squared=False),
+        [
+            r2_score(simple_df["label"], simple_df["pred"]),
+            mean_squared_error(simple_df["label"], simple_df["pred"], squared=False),
+        ]
     ]
 
     base_metrics_df = pd.DataFrame(
@@ -77,7 +79,7 @@ def test_scratch_in_folder(folder: str):
     for ckpt in models_ckpt:
         print(f"Start Evaluation for {ckpt}")
         exp = path.basename(ckpt).split(".")[0]
-        report_dir = path.join("test_report", "scratch", exp)
+        report_dir = path.join("report", "scratch", exp)
         if path.exists(report_dir):
             shutil.rmtree(report_dir)
         os.makedirs(report_dir)
@@ -96,15 +98,15 @@ def test_scratch_model(
     acc, per_class_f1, cm_fig = metrics.prediction_report(
         simple_df["label"], simple_df["pred"].astype(int)
     )
-    base_metrics = [acc, *per_class_f1]
+    base_metrics = [[acc, *per_class_f1]]
     cm_fig.tight_layout()
     cm_fig.savefig(path.join(report_dir, f"confusion"))
 
-    recap = pd.DataFrame(
+    res = pd.DataFrame(
         base_metrics,
         columns=["balanced_accuracy", "f1_0", "f1_1", "f1_2"],
     )
-    recap.to_csv(path.join(report_dir, "recap.csv"))
+    res.to_csv(path.join(report_dir, "results.csv"))
 
     simple_df.to_csv(path.join(report_dir, "test-pred.csv"))
     plt.close()
@@ -116,7 +118,7 @@ def test_transfer_in_folder(folder: str):
     for ckpt in models_ckpt:
         print(f"Start Evaluation for {ckpt}")
         exp = path.basename(ckpt).split(".")[0]
-        report_dir = path.join("test_report", "transfer", exp)
+        report_dir = path.join("report", "transfer", exp)
         if path.exists(report_dir):
             shutil.rmtree(report_dir)
         os.makedirs(report_dir)

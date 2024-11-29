@@ -3,10 +3,11 @@ Module containing base structure and functions for every dataset
 """
 
 import abc
-import os
 import logging
+import os
 import re
 from typing import Callable, Self
+
 import lightning as L
 
 from src import config
@@ -48,7 +49,7 @@ class BaseDataset(abc.ABC):
         Returns:
             Self: Dataset on lab computer
         """
-        return cls(transform, "/home/at70870/local_scratch/")
+        return cls(transform, config.LAB_DIR)
 
     @classmethod
     def narval(cls, transform: Callable | None = None) -> Self:

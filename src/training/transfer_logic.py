@@ -39,7 +39,7 @@ class TransferTask(BaseFinalTrain):
             weigth.requires_grad = False
         self.model = TransferMLP(
             self.input_size,
-            self.output_size,
+            self.num_classes,
             pool=pool,
             dropout_rate=self.dropout_rate,
             num_layers=self.num_layers,
@@ -85,7 +85,7 @@ class TransferTask(BaseFinalTrain):
 class AMPSCZTransferTask(TransferTask):
     """Task to transfer on AMPSCZ"""
 
-    output_size = 3
+    num_classes = 3
     output_pipeline = nn.Identity()
     label_loss = nn.CrossEntropyLoss()
 

@@ -8,8 +8,7 @@ from comet_ml import API
 
 from src import config
 
-path_to_test = "test_report"
-task_hue_order = ("SSIM", "MOTION", "BINARY")
+path_to_test = "report"
 api = API(config.COMET_API_KEY)
 
 
@@ -19,7 +18,7 @@ def retrieve_transfer():
     for models_directory in glob.glob(directory):
         model, task, run_num = path.basename(models_directory).split("-")
 
-        results = pd.read_csv(path.join(models_directory, "mrart_recap.csv"))
+        results = pd.read_csv(path.join(models_directory, "results.csv"))
         results["model"] = model
         results["task"] = task
         results["run_num"] = int(run_num)
@@ -30,7 +29,6 @@ def retrieve_transfer():
                     "model",
                     "task",
                     "run_num",
-                    "source",
                     "balanced_accuracy",
                     "f1_0",
                     "f1_1",
@@ -40,9 +38,7 @@ def retrieve_transfer():
         )
 
     full_results = pd.concat(full_results)
-    simple_res = full_results[full_results["source"] == "simple"]
-    simple_res = simple_res.drop(columns="source")
-    return simple_res.sort_values(
+    return full_results.sort_values(
         ["model", "task", "run_num"], ascending=False
     ).reset_index(drop=True)
 
@@ -55,7 +51,7 @@ def retrieve_scratch():
             path.basename(models_directory).removesuffix(".ckpt").split("-")
         )
 
-        results = pd.read_csv(path.join(models_directory, "mrart_recap.csv"))
+        results = pd.read_csv(path.join(models_directory, "results.csv"))
         results["model"] = model
         results["run_num"] = int(run_num)
 
@@ -64,7 +60,6 @@ def retrieve_scratch():
                 [
                     "model",
                     "run_num",
-                    "source",
                     "balanced_accuracy",
                     "f1_0",
                     "f1_1",
@@ -74,9 +69,8 @@ def retrieve_scratch():
         )
 
     full_results = pd.concat(full_results)
-    simple_scratch = full_results[full_results["source"] == "simple"]
-    simple_scratch.sort_values("balanced_accuracy", ascending=False)
-    return simple_scratch
+    full_results.sort_values("balanced_accuracy", ascending=False)
+    return full_results
 
 
 def ms_to_time(millis: int):
